@@ -929,6 +929,11 @@ namespace DMTServices
             //SQLParams.Add(data);
         }
 
+        public Hashtable SqlParameters
+        {
+            get { return SQLParams; }
+        }
+
         /// <summary>Clears the fields used in binding to a sql statement</summary>
         public void Clear()
         {
