@@ -1015,6 +1015,11 @@ namespace DMTServices
             return ofetch(field) is System.DBNull;
         }
 
+        public bool nullDate(string field)
+        {
+            return dtfetch(field) == DateTime.MinValue;
+        }
+
         /// <summary>
         /// Close the reader handle...
         /// </summary>
