@@ -1599,6 +1599,36 @@ namespace DMTServices
     }
 
     /// <summary>
+    /// DataBase Helper class
+    /// </summary>
+    public static class DbFunc
+    {
+        /// <summary>
+        /// Create a .sdf file on the fly within SQL Server Express
+        /// </summary>
+        /// <param name="filename">.sdf file to create</param>
+        public static void CreateSqlExpressDatabase(string filename)
+        {
+            string databaseName = System.IO.Path.GetFileNameWithoutExtension(filename);
+
+            using (System.Data.SqlClient.SqlConnection connection = new System.Data.SqlClient.SqlConnection(@"Data Source=.\sqlexpress;Initial Catalog=tempdb;Integrated Security=true;User Instance=True;"))
+            {
+                connection.Open();
+                using (System.Data.SqlClient.SqlCommand command = connection.CreateCommand())
+                {
+                    command.CommandText = "CREATE DATABASE " + databaseName +
+                            " ON PRIMARY (NAME=" + databaseName +
+                                ", FILENAME='" + filename + "')";
+                    command.ExecuteNonQuery();
+                    // this is only for detaching from SQLServer Express
+                    //command.CommandText = "EXEC sp_detach_db '" + databaseName + "', 'true'";
+                    //command.ExecuteNonQuery();
+                }
+            }
+        } 
+    }
+
+    /// <summary>
     /// Class for data conversion
     /// WITHOUT exceptions and as fast as possible...
     ///  (I put it here as these are called extensively from the data connection classes above)
