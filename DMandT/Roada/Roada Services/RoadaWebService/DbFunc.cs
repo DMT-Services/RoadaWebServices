@@ -1603,6 +1603,19 @@ namespace DMTServices
     /// </summary>
     public static class DbFunc
     {
+        public static void DropSqlExpressDatabase(string dbName)
+        {
+            using (System.Data.SqlClient.SqlConnection connection = new System.Data.SqlClient.SqlConnection(@"Data Source=.\sqlexpress;Initial Catalog=tempdb;Integrated Security=true;User Instance=True;"))
+            {
+                connection.Open();
+                using (System.Data.SqlClient.SqlCommand command = connection.CreateCommand())
+                {
+                    command.CommandText = "DROP DATABASE " + dbName;
+                    command.ExecuteNonQuery();
+                }
+            }
+
+        }
         /// <summary>
         /// Create a .sdf file on the fly within SQL Server Express
         /// </summary>
