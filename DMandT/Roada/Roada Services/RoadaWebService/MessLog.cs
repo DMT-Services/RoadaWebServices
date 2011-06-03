@@ -244,7 +244,7 @@ namespace DMTServices
         /// </summary>
         static public string ApplicationPath()
         {
-            string Result = System.Reflection.Assembly.GetExecutingAssembly().GetName().CodeBase.ToLower();
+            string Result = System.Reflection.Assembly.GetExecutingAssembly().GetName().CodeBase;
 
             // change all forward slashes to back slashes (if we are a web site above returns /'s)
             int p = Result.LastIndexOf("/");
@@ -252,7 +252,7 @@ namespace DMTServices
                 Result = Result.Replace('/', '\\');
 
             // when web type program you can get this 'weirdness'...
-            if (Result.StartsWith("file:"))
+            if (Result.ToLower().StartsWith("file:"))
             {
                 Result = Result.Substring(5);
                 p = Result.IndexOf(":");
@@ -268,7 +268,7 @@ namespace DMTServices
                 Result = Result.Remove(p + 1, Result.Length - p - 1);   // strip the .exe name
 
             // when we are a web site it's the dll on the bin directory, so move up one from there...
-            if (Result.EndsWith(@"\bin\"))
+            if (Result.ToLower().EndsWith(@"\bin\"))
                 Result = Result.Substring(0, Result.Length - 4);
 
             return Result;
