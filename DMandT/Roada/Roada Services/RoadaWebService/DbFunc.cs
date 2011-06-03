@@ -443,6 +443,9 @@ namespace DMTServices
             List<string> Result = new List<string>();
             try
             {
+                if (!Connected())
+                    dbConnect();
+
                 DataTable schemaTable = null;
 
                 string sname = (view) ? "Views" : "Tables";
@@ -1560,6 +1563,7 @@ namespace DMTServices
             }
             return rc;
         }
+
         #region NOT_USED
         private List<string> fdrFields = new List<string>();
         private void drGetFieldList()
@@ -1614,31 +1618,61 @@ namespace DMTServices
                     command.ExecuteNonQuery();
                 }
             }
-
         }
+
         /// <summary>
-        /// Create a .sdf file on the fly within SQL Server Express
+        /// Create a .mdf file on the fly within SQL Server Express
         /// </summary>
-        /// <param name="filename">.sdf file to create</param>
+        /// <param name="filename">.mdf file to create</param>
         public static void CreateSqlExpressDatabase(string filename)
         {
             string databaseName = System.IO.Path.GetFileNameWithoutExtension(filename);
-
+            // it really seems to mess things up if the extension is NOT mdf...
+            filename = System.IO.Path.ChangeExtension(filename, ".mdf");
             using (System.Data.SqlClient.SqlConnection connection = new System.Data.SqlClient.SqlConnection(@"Data Source=.\sqlexpress;Initial Catalog=tempdb;Integrated Security=true;User Instance=True;"))
             {
                 connection.Open();
                 using (System.Data.SqlClient.SqlCommand command = connection.CreateCommand())
                 {
                     command.CommandText = "CREATE DATABASE " + databaseName +
-                            " ON PRIMARY (NAME=" + databaseName +
-                                ", FILENAME='" + filename + "')";
+                                          " ON PRIMARY (NAME=" + databaseName + ", FILENAME='" + filename + "')";
                     command.ExecuteNonQuery();
                     // this is only for detaching from SQLServer Express
                     //command.CommandText = "EXEC sp_detach_db '" + databaseName + "', 'true'";
                     //command.ExecuteNonQuery();
                 }
             }
-        } 
+        }
+
+        public static bool FindSqlExpressDatabase(string dbname)
+        {
+            bool found = false;
+            using (System.Data.SqlClient.SqlConnection connection = new System.Data.SqlClient.SqlConnection(@"Data Source=.\sqlexpress;Initial Catalog=tempdb;Integrated Security=true;User Instance=True;"))
+            {
+                connection.Open();
+                using (System.Data.SqlClient.SqlCommand command = connection.CreateCommand())
+                {
+                    command.CommandText = "exec sp_databases";
+                    System.Data.SqlClient.SqlDataReader sr = command.ExecuteReader();
+                    if (!sr.HasRows)
+                    {
+                        // on older version the exec sp_databases may not exist  sys.master_files has good info but not the actual name
+                        command.CommandText = "SELECT name FROM sys.databases";
+                        sr = command.ExecuteReader();
+                    }
+                    while (sr.Read())
+                    {
+                        if (sr.GetString(0).ToLower() == dbname.ToLower())
+                        {
+                            found = true;
+                            break;
+                        }
+                    }
+                    sr.Close();
+                }
+            }
+            return found;
+        }
     }
 
     /// <summary>
