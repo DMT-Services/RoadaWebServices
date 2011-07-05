@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Security.AccessControl;
+using System.Windows.Forms;
 
 namespace DMTServices
 {
@@ -11,25 +12,39 @@ namespace DMTServices
     {
         static public bool Exists(string Filename)
         {
+            return Exists(Filename, false);
+        }
+
+        static public bool Exists(string Filename, bool showMsg)
+        {
             bool r = false;
             try
             {
                 r = File.Exists(Filename);
             }
-            catch
+            catch (Exception ex)
             {
+                if (showMsg)
+                    MessageBox.Show(ex.Message);
             }
             return r;
         }
 
         static public void Delete(string Filename)
         {
+            Delete(Filename, false);
+        }
+
+        static public void Delete(string Filename, bool showMsg)
+        {
             try
             {
                 File.Delete(Filename);
             }
-            catch
+            catch(Exception ex)
             {
+                if(showMsg)
+                    MessageBox.Show(ex.Message);
             }
         }
 
