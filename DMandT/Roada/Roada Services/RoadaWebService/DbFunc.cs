@@ -568,6 +568,9 @@ namespace DMTServices
             DataTable schemaTable = new DataTable();
             try
             {
+                if (!Connected())
+                    dbConnect();
+
                 tableName = FixUpTable(tableName);
                 string sname = (index) ? "IndexColumns" : "Columns";
                 string[] restrictions = GetRestrictions(ref sname, tableName);
@@ -612,6 +615,21 @@ namespace DMTServices
                 schemaTable = new DataTable();
             }
             return schemaTable;
+        }
+
+        // currently, this is only for MSSQL as the DATA_TYPE field is DATATYPE in Oracle, TYPE_NAME in firebird
+        public Dictionary<string, string> TableLayout(string Table)
+        {
+            Dictionary<string, string> f = new Dictionary<string, string>();
+            DataTable dt = GetSchema(Table, false);
+            try
+            {
+                foreach (DataRow dr in dt.Rows)
+                    f.Add(dr["COLUMN_NAME"].ToString().ToLower(), dr["DATA_TYPE"].ToString().ToLower());
+            }
+            catch { }
+
+            return f;
         }
 
         public string[] FieldList(string Table)
