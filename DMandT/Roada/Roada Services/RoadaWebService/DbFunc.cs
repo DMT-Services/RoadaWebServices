@@ -732,6 +732,17 @@ namespace DMTServices
 
     public class SqlStmt
     {
+#if REPLICATE_DB
+        /// <summary>
+        /// this event is called if replication is turned on
+        /// for every SQL statement
+        /// </summary>
+        /// <param name="sender">this SqlStmt</param>
+        /// <param name="sqlStr">SQL string that gets processed for replication</param>
+        /// <param name="param">passed parameters to the SQL string</param>
+        public delegate void ReplicationEventHandler(object sender, string sqlStr, Hashtable param);
+        event ReplicationEventHandler replicationEvent;
+#endif
         private myDbCommand cmd = null;
         private myDataReader rdr = null;
 
@@ -757,6 +768,23 @@ namespace DMTServices
             fParent = conn;
             fParent.AddStmt(this);
         }
+
+#if REPLICATE_DB
+        /// <summary>
+        /// Event that is raised when replication is on and a SQL statement is executed
+        /// </summary>
+        public event ReplicationEventHandler ReplicationEvent
+        {
+            add
+            {
+                replicationEvent += value;
+            }
+            remove
+            {
+                replicationEvent -= value;
+            }
+        }
+#endif
 
         public bool Connected()
         {
