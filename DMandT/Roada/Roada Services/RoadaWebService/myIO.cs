@@ -1,7 +1,9 @@
 using System;
 using System.IO;
 using System.Security.AccessControl;
+#if WINFORMS
 using System.Windows.Forms;
+#endif
 
 namespace DMTServices
 {
@@ -22,11 +24,16 @@ namespace DMTServices
             {
                 r = File.Exists(Filename);
             }
+#if WINFORMS
             catch (Exception ex)
             {
                 if (showMsg)
                     MessageBox.Show(ex.Message);
             }
+#else
+            catch { }
+#endif
+
             return r;
         }
 
@@ -41,11 +48,15 @@ namespace DMTServices
             {
                 File.Delete(Filename);
             }
+#if WINFORMS
             catch(Exception ex)
             {
                 if(showMsg)
                     MessageBox.Show(ex.Message);
             }
+#else
+            catch { }
+#endif
         }
 
         static public void Move(string fFilename, string tFilename)
