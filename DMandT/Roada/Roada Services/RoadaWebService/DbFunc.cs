@@ -784,7 +784,22 @@ namespace DMTServices
                 replicationEvent -= value;
             }
         }
+
 #endif
+        /// <summary>
+        /// Needed to expose SQLParams
+        /// </summary>
+        public Hashtable Params
+        {
+            get
+            {
+                return SQLParams;
+            }
+            set
+            {
+                SQLParams = value;
+            }
+        }
 
         public bool Connected()
         {
