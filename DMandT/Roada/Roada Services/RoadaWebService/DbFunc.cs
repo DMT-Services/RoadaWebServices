@@ -741,7 +741,7 @@ namespace DMTServices
         /// <param name="sqlStr">SQL string that gets processed for replication</param>
         /// <param name="param">passed parameters to the SQL string</param>
         public delegate void ReplicationEventHandler(object sender, string sqlStr, Hashtable param);
-        event ReplicationEventHandler replicationEvent;
+        static public event ReplicationEventHandler ReplicationEvent;
 #endif
         private myDbCommand cmd = null;
         private myDataReader rdr = null;
@@ -769,23 +769,6 @@ namespace DMTServices
             fParent.AddStmt(this);
         }
 
-#if REPLICATE_DB
-        /// <summary>
-        /// Event that is raised when replication is on and a SQL statement is executed
-        /// </summary>
-        public event ReplicationEventHandler ReplicationEvent
-        {
-            add
-            {
-                replicationEvent += value;
-            }
-            remove
-            {
-                replicationEvent -= value;
-            }
-        }
-
-#endif
         /// <summary>
         /// Needed to expose SQLParams
         /// </summary>
@@ -928,6 +911,11 @@ namespace DMTServices
                         rdr = cmd.ExecuteReader();
                     else
                     {
+#if REPLICATE_DB
+                        // for replication, fire an event
+                        if (ReplicationEvent != null)
+                            ReplicationEvent(this, cmd.CommandText, SQLParams);
+#endif
                         RowsAffected = cmd.ExecuteNonQuery();
                         rdr = null;
                     }
