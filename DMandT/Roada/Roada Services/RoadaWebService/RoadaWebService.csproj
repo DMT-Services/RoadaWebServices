@@ -62,6 +62,7 @@
     <Compile Include="DbFunc.cs" />
     <Compile Include="MessLog.cs" />
     <Compile Include="myIO.cs" />
+    <Compile Include="SqlHelper.cs" />
     <Compile Include="TCPPacket.cs" />
     <Compile Include="main.asmx.cs">
       <DependentUpon>main.asmx</DependentUpon>

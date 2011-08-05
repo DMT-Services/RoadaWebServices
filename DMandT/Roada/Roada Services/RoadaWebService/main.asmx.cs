@@ -5,7 +5,12 @@ using System.Web;
 using System.Web.Services;
 using System.Messaging;
 using System.Runtime.InteropServices;
+using System.IO;
+using System.Xml.Serialization;
+using System.Collections;
+using System.Reflection;
 using DMTServices;
+using System.Diagnostics;
 
 namespace RoadaWebService
 {
@@ -21,7 +26,16 @@ namespace RoadaWebService
     {
         public const int MAX_RECORDS = 500;
         private List<MQueue> queueList = new List<MQueue>();
-        private MessLog messLog = new MessLog(@"log\webService.log");
+        private MessLog messLog = new MessLog(@"log\RoadaWebService.log");
+        const string DEFAULT_USER = "DMTServices";
+        const string DEFAULT_PASSWORD = "1Secr3t2";
+        const string RECVD_PATH = @"Recvd\";
+        const string OBJECTS_PATH = @"objects\";
+
+        private void InitializeComponent()
+        {
+
+        }
 
         private string[] ReadQueueList(bool forceRefresh)
         {
@@ -123,7 +137,7 @@ namespace RoadaWebService
             return r;
         }
 
-        private MQueue GetQueue(Request request, bool checkBin)
+        private MQueue GetQueue(Request request, bool checkBin, bool ignoreAuth)
         {
             MQueue Result = null;
             ReadQueueList(false);      // always must check if we have read the connection list
@@ -131,9 +145,16 @@ namespace RoadaWebService
             {
                 foreach (MQueue q in queueList)
                 {
-                    if (request.CustCode == q.CustCode && request.UserName == q.UserName && request.Password == q.Password)
+                    if (request.CustCode == q.CustCode)
                     {
-                        if (!checkBin || request.BinPassword == "1dmtserv2")
+                        bool ok = true;
+                        if(! ignoreAuth)
+                        {
+                            ok = false;
+                            if(request.UserName == q.UserName && request.Password == q.Password)
+                                ok = ! checkBin || request.BinPassword == "1dmtserv2";
+                        }
+                        if(ok)
                         {
                             Result = q;
                             break;
@@ -202,7 +223,7 @@ namespace RoadaWebService
         public Response AddTCPPacket(Request request, TCPPacketBuffer[] buffer)
         {
             Response Result;
-            MQueue q = GetQueue(request, true);
+            MQueue q = GetQueue(request, true, false);
             if (q == null)
             {
                 Result = GetResponse(-1);
@@ -304,7 +325,7 @@ namespace RoadaWebService
         public Response AddGPSData(Request request, GPSData[] gpsData)
         {
             Response Result = new Response();
-            MQueue q = GetQueue(request, false);
+            MQueue q = GetQueue(request, false, false);
             if (q == null)
                 Result = GetResponse(-1);
             else
@@ -470,7 +491,7 @@ namespace RoadaWebService
         public Response AddACEData(Request request, ACEData[] aceData)
         {
             Response Result = new Response();
-            MQueue q = GetQueue(request, false);
+            MQueue q = GetQueue(request, false, false);
             if (q == null)
                 Result = GetResponse(-1);
             else
@@ -505,10 +526,390 @@ namespace RoadaWebService
             return Result;
         }
 
-        private void InitializeComponent()
+        private bool LowSecurityCheck(Request request)
         {
-
+            return (request.UserName == DEFAULT_USER && request.Password == DEFAULT_PASSWORD);
         }
 
+        [WebMethod(Description = "Commission Software")]
+        public CommResponse CommSoftware(Request request, string guid, string descr)
+        {
+            CommResponse response = new CommResponse();
+            response.CommFlag = false;
+            response.Mesg = "Unknown error";
+            // added security!!
+            if(LowSecurityCheck(request))
+            {
+                SqlConn mConn = new SqlConn("MainConn");
+                SqlStmt stmt = null;
+                try
+                {
+                    mConn.Mess = messLog;
+                    if (mConn.dbConnect())
+                    {
+                        stmt = new SqlStmt(mConn);
+                        // main database, look for a new software activation record that
+                        bool rc = stmt.DoSQL(string.Format("SELECT * FROM soft_activate WHERE cust_code = '{0}'", request.CustCode.ToUpper()));
+                        if (!rc)
+                        {
+                            response.Mesg = string.Format("Entered customer code {0} does not exist", request.CustCode);
+                        }
+                        else
+                        {
+                            while (rc)
+                            {
+                                if (!stmt.tfetch("commissioned"))
+                                {
+                                    SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
+                                    sql.Add("commissioned", true);
+                                    sql.AddNow("comm_date");
+                                    sql.Add("client_guid", guid);
+                                    sql.Add("description", descr);
+                                    int rowId = stmt.ifetch("id");
+                                    int mode = stmt.ifetch("mode");
+                                    stmt.DoSQL(sql.BuildUpdate("UPDATE soft_activate", string.Format("WHERE id = {0}", rowId)));
+                                    if (stmt.RowsAffected != 1)
+                                        response.Mesg = "Failed updating activation database";
+                                    else
+                                    {
+                                        response.Id = rowId;
+                                        response.CommFlag = true;
+                                        response.Mode = mode;
+                                        response.Mesg = "Commission success";
+                                    }
+                                    break;
+                                }
+                                rc = stmt.dbSkip();
+                            }
+                            if (!response.CommFlag)
+                                response.Mesg = string.Format("No validation keys left for customer code {0}", request.CustCode);
+                        }
+                    }
+                }
+                finally
+                {
+                    if (stmt != null)
+                        stmt.Close();
+                    if (mConn != null)
+                        mConn.Close();
+                }
+            }
+            return response;
+        }
+
+        [WebMethod(Description = "Checks for any new objects")]
+        public string[] GetObjects(Request request, VersionInfo[] versions)
+        {
+            string[] Result = new string[0];
+            if(LowSecurityCheck(request))
+            {
+                SqlStmt stmt = new SqlStmt("mainconn");
+                stmt.Mess = messLog;
+                try
+                {
+                    List<string> objList = new List<string>();
+                    string objPath = MessLog.ApplicationPath() + OBJECTS_PATH;
+                    foreach (VersionInfo v in versions)
+                    {
+                        // check if we've staged this DLL or EXE
+                        if (File.Exists(objPath + Path.GetFileName(v.Name)))
+                        {
+                            // get our version info and compare against the clients
+                            FileVersionInfo verInfo = FileVersionInfo.GetVersionInfo(objPath + Path.GetFileName(v.Name));
+                            Version fVer = new Version(verInfo.FileMajorPart, verInfo.FileMinorPart, verInfo.FileBuildPart, verInfo.FilePrivatePart);
+                            Version oVer = new Version(v.Vers);
+                            if (fVer > oVer)
+                                objList.Add(v.Name);
+                        }
+                    }
+                    if (stmt.DoSQL(string.Format("SELECT objects FROM soft_activate WHERE id = {0}", request.CustId)))
+                    {
+                        string tmp = stmt.fetch("objects");
+                        if (tmp != "")
+                        {
+                            string[] objAry = tmp.Split(new char[] { '|' });
+                            foreach (string o in objAry)
+                                objList.Add(o);
+                        }
+                    }
+                    Result = objList.ToArray();
+                }
+                finally
+                {
+                    stmt.Close();
+                }
+            }
+            return Result;
+        }
+
+
+        [WebMethod(Description = "Update that all objects have been received")]
+        public bool SetObjects(Request request, string[] objList)
+        {
+            bool Result = false;
+            if (LowSecurityCheck(request))
+            {
+                SqlStmt stmt = new SqlStmt("MainConn");
+                stmt.Mess = messLog;
+                try
+                {
+                    SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
+                    sql.AddNow("objdate");
+                    string objs = string.Empty;
+                    foreach(string s in objList)
+                    {
+                        if(objs.Length > 0)
+                            objs += "|";
+                        objs += s;
+                    }
+                    sql.Add("objrecvd", objs);
+                    sql.Add("objects", "");
+                    stmt.DoSQL(sql.BuildUpdate("UPDATE soft_activate", string.Format("WHERE id = {0}", request.CustId)));
+                    Result = true;
+                }
+                finally
+                {
+                    stmt.Close();
+
+                }
+            }
+            return Result;
+        }
+
+        [WebMethod(Description = "Get a block of a file")]
+        public byte[] GetFileBlock(Request request, string fileName, ref int block, out int count)
+        {
+            byte[] Result = new byte[0];
+            count = 0;
+            if (! LowSecurityCheck(request))
+                block = -2;     // failed security check!
+            else
+            {
+                try
+                {
+                    string objectName = MessLog.ApplicationPath() + OBJECTS_PATH + Path.GetFileName(fileName);
+                    FileStream fs = new FileStream(objectName, FileMode.Open, FileAccess.Read);
+                    fs.Seek(block * 50000, SeekOrigin.Begin);
+                    Result = new byte[50000];
+                    count = fs.Read(Result, 0, 50000);
+                    if (count < 50000)
+                        block = -1;     // mark EOF
+                    else
+                        block++;        // next block
+                    fs.Close();
+                }
+                catch(Exception ex)
+                {
+                    messLog.Flush("GetFileBlock Excp: " + ex.Message);
+                    block = -2;     // error reading file
+                }
+            }
+            return Result;
+        }
+
+        [WebMethod(Description = "Set (receive) a block of a file")]
+        public bool SetFileBlock(Request request, string fileName, byte[] data, int count)
+        {
+            bool Result = false;
+            if (LowSecurityCheck(request))
+            {
+                string destName = MessLog.ApplicationPath() + RECVD_PATH + Path.GetFileName(fileName);
+                messLog.Flush("Path " + destName);
+                try
+                {
+                    FileStream fs = new FileStream(destName, FileMode.Append, FileAccess.Write);
+                    fs.Write(data, 0, count);
+                    fs.Close();
+                    Result = true;
+                }
+                catch
+                {
+                    messLog.Flush(string.Format("Failed writing block of file {0}", fileName));
+                }
+            }
+            return Result;
+        }
+
+        [WebMethod(Description = "Rename a file sent from the client")]
+        public bool RenameFile(Request request, string oldName, string newName)
+        {
+            bool Result = false;
+            if (LowSecurityCheck(request))
+            {
+                try
+                {
+                    string pathName = MessLog.ApplicationPath() + RECVD_PATH;
+                    if (File.Exists(pathName + Path.GetFileName(newName)))
+                        File.Delete(pathName + Path.GetFileName(newName));
+
+                    File.Move(pathName + Path.GetFileName(oldName), pathName + Path.GetFileName(newName));
+                    Result = true;
+                }
+                catch
+                {
+                    messLog.Flush(string.Format("Failed renaming {0} to {1}", oldName, newName));
+                }
+            }
+            return Result;
+        }
+
+        [WebMethod(Description = "Get the client table info")]
+        public Client[] GetClients(Request request)
+        {
+            Client[] Result = new Client[0];
+            if (LowSecurityCheck(request))
+            {
+                SqlConn mConn = new SqlConn("MainConn");
+                SqlStmt stmt = null;
+                try
+                {
+                    mConn.Mess = messLog;
+                    if (mConn.dbConnect())
+                    {
+                        List<Client> clients = new List<Client>();
+                        stmt = new SqlStmt(mConn);
+                        // main database, look for this customer code in the main customer database
+                        string sqlStr = string.Format("SELECT * FROM clients WHERE cust_main = '{0}' ORDER BY id", request.CustCode);
+                        messLog.Flush(sqlStr);
+                        bool rc = stmt.DoSQL(sqlStr);
+                        while (rc)
+                        {
+                            Client c = new Client();
+                            c.CustCode = stmt.fetch("cust_code");
+                            c.Name = stmt.fetch("name");
+                            c.SaveData = stmt.tfetch("savedata");
+                            clients.Add(c);
+                            rc = stmt.dbSkip();
+                        }
+                        Result = clients.ToArray();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    messLog.Flush("Excp in GetClients: " + ex.Message);
+                }
+                finally
+                {
+                    if (stmt != null)
+                        stmt.Close();
+                    if (mConn != null)
+                        mConn.Close();
+                }
+            }
+            return Result;
+        }
+
+        private string SerializeObject(object obj, Type objType)
+        {
+            string Result = string.Empty;
+            StringWriter writer= new StringWriter();
+            try
+            {
+                XmlSerializer serializer = new XmlSerializer(objType);
+                XmlSerializerNamespaces xs = new XmlSerializerNamespaces();
+                //To remove namespace and any 
+                //other inline information tag
+                xs.Add("", "");
+                serializer.Serialize(writer, obj, xs);
+                Result = writer.ToString();
+            }
+            catch (Exception ex)
+            {
+                messLog.Flush("Error serializing object " + ex.Message);
+            }
+            finally
+            {
+                writer.Close();
+            }
+            return Result;
+        }
+
+        private object DeserializeObject(string xmlString, Type objType)
+        {
+            object obj = null;
+            StringReader reader = new StringReader(xmlString);
+            try
+            {
+                XmlSerializer xmlSerializer = new XmlSerializer(objType);
+                obj = xmlSerializer.Deserialize(reader);
+            }
+            catch (Exception ex)
+            {
+                messLog.Flush(string.Format("Error deserializing object {0}", ex.Message));
+                obj = null;
+            }
+            finally
+            {
+                reader.Close();
+            }
+            return obj;
+        }
+
+        private string SerializeSQLString(string sqlStr)
+        {
+            string Result = sqlStr.Replace("\r", "^r");
+            Result = Result.Replace("\n", "^n");
+            return Result;
+        }
+
+        private string DeserializeSQLString(string sqlStr)
+        {
+            string Result = sqlStr.Replace("^r", "\r");
+            Result = Result.Replace("^n", "\n");
+            return Result;
+        }
+
+
+        [WebMethod(Description = "Retrieves replication data from the server")]
+        public ReplicationData[] GetReplicationData(Request request, int startRecord)
+        {
+            ReplicationData[] Result = new ReplicationData[0];
+            if (LowSecurityCheck(request))
+            {
+                MQueue mq = GetQueue(request, false, true);
+                if (mq != null)
+                {
+                    SqlConn cConn = new SqlConn();
+                    cConn.Mess = messLog;
+                    cConn.ConnectionData = mq.ConnectionString;
+                    SqlStmt stmt = null;
+                    try
+                    {
+                        if (cConn.dbConnect())
+                        {
+                            stmt = new SqlStmt(cConn);
+                            List<ReplicationData> repList = new List<ReplicationData>();
+                            bool rc = stmt.DoSQL(string.Format("SELECT * FROM datarep WHERE record_id > {0} and client_id != {1} ORDER BY record_id", startRecord, request.CustId));
+                            Hashtable h = new Hashtable();
+                            while (rc)
+                            {
+                                ReplicationData r = new ReplicationData();
+                                string mySql = stmt.fetch("sqlstr");
+                                // need to deserialize it
+                                mySql = DeserializeSQLString(mySql);
+                                r.SqlStr = mySql;
+                                string par = stmt.fetch("params");
+                                if (par.Trim().Length > 0)
+                                    r.Params = (SQLParameter[])DeserializeObject(par, h.GetType());
+                                r.RecordId = stmt.ifetch("record_id");
+                                repList.Add(r);
+                                rc = stmt.dbSkip();
+                            }
+                            Result = repList.ToArray();
+                        }
+                    }
+                    finally
+                    {
+                        if (stmt != null)
+                            stmt.Close();
+                        cConn.Close();
+                    }
+                }
+                else
+                    messLog.Flush(string.Format("GetReplicationData: Cannot find queue for {0}", request.CustCode));
+            }
+
+            return Result;
+        }
     }
 }

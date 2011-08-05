@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Web;
 using System.Messaging;
+using System.Collections;
+using System.Reflection;
 
 namespace RoadaWebService
 {
@@ -22,6 +24,15 @@ namespace RoadaWebService
         public string UserName;
         public string Password;
         public string BinPassword;
+        public int CustId;
+    }
+
+    public class CommResponse
+    {
+        public bool CommFlag;
+        public string Mesg;
+        public int Mode;
+        public int Id;
     }
 
     public class MQueue
@@ -84,5 +95,35 @@ namespace RoadaWebService
         public int TripSolid;
         public int TripLiquid;
         public int ServicedDist;
+    }
+
+    public class ReplicationData
+    {
+        public int RecordId;
+        public string SqlStr;
+        public string CustCode;
+        public SQLParameter[] Params;
+    }
+
+    /// <summary>
+    /// must be able to serialize, so can't use a hashtable, make my own
+    /// </summary>
+    public class SQLParameter
+    {
+        public string Key;
+        public object Value;
+    }
+
+    public class VersionInfo
+    {
+        public string Name;
+        public string Vers;
+    }
+
+    public class Client
+    {
+        public string CustCode;
+        public string Name;
+        public bool SaveData;
     }
 }
