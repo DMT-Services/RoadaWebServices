@@ -742,6 +742,7 @@ namespace DMTServices
         /// <param name="param">passed parameters to the SQL string</param>
         public delegate void ReplicationEventHandler(object sender, string sqlStr, Hashtable param);
         static public event ReplicationEventHandler ReplicationEvent;
+        public bool IgnoreReplicate = false;
 #endif
         private myDbCommand cmd = null;
         private myDataReader rdr = null;
@@ -913,7 +914,7 @@ namespace DMTServices
                     {
 #if REPLICATE_DB
                         // for replication, fire an event
-                        if (ReplicationEvent != null)
+                        if (ReplicationEvent != null && ! IgnoreReplicate)
                             ReplicationEvent(this, cmd.CommandText, SQLParams);
 #endif
                         RowsAffected = cmd.ExecuteNonQuery();
