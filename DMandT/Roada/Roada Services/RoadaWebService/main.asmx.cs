@@ -26,7 +26,6 @@ namespace RoadaWebService
     {
         public const int MAX_RECORDS = 500;
         private List<MQueue> queueList = new List<MQueue>();
-        private MessLog messLog = new MessLog(@"log\RoadaWebService.log");
         const string DEFAULT_USER = "DMTServices";
         const string DEFAULT_PASSWORD = "1Secr3t2";
         const string RECVD_PATH = @"Recvd\";
@@ -46,7 +45,7 @@ namespace RoadaWebService
                 try
                 {
                     queueList.Clear();
-                    mConn.Mess = messLog;
+                    mConn.Mess = Global.messLog;
                     if (mConn.dbConnect())
                     {
                         SqlStmt stmt = new SqlStmt(mConn);
@@ -72,7 +71,7 @@ namespace RoadaWebService
                                     }
                                     catch (Exception ex)
                                     {
-                                        messLog.Flush(String.Format("MessageQueue Create Exception: {0}", ex.Message));
+                                        Global.messLog.Flush(String.Format("MessageQueue Create Exception: {0}", ex.Message));
                                         qok = false;
                                     }
                                 }
@@ -88,17 +87,17 @@ namespace RoadaWebService
                             rc = stmt.dbSkip();
                         }
                         if (queueList.Count == 0)
-                            messLog.Flush("No customer records found with web service privileges");
+                            Global.messLog.Flush("No customer records found with web service privileges");
                         else
-                            messLog.Flush("Customer Queue List Refreshed");
+                            Global.messLog.Flush("Customer Queue List Refreshed");
                         stmt.Close();
                     }
                     else
-                        messLog.Flush("ReadQueueList: Error connecting to main database!");
+                        Global.messLog.Flush("ReadQueueList: Error connecting to main database!");
                 }
                 catch (Exception ex)
                 {
-                    messLog.Flush(string.Format("Excp ReadQueueList: {0}", ex.Message));
+                    Global.messLog.Flush(string.Format("Excp ReadQueueList: {0}", ex.Message));
                 }
                 finally
                 {
@@ -181,7 +180,7 @@ namespace RoadaWebService
             {
                 q.MessageTx.Abort();
                 Result = false;
-                messLog.Flush(string.Format("Exception in AddToMSMQueue Cust {0} {1}", q.CustCode, ex.Message));
+                Global.messLog.Flush(string.Format("Exception in AddToMSMQueue Cust {0} {1}", q.CustCode, ex.Message));
             }
             /*
             AddCount++;
@@ -191,10 +190,10 @@ namespace RoadaWebService
                 {
                     TotCount += AddCount;
                     AddCount = 0;
-                    messLog.Flush(string.Format("Queued {0} for customer {1}, waiting...", TotCount, custCodes[mNdx]));
+                    Global.messLog.Flush(string.Format("Queued {0} for customer {1}, waiting...", TotCount, custCodes[mNdx]));
                     while (!IsQueueNearEmpty(MessageQ[mNdx], 5))
                         System.Threading.Thread.Sleep(50);
-                    messLog.Flush(string.Format("Queueing Resumed", custCodes[mNdx]));
+                    Global.messLog.Flush(string.Format("Queueing Resumed", custCodes[mNdx]));
                 }
             }
             */
@@ -344,7 +343,7 @@ namespace RoadaWebService
                         }
                         catch (Exception ex)
                         {
-                            messLog.Flush(string.Format("MakeGPSReading Excp: {0}", ex.Message));
+                            Global.messLog.Flush(string.Format("MakeGPSReading Excp: {0}", ex.Message));
                             Result = GetResponse(-3);
                         }
 
@@ -510,7 +509,7 @@ namespace RoadaWebService
                         }
                         catch (Exception ex)
                         {
-                            messLog.Flush(string.Format("MakeACE Excp: {0}", ex.Message));
+                            Global.messLog.Flush(string.Format("MakeACE Excp: {0}", ex.Message));
                             Result = GetResponse(-3);
                         }
 
@@ -544,12 +543,12 @@ namespace RoadaWebService
                 SqlStmt stmt = null;
                 try
                 {
-                    mConn.Mess = messLog;
+                    mConn.Mess = Global.messLog;
                     if (mConn.dbConnect())
                     {
                         stmt = new SqlStmt(mConn);
                         // main database, look for a new software activation record that
-                        bool rc = stmt.DoSQL(string.Format("SELECT * FROM soft_activate WHERE cust_code = '{0}'", request.CustCode.ToUpper()));
+                        bool rc = stmt.DoSQL(string.Format("SELECT * FROM soft_activate WHERE pc_code = '{0}'", request.CustCode.ToUpper()));
                         if (!rc)
                         {
                             response.Mesg = string.Format("Entered customer code {0} does not exist", request.CustCode);
@@ -567,6 +566,7 @@ namespace RoadaWebService
                                     sql.Add("description", descr);
                                     int rowId = stmt.ifetch("id");
                                     int mode = stmt.ifetch("mode");
+                                    int uniqId = stmt.ifetch("unique_id");
                                     stmt.DoSQL(sql.BuildUpdate("UPDATE soft_activate", string.Format("WHERE id = {0}", rowId)));
                                     if (stmt.RowsAffected != 1)
                                         response.Mesg = "Failed updating activation database";
@@ -575,6 +575,7 @@ namespace RoadaWebService
                                         response.Id = rowId;
                                         response.CommFlag = true;
                                         response.Mode = mode;
+                                        response.UniqueId = uniqId;
                                         response.Mesg = "Commission success";
                                     }
                                     break;
@@ -604,7 +605,7 @@ namespace RoadaWebService
             if(LowSecurityCheck(request))
             {
                 SqlStmt stmt = new SqlStmt("mainconn");
-                stmt.Mess = messLog;
+                stmt.Mess = Global.messLog;
                 try
                 {
                     List<string> objList = new List<string>();
@@ -650,7 +651,7 @@ namespace RoadaWebService
             if (LowSecurityCheck(request))
             {
                 SqlStmt stmt = new SqlStmt("MainConn");
-                stmt.Mess = messLog;
+                stmt.Mess = Global.messLog;
                 try
                 {
                     SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
@@ -700,7 +701,7 @@ namespace RoadaWebService
                 }
                 catch(Exception ex)
                 {
-                    messLog.Flush("GetFileBlock Excp: " + ex.Message);
+                    Global.messLog.Flush("GetFileBlock Excp: " + ex.Message);
                     block = -2;     // error reading file
                 }
             }
@@ -714,7 +715,7 @@ namespace RoadaWebService
             if (LowSecurityCheck(request))
             {
                 string destName = MessLog.ApplicationPath() + RECVD_PATH + Path.GetFileName(fileName);
-                messLog.Flush("Path " + destName);
+                Global.messLog.Flush("Path " + destName);
                 try
                 {
                     FileStream fs = new FileStream(destName, FileMode.Append, FileAccess.Write);
@@ -724,7 +725,7 @@ namespace RoadaWebService
                 }
                 catch
                 {
-                    messLog.Flush(string.Format("Failed writing block of file {0}", fileName));
+                    Global.messLog.Flush(string.Format("Failed writing block of file {0}", fileName));
                 }
             }
             return Result;
@@ -747,7 +748,7 @@ namespace RoadaWebService
                 }
                 catch
                 {
-                    messLog.Flush(string.Format("Failed renaming {0} to {1}", oldName, newName));
+                    Global.messLog.Flush(string.Format("Failed renaming {0} to {1}", oldName, newName));
                 }
             }
             return Result;
@@ -763,30 +764,30 @@ namespace RoadaWebService
                 SqlStmt stmt = null;
                 try
                 {
-                    mConn.Mess = messLog;
+                    mConn.Mess = Global.messLog;
                     if (mConn.dbConnect())
                     {
                         List<Client> clients = new List<Client>();
                         stmt = new SqlStmt(mConn);
-                        // main database, look for this customer code in the main customer database
-                        string sqlStr = string.Format("SELECT * FROM clients WHERE cust_main = '{0}' ORDER BY id", request.CustCode);
-                        messLog.Flush(sqlStr);
-                        bool rc = stmt.DoSQL(sqlStr);
-                        while (rc)
+                        // made a change, get the comma separated list of db_codes from the soft_activate table
+                        stmt.DoSQL(string.Format("SELECT db_codes FROM soft_activate WHERE pc_code = '{0}'", request.CustCode));
+                        string[] dbCodes = stmt.fetch("db_codes").Split(new char[] { ',' });
+                        foreach (string dbcode in dbCodes)
                         {
+                            // look for this db code in the clients table
+                            stmt.DoSQL(string.Format("SELECT * FROM clients WHERE db_code = '{0}'", dbcode));
                             Client c = new Client();
-                            c.CustCode = stmt.fetch("cust_code");
+                            c.CustCode = dbcode;
                             c.Name = stmt.fetch("name");
                             c.SaveData = stmt.tfetch("savedata");
                             clients.Add(c);
-                            rc = stmt.dbSkip();
                         }
                         Result = clients.ToArray();
                     }
                 }
                 catch (Exception ex)
                 {
-                    messLog.Flush("Excp in GetClients: " + ex.Message);
+                    Global.messLog.Flush("Excp in GetClients: " + ex.Message);
                 }
                 finally
                 {
@@ -815,7 +816,7 @@ namespace RoadaWebService
             }
             catch (Exception ex)
             {
-                messLog.Flush("Error serializing object " + ex.Message);
+                Global.messLog.Flush("Error serializing object " + ex.Message);
             }
             finally
             {
@@ -835,7 +836,7 @@ namespace RoadaWebService
             }
             catch (Exception ex)
             {
-                messLog.Flush(string.Format("Error deserializing object {0}", ex.Message));
+                Global.messLog.Flush(string.Format("Error deserializing object {0}", ex.Message));
                 obj = null;
             }
             finally
@@ -861,52 +862,83 @@ namespace RoadaWebService
 
 
         [WebMethod(Description = "Retrieves replication data from the server")]
-        public ReplicationData[] GetReplicationData(Request request, int startRecord)
+        public ReplicationData[] GetReplicationData(Request request, string dbCode, int startRecord)
         {
             ReplicationData[] Result = new ReplicationData[0];
             if (LowSecurityCheck(request))
             {
-                MQueue mq = GetQueue(request, false, true);
-                if (mq != null)
+                SqlStmt rstmt = new SqlStmt("MainConn");
+                rstmt.Mess = Global.messLog;
+                try
                 {
                     SqlConn cConn = new SqlConn();
-                    cConn.Mess = messLog;
-                    cConn.ConnectionData = mq.ConnectionString;
-                    SqlStmt stmt = null;
-                    try
+                    cConn.Mess = Global.messLog;
+                    bool foundConn;
+                    if (dbCode == "MSTR")        // master (mainconn) database?
                     {
-                        if (cConn.dbConnect())
+                        Global.messLog.Flush(string.Format("Checking GetReplicationData MSTR for {0}", request.CustCode));
+                        // for the master database, lookup the pc_code in the soft_activate and get the mstr_code
+                        foundConn = rstmt.DoSQL(string.Format("SELECT mstr_code FROM soft_activate WHERE pc_code = '{0}'", request.CustCode));
+                        if (foundConn)
                         {
-                            stmt = new SqlStmt(cConn);
-                            List<ReplicationData> repList = new List<ReplicationData>();
-                            bool rc = stmt.DoSQL(string.Format("SELECT * FROM datarep WHERE record_id > {0} and client_id != {1} ORDER BY record_id", startRecord, request.CustId));
-                            Hashtable h = new Hashtable();
-                            while (rc)
+                            // now, lookup the master code in the customer tables connectionstrings column
+                            string mstrCode = rstmt.fetch("mstr_code");
+                            foundConn = rstmt.DoSQL(string.Format("SELECT connectionstrings FROM customer WHERE cust_code = '{0}'", mstrCode));
+                            cConn.ConnectionData = rstmt.fetch("connectionstrings");
+                        }
+                        // this is the old way, no longer used
+                        //rstmt.Conn.dbConnect();
+                        //cConn.ConnectionData = rstmt.Conn.ConnectionData;
+                    }
+                    else
+                    {
+                        Global.messLog.Flush(string.Format("Checking GetReplicationData for {0}", dbCode));
+                        // we only need to look up the db_code now since there's only one record per db_code in the clients table
+                        foundConn = rstmt.DoSQL(string.Format("SELECT connectionstring FROM clients WHERE db_code = '{0}' and savedata = 1", dbCode));
+                        cConn.ConnectionData = rstmt.fetch("connectionstring");
+                    }
+                    if (foundConn)
+                    {
+                        SqlStmt stmt = null;
+                        try
+                        {
+                            if (cConn.dbConnect())
                             {
-                                ReplicationData r = new ReplicationData();
-                                string mySql = stmt.fetch("sqlstr");
-                                // need to deserialize it
-                                mySql = DeserializeSQLString(mySql);
-                                r.SqlStr = mySql;
-                                string par = stmt.fetch("params");
-                                if (par.Trim().Length > 0)
-                                    r.Params = (SQLParameter[])DeserializeObject(par, h.GetType());
-                                r.RecordId = stmt.ifetch("record_id");
-                                repList.Add(r);
-                                rc = stmt.dbSkip();
+                                stmt = new SqlStmt(cConn);
+                                List<ReplicationData> repList = new List<ReplicationData>();
+                                bool rc = stmt.DoSQL(string.Format("SELECT * FROM datarep WHERE record_id > {0} and client_id != {1} ORDER BY record_id", startRecord, request.CustId));
+                                while (rc)
+                                {
+                                    ReplicationData r = new ReplicationData();
+                                    string mySql = stmt.fetch("sqlstr");
+                                    // need to deserialize it
+                                    mySql = DeserializeSQLString(mySql);
+                                    r.SqlStr = mySql;
+                                    string par = stmt.fetch("params");
+                                    if (par.Trim().Length > 0)
+                                        r.Params = (SQLParameter[])DeserializeObject(par, r.Params.GetType());
+                                    r.RecordId = stmt.ifetch("record_id");
+                                    repList.Add(r);
+                                    rc = stmt.dbSkip();
+                                }
+                                Result = repList.ToArray();
+                                Global.messLog.Flush(string.Format("GetReplication Found {0} records Start id {1} client_id {2}", Result.Length, startRecord, request.CustId));
                             }
-                            Result = repList.ToArray();
+                        }
+                        finally
+                        {
+                            if (stmt != null)
+                                stmt.Close();
+                            cConn.Close();
                         }
                     }
-                    finally
-                    {
-                        if (stmt != null)
-                            stmt.Close();
-                        cConn.Close();
-                    }
+                    else
+                        Global.messLog.Flush(string.Format("GetReplicationData: Cannot find connectionstring for {0} - {1}", request.CustCode, dbCode));
                 }
-                else
-                    messLog.Flush(string.Format("GetReplicationData: Cannot find queue for {0}", request.CustCode));
+                finally
+                {
+                    rstmt.Close();
+                }
             }
 
             return Result;

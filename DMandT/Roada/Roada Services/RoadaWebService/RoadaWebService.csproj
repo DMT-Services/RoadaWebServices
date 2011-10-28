@@ -60,6 +60,7 @@
   <ItemGroup>
     <Compile Include="Classes.cs" />
     <Compile Include="DbFunc.cs" />
+    <Compile Include="Global.cs" />
     <Compile Include="MessLog.cs" />
     <Compile Include="myIO.cs" />
     <Compile Include="SqlHelper.cs" />

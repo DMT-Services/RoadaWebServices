@@ -33,6 +33,7 @@ namespace RoadaWebService
         public string Mesg;
         public int Mode;
         public int Id;
+        public int UniqueId;
     }
 
     public class MQueue
