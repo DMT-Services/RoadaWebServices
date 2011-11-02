@@ -740,7 +740,7 @@ namespace DMTServices
         /// <param name="sender">this SqlStmt</param>
         /// <param name="sqlStr">SQL string that gets processed for replication</param>
         /// <param name="param">passed parameters to the SQL string</param>
-        public delegate void ReplicationEventHandler(object sender, myDbCommand cmd);
+        public delegate void ReplicationEventHandler(object sender, string sqlStr, Hashtable param);
         static public event ReplicationEventHandler ReplicationEvent;
         public bool IgnoreReplicate = false;
 #endif
@@ -904,7 +904,6 @@ namespace DMTServices
                         foreach (DictionaryEntry parms in SQLParams)
                             cmd.Parameters.Add(new myParameter((string)parms.Key, parms.Value));
 #endif
-                        
                         SQLParams.Clear();
                     }
                     cmd.CommandTimeout = defTimeOut;
@@ -913,13 +912,13 @@ namespace DMTServices
                         rdr = cmd.ExecuteReader();
                     else
                     {
-                        RowsAffected = cmd.ExecuteNonQuery();
-                        rdr = null;
 #if REPLICATE_DB
                         // for replication, fire an event
-                        if (ReplicationEvent != null && !IgnoreReplicate)
-                            ReplicationEvent(this, cmd);
+                        if (ReplicationEvent != null && ! IgnoreReplicate)
+                            ReplicationEvent(this, cmd.CommandText, SQLParams);
 #endif
+                        RowsAffected = cmd.ExecuteNonQuery();
+                        rdr = null;
                     }
                 }
                 else
