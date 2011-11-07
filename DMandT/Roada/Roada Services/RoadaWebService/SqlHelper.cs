@@ -11,13 +11,13 @@ namespace DMTServices
     {
         public enum dbType { SqlServer, Oracle, Access, DBF };
 
-        private ArrayList ColumnList = new ArrayList();
-        private ArrayList ValueList = new ArrayList();
-        private ArrayList QuotedList = new ArrayList();
-        private ArrayList CompareList = new ArrayList();
+        private List<string> ColumnList = new List<string>();
+        private List<object> ValueList = new List<object>();
+        private List<bool> QuotedList = new List<bool>();
+        private List<string> CompareList = new List<string>();
 
-        private ArrayList FieldList = new ArrayList();
-        private ArrayList LengthList = new ArrayList();
+        private List<string> FieldList = new List<string>();      // these 2 are optionally used to control max data length
+        private List<int> LengthList = new List<int>();     // so you don't get 'overflow' errors when adding data
 
         private dbType DataSource = dbType.SqlServer;
 
@@ -49,6 +49,13 @@ namespace DMTServices
             Reset(tableName, conn);
         }
 
+        /// <summary>
+        /// if you call this for a given tableName, it will fill an array of max lengths for
+        /// all char type data and, each time you add() values it will check the data is not
+        /// longer than the max for that field and, if it is, it will truncate it...
+        /// </summary>
+        /// <param name="tableName">name of table to check</param>
+        /// <param name="conn">SqlConn connection (should be open)</param>
         public void Reset(string tableName, SqlConn conn)
         {
             if (conn != null)
@@ -180,9 +187,10 @@ namespace DMTServices
                     quotes = false;
                 }
 
-                Result = ColumnList.Add(CheckCols(colName.ToLower()));
+                ColumnList.Add(CheckCols(colName.ToLower()));
                 ValueList.Add(CheckVals(v, colName));         // add the value
                 QuotedList.Add(quotes);   // add one to the quote flags array
+                Result = ColumnList.Count;
             }
 
             return Result;
@@ -252,6 +260,9 @@ namespace DMTServices
                 mess.Flush(m);
         }
 
+        // if FieldList/LengthList have been setup (by a call to Reset)
+        // then this will check the value being added for a column
+        // against LengthList and shorten it to fit if needed...
         public string CheckVals(string v, string colName)
         {
             string rc = v;
@@ -268,12 +279,12 @@ namespace DMTServices
                         if (rc.StartsWith("'") && rc.EndsWith("'"))
                         {
                             l -= -2;         // so we need to ignore them in length check...
-                            if (l > (int)LengthList[p])
-                                rc = rc.Substring(1, (int)LengthList[p] + 1) + "'";
+                            if (l > LengthList[p])
+                                rc = rc.Substring(1, LengthList[p] + 1) + "'";
                         }
                         else
-                            if (l > (int)LengthList[p])
-                                rc = rc.Substring(0, (int)LengthList[p]);
+                            if (l > LengthList[p])
+                                rc = rc.Substring(0, LengthList[p]);
 
                     }
                     catch (Exception e)
@@ -305,9 +316,9 @@ namespace DMTServices
         public void Clear(ArrayList fields, ArrayList values, ArrayList quotes)
         {
             Clear();
-            ColumnList = (ArrayList)fields.Clone();
-            ValueList = (ArrayList)values.Clone();
-            QuotedList = (ArrayList)quotes.Clone();
+            ColumnList.AddRange((string[])fields.ToArray(typeof(string)));
+            ValueList.AddRange((object[])values.ToArray(typeof(object)));
+            QuotedList.AddRange((bool[])quotes.ToArray(typeof(bool)));
         }
 
         /// <summary>
@@ -432,9 +443,10 @@ namespace DMTServices
             Result = FindIndex(colName);    // make sure doesn't already exist
             if (Result == -1)
             {
-                Result = ColumnList.Add(CheckCols(colName.ToLower()));
+                ColumnList.Add(CheckCols(colName.ToLower()));
                 ValueList.Add(items);       // add the array values
                 QuotedList.Add(quotes);     // add one to the quote flags array
+                Result = ColumnList.Count;
             }
 
             return Result;
@@ -528,12 +540,12 @@ namespace DMTServices
 
         public ArrayList GetValueList()
         {
-            return (ArrayList)ValueList.Clone();
+            return new ArrayList(ValueList.ToArray());
         }
 
         public ArrayList GetQuoteList()
         {
-            return (ArrayList)QuotedList.Clone();
+            return new ArrayList(QuotedList.ToArray());
         }
 
         // set the DataSource type (SqlServer, Oracle, etc...)
@@ -661,9 +673,9 @@ namespace DMTServices
                 if (i != 0)
                     sqlcmd = sqlcmd + ", ";     // need comma if not the first entry
 
-                sqlcmd = sqlcmd + FieldFixUp((string)ColumnList[i]) + "=";
+                sqlcmd = sqlcmd + FieldFixUp(ColumnList[i]) + "=";
                 string v = ValueList[i].ToString();
-                if (((bool)QuotedList[i]) || (v.Length == 0))
+                if ((QuotedList[i]) || (v.Length == 0))
                     sqlcmd = sqlcmd + "'" + FixUp(v) + "'";
                 else
                     sqlcmd = sqlcmd + v;
@@ -693,7 +705,7 @@ namespace DMTServices
             {
                 if (i != 0)
                     sqlcmd += ", ";
-                sqlcmd = sqlcmd + FieldFixUp((string)ColumnList[i]);
+                sqlcmd = sqlcmd + FieldFixUp(ColumnList[i]);
             }
             sqlcmd = sqlcmd + ") " + mid + " (";
             for (int i = 0; i < ValueList.Count; i++)
@@ -701,7 +713,7 @@ namespace DMTServices
                 if (i != 0)
                     sqlcmd = sqlcmd + ", ";
                 string v = (string)ValueList[i];
-                if (((bool)QuotedList[i]) || (v.Length == 0))
+                if ((QuotedList[i]) || (v.Length == 0))
                     sqlcmd = sqlcmd + "'" + FixUp(v) + "'";
                 else
                     sqlcmd = sqlcmd + v;
@@ -757,21 +769,21 @@ namespace DMTServices
                     for (int j = 0; j < av.Count; j++)
                     {
                         v = (string)av[j];
-                        if ((bool)QuotedList[i] || (v.Length == 0))
+                        if (QuotedList[i] || (v.Length == 0))
                             v = "'" + FixUp(v) + "'";
 
                         if (j > 0)
                             s += ",";
                         s += v;
                     }
-                    sqlcmd += (FieldFixUp((string)ColumnList[i]) + " in (" + s + ")");
+                    sqlcmd += (FieldFixUp(ColumnList[i]) + " in (" + s + ")");
                 }
                 else
                 {
                     // ToDo: add in CompareList stuff...
                     // they may not have set the comparison operator, default to '=' ...
                     if (i < CompareList.Count)
-                        Compare = (string)CompareList[i];
+                        Compare = CompareList[i];
                     else
                         Compare = "=";
                     v = (string)ValueList[i];
@@ -779,9 +791,9 @@ namespace DMTServices
                     if ((Compare == "=") && (v.ToLower() == "null"))
                         Compare = " is ";
 
-                    sqlcmd += (FieldFixUp((string)ColumnList[i]) + Compare);
+                    sqlcmd += (FieldFixUp(ColumnList[i]) + Compare);
 
-                    if ((bool)QuotedList[i] || (v.Length == 0))
+                    if (QuotedList[i] || (v.Length == 0))
                         sqlcmd += ("'" + FixUp(v) + "'");
                     else
                         sqlcmd += v;
@@ -811,7 +823,7 @@ namespace DMTServices
             for (int i = 0; i < ValueList.Count; i++)
             {
                 int l = ((string)ValueList[i]).Length;
-                if (((bool)QuotedList[i]) || (l == 0))
+                if ((QuotedList[i]) || (l == 0))
                     l += 2;
                 rc += l;
             }
@@ -830,12 +842,30 @@ namespace DMTServices
                 if (i != 0)
                     sqlcmd = sqlcmd + ", ";
                 string v = (string)ValueList[i];
-                if (((bool)QuotedList[i]) || (v.Length == 0))
+                if ((QuotedList[i]) || (v.Length == 0))
                     sqlcmd = sqlcmd + "'" + FixUp(v) + "'";
                 else
                     sqlcmd = sqlcmd + v;
             }
             return sqlcmd;
+        }
+
+        public string[] Compare(SqlHelper qcmp)
+        {
+            List<string> rc = new List<string>();
+                for (int i = 0; i < ColumnList.Count; i++)
+                {
+                    bool add = true;
+                    if (qcmp != null)
+                    {
+                        int j = qcmp.FindIndex(ColumnList[i]);
+                        if (j >= 0)
+                            add = ((string)qcmp.ValueList[j] != (string)ValueList[i]);
+                    }
+                    if (add)
+                        rc.Add(ColumnList[i]);
+                }
+            return rc.ToArray();
         }
     }
 
