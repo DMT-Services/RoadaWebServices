@@ -916,9 +916,13 @@ namespace DMTServices
                         RowsAffected = cmd.ExecuteNonQuery();
                         rdr = null;
 #if REPLICATE_DB
-                        // for replication, fire an event
-                        if (ReplicationEvent != null && !IgnoreReplicate)
-                            ReplicationEvent(this, cmd);
+                        try
+                        {
+                            // for replication, fire an event
+                            if (ReplicationEvent != null && !IgnoreReplicate)
+                                ReplicationEvent(this, cmd);
+                        }
+                        catch { }
 #endif
                     }
                 }
