@@ -915,8 +915,9 @@ namespace RoadaWebService
                                     mySql = DeserializeSQLString(mySql);
                                     r.SqlStr = mySql;
                                     string par = stmt.fetch("params");
+                                    SQLParameter[] tmpParam = new SQLParameter[0];
                                     if (par.Trim().Length > 0)
-                                        r.Params = (SQLParameter[])DeserializeObject(par, r.Params.GetType());
+                                        r.Params = (SQLParameter[])DeserializeObject(par, tmpParam.GetType());
                                     r.RecordId = stmt.ifetch("record_id");
                                     repList.Add(r);
                                     rc = stmt.dbSkip();
@@ -924,6 +925,10 @@ namespace RoadaWebService
                                 Result = repList.ToArray();
                                 Global.messLog.Flush(string.Format("GetReplication Found {0} records Start id {1} client_id {2}", Result.Length, startRecord, request.CustId));
                             }
+                        }
+                        catch (Exception ex)
+                        {
+                            Global.messLog.Flush(string.Format("Exception GetRecplicationData {0}", ex.Message));
                         }
                         finally
                         {
