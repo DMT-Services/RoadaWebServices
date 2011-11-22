@@ -744,6 +744,17 @@ namespace DMTServices
         static public event ReplicationEventHandler ReplicationEvent;
         public bool IgnoreReplicate = false;
 #endif
+        /// <summary>
+        /// this event is called provided it's not null
+        /// it's called for every DoSQL as well as dbSkip method call
+        /// </summary>
+        /// <param name="sender">this SQLStmt object</param>
+        /// <param name="totSecs">total length of time for the call</param>
+        /// <param name="func">function name which called it</param>
+        /// <param name="cmd">SQL command string</param>
+        public delegate void TimeOverEventHandler(object sender, double totSecs, string func, string cmd);
+        static public event TimeOverEventHandler TimeOverEvent = null;
+
         private myDbCommand cmd = null;
         private myDataReader rdr = null;
 
@@ -836,6 +847,7 @@ namespace DMTServices
         {
             try
             {
+                TimeSpan ts = new TimeSpan(DateTime.Now.Ticks);
                 // clear out any previous error message
                 LastError = string.Empty;
 
@@ -925,6 +937,12 @@ namespace DMTServices
                         catch { }
 #endif
                     }
+                    try
+                    {
+                        if (TimeOverEvent != null)
+                            TimeOverEvent(this, new TimeSpan(DateTime.Now.Ticks).Subtract(ts).TotalSeconds, "DoSQL", selectStr);
+                    }
+                    catch { }
                 }
                 else
                     throw new Exception("Not Connected to DataSource!");
@@ -966,7 +984,11 @@ namespace DMTServices
             {
                 try
                 {
-                    return rdr.Read();
+                    TimeSpan ts = new TimeSpan(DateTime.Now.Ticks);
+                    bool Result = rdr.Read();
+                    if (TimeOverEvent != null)
+                        TimeOverEvent(this, new TimeSpan(DateTime.Now.Ticks).Subtract(ts).TotalSeconds, "dbSkip", cmd.CommandText);
+                    return Result;
                 }
                 catch
                 {
