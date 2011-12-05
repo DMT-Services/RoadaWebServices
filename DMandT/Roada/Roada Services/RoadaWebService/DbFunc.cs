@@ -1616,6 +1616,12 @@ namespace DMTServices
             return fmt;
         }
 
+        public DateTime dtfetch(string dn)
+        {
+            return myConvert.ToDateTime(ofetch(dn));
+        }
+
+
         /// <summary>
         ///  get DateTime value into dt from DataTable passing in the expected format
         /// </summary>
