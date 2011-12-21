@@ -61,6 +61,18 @@ namespace DMTServices
 
         static public void Move(string fFilename, string tFilename)
         {
+            Move(fFilename, tFilename, false);
+        }
+
+        static public string Move(string fFilename, string tFilename, bool mkUnique)
+        {
+            if (mkUnique)
+            {
+                int ct = 1;
+                string justFile = Path.GetFileNameWithoutExtension(tFilename);
+                while (myFile.Exists(tFilename))
+                    tFilename = Path.GetDirectoryName(tFilename) + "\\" + justFile + "_" + ct++.ToString() + Path.GetExtension(tFilename);
+            }
             try
             {
                 File.Move(fFilename, tFilename);
@@ -68,6 +80,7 @@ namespace DMTServices
             catch
             {
             }
+            return tFilename;
         }
 
         static public FileStream Create(string Filename)
