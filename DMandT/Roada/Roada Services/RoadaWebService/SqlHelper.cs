@@ -5,6 +5,17 @@ using System.Text;
 using System.Globalization;
 using System.Data;
 
+#if NET20
+namespace System.Runtime.CompilerServices
+{
+    [AttributeUsage(AttributeTargets.Method)]
+    public sealed class ExtensionAttribute : Attribute
+    {
+        public ExtensionAttribute() { }
+    }
+}
+#endif
+
 namespace DMTServices
 {
     public class SqlHelper
@@ -500,7 +511,7 @@ namespace DMTServices
                                     if (o is byte[])
                                         return Add(colName, (byte[])o);
                                     else
-                                        if(o.GetType().IsValueType)
+                                        if (o.GetType().IsValueType)
                                             try
                                             {
                                                 return Add(colName, o.ToString(), false);
@@ -592,7 +603,7 @@ namespace DMTServices
 
                     List<string> fields1 = new List<string>(conn.FieldList(tableName1));
                     List<string> fields2 = new List<string>(conn.FieldList(tableName2));
-                    foreach(string field in fields1)
+                    foreach (string field in fields1)
                     {
                         table1 += field + ",";
                         if (fields2.Contains(field))
@@ -852,18 +863,18 @@ namespace DMTServices
         public string[] Compare(SqlHelper qcmp)
         {
             List<string> rc = new List<string>();
-                for (int i = 0; i < ColumnList.Count; i++)
+            for (int i = 0; i < ColumnList.Count; i++)
+            {
+                bool add = true;
+                if (qcmp != null)
                 {
-                    bool add = true;
-                    if (qcmp != null)
-                    {
-                        int j = qcmp.FindIndex(ColumnList[i]);
-                        if (j >= 0)
-                            add = ((string)qcmp.ValueList[j] != (string)ValueList[i]);
-                    }
-                    if (add)
-                        rc.Add(ColumnList[i]);
+                    int j = qcmp.FindIndex(ColumnList[i]);
+                    if (j >= 0)
+                        add = ((string)qcmp.ValueList[j] != (string)ValueList[i]);
                 }
+                if (add)
+                    rc.Add(ColumnList[i]);
+            }
             return rc.ToArray();
         }
     }
@@ -874,6 +885,8 @@ namespace DMTServices
     // SqlStmt class....
     public static class SqlStmtExt
     {
+        // if you are getting "Cannot define a new extension method because the compiler required type..." error
+        // you need to add NET20 to the project's 'Conditional compilation symbols' under the Build tab in project properties...
         public static int Add(this SqlStmt stmt, SqlHelper query, string colName, string bindName, object value)
         {
             stmt.Add(bindName, value);
@@ -890,8 +903,8 @@ namespace DMTServices
     {
         public static string CreateIndex(string name, string table, string fields)
         {
-            string rc  = "CREATE INDEX [" + name + "] ON ";
-            if(table.Contains("."))
+            string rc = "CREATE INDEX [" + name + "] ON ";
+            if (table.Contains("."))
                 rc += table;
             else
                 rc += "[" + table + "]";
@@ -917,10 +930,10 @@ namespace DMTServices
                 rc += table;
             else
                 rc += "[" + table + "]";
-            if(Alter)
+            if (Alter)
                 rc += " ALTER COLUMN ";
             else
-            rc += " ADD ";
+                rc += " ADD ";
             rc += "[" + column + "] " + colDesc;
             return rc;
         }
