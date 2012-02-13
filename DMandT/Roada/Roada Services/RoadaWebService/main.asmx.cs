@@ -24,6 +24,7 @@ namespace RoadaWebService
     // [System.Web.Script.Services.ScriptService]
     public class ROADAService : System.Web.Services.WebService
     {
+        private System.Object lockThis = new System.Object();
         public const int MAX_RECORDS = 500;
         private List<MQueue> queueList = new List<MQueue>();
         const string DEFAULT_USER = "DMTServices";
@@ -169,18 +170,21 @@ namespace RoadaWebService
         {
             bool Result = true;
 
-            q.MyMessage.Body = b;
-            try
+            lock (lockThis)
             {
-                q.MessageTx.Begin();
-                q.MessageQ.Send(q.MyMessage, q.MessageTx);
-                q.MessageTx.Commit();
-            }
-            catch (Exception ex)
-            {
-                q.MessageTx.Abort();
-                Result = false;
-                Global.messLog.Flush(string.Format("Exception in AddToMSMQueue Cust {0} {1}", q.CustCode, ex.Message));
+                q.MyMessage.Body = b;
+                try
+                {
+                    q.MessageTx.Begin();
+                    q.MessageQ.Send(q.MyMessage, q.MessageTx);
+                    q.MessageTx.Commit();
+                }
+                catch (Exception ex)
+                {
+                    q.MessageTx.Abort();
+                    Result = false;
+                    Global.messLog.Flush(string.Format("Exception in AddToMSMQueue Cust {0} {1}", q.CustCode, ex.Message));
+                }
             }
             /*
             AddCount++;
