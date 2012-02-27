@@ -136,7 +136,12 @@ namespace DMTServices
                 }
             return rc;
         }
-        
+
+        public void Flush(string msg, params object[] args)
+        {
+            iFlush(string.Format(msg, args));
+        }
+
         public void Flush(string msg)
         {
             iFlush(msg);
