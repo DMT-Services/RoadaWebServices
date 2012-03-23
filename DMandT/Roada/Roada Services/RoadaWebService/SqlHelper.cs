@@ -491,7 +491,7 @@ namespace DMTServices
 
         public int Add(string colName, object o, bool NoNulls)
         {
-            if (o != null)
+            if (o != null && !(o is System.DBNull))
             {
                 if (o is string)
                     return Add(colName, (string)o);
