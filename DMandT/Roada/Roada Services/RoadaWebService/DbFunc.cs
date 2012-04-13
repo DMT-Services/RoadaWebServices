@@ -1701,7 +1701,10 @@ namespace DMTServices
         {
             try
             {
-                return Convert.ToString(o);
+                if (o == null || o is System.DBNull)
+                    return def;
+                else
+                    return Convert.ToString(o);
             }
             catch
             {
