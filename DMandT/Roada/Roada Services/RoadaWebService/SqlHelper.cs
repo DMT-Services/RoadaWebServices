@@ -439,14 +439,28 @@ namespace DMTServices
             return Add(colName, data, false);
         }
 
+        /// <summary>
+        /// Adds all the values from the List
+        /// used to create   xxx in (aaa,bbb,ccc,...) for where clause
+        /// </summary>
+        /// <param name="colName"></param>
+        /// <param name="o"></param>
+        /// <param name="quotes"></param>
+        /// <returns></returns>
         public int Add(string colName, List<string> o, bool quotes)
         {
             return Add(colName, new ArrayList(o), quotes);
         }
 
-        // add in an arraylist, 
-        // used to create   xxx in (aaa,bbb,ccc,...)
-        // for where clauses ONLY...
+        /// <summary>
+        /// add in an arraylist, 
+        /// used to create   xxx in (aaa,bbb,ccc,...)
+        /// for where clauses ONLY...
+        /// </summary>
+        /// <param name="colName"></param>
+        /// <param name="items"></param>
+        /// <param name="quotes"></param>
+        /// <returns></returns>
         public int Add(string colName, ArrayList items, bool quotes)
         {
             int Result;
