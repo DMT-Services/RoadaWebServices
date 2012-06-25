@@ -1701,7 +1701,10 @@ namespace DMTServices
         {
             try
             {
-                return Convert.ToString(o);
+                if (o == null || o is System.DBNull)
+                    return def;
+                else
+                    return Convert.ToString(o);
             }
             catch
             {
@@ -1934,6 +1937,25 @@ namespace DMTServices
             {
                 return def;
             }
+        }
+
+        public static DateTime ToTime(string time, DateTime date)
+        {
+            string fmt = "HHmm";
+            if (time.Contains(":"))
+            {
+                int c = time.Length;
+                time = time.Replace(":", "");
+                if ((c - time.Length) > 1)  // if there was more than 1 colon, ass-u-me seconds included...
+                    fmt += "ss";
+            }
+
+            int l = fmt.Length;
+            if (time.Length > l)
+                time = time.Substring(time.Length - l);
+            else
+                time = ((new string('0', l)) + time).Substring(time.Length);
+            return date.Date + myConvert.ToDateTime(time, DateTime.MinValue, fmt).TimeOfDay;
         }
 
         public static byte[] ToByteArray(object o)
