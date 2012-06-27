@@ -5,35 +5,24 @@ using System.Text;
 using System.Globalization;
 using System.Data;
 
-#if NET20
-namespace System.Runtime.CompilerServices
-{
-    [AttributeUsage(AttributeTargets.Method)]
-    public sealed class ExtensionAttribute : Attribute
-    {
-        public ExtensionAttribute() { }
-    }
-}
-#endif
-
 namespace DMTServices
 {
     public class SqlHelper
     {
         public enum dbType { SqlServer, Oracle, Access, DBF };
 
-        private List<string> ColumnList = new List<string>();       // column names
-        private List<object> ValueList = new List<object>();        // values to insert/update
-        private List<bool> QuotedList = new List<bool>();           // should the value be quoted
-        private List<string> CompareList = new List<string>();      // used for building WHERE clause (defaults to '=')
+        private List<string> ColumnList = new List<string>();
+        private List<object> ValueList = new List<object>();
+        private List<bool> QuotedList = new List<bool>();
+        private List<string> CompareList = new List<string>();
 
-        private List<string> FieldList = new List<string>();        // these 2 are optionally used to control max data length
-        private List<int> LengthList = new List<int>();             // so you don't get 'overflow' errors when adding data
+        private List<string> FieldList = new List<string>();      // these 2 are optionally used to control max data length
+        private List<int> LengthList = new List<int>();     // so you don't get 'overflow' errors when adding data
 
-        private dbType DataSource = dbType.SqlServer;               // used when doing some Database type specific stuff (ie. SqlServer - GETDATE() vs Oracle - SYSDATE)
+        private dbType DataSource = dbType.SqlServer;
 
-        public MessLog mess = null;                                 // not really used but does log a couple of Exceptions should they occur...
-        private bool inWhere = false;                               // flag used preparing for a WHERE
+        public MessLog mess = null;
+        private bool inWhere = false;
 
         // for date time parsing
         //CultureInfo MyCultureInfo = new CultureInfo("en-US");
@@ -47,7 +36,7 @@ namespace DMTServices
             DataSource = typ;
         }
 
-        // 'older' Oracle's connection stuff doesn't appear to have the GetSchema function?
+        // Orcale's connection stuff doesn't appear to have the GetSchema function?
 #if !ORACLEDB
         /// <summary>
         /// Get a list of all varchar and char types and their length from the database
@@ -183,8 +172,8 @@ namespace DMTServices
             int Result;
             string v;
 
-            Result = FindIndex(colName);                // make sure doesn't already exist
-            if ((Result == -1) || inWhere)              // inWhere  - if building a where clause, you often DO
+            Result = FindIndex(colName);    // make sure doesn't already exist
+            if ((Result == -1) || inWhere)              // inWhere if building a where clause, and you often do
             {                                           // want the same field multiple times ie. where (a>1 and a<10)
                 if (value != null)
                 {
@@ -208,7 +197,7 @@ namespace DMTServices
         }
 
         /// <summary>
-        /// change a fieldname and value pair in the list, with optional quotes
+        /// change a fieldname and value pair to the list with optional quotes
         /// (it will be added if it doesn't already exist)
         /// </summary>
         public int Change(string colName, string value, bool quotes)
@@ -258,7 +247,7 @@ namespace DMTServices
 
         public string CheckCols(string colName)
         {
-            string[] check = { "order", "desc", "key", "user", "type" };
+            string[] check = { "order", "desc", "key" };
             foreach (string s in check)
                 if (colName == s)
                     return "[" + colName + "]";
@@ -439,28 +428,14 @@ namespace DMTServices
             return Add(colName, data, false);
         }
 
-        /// <summary>
-        /// Adds all the values from the List
-        /// used to create   xxx in (aaa,bbb,ccc,...) for where clause
-        /// </summary>
-        /// <param name="colName"></param>
-        /// <param name="o"></param>
-        /// <param name="quotes"></param>
-        /// <returns></returns>
         public int Add(string colName, List<string> o, bool quotes)
         {
             return Add(colName, new ArrayList(o), quotes);
         }
 
-        /// <summary>
-        /// add in an arraylist, 
-        /// used to create   xxx in (aaa,bbb,ccc,...)
-        /// for where clauses ONLY...
-        /// </summary>
-        /// <param name="colName"></param>
-        /// <param name="items"></param>
-        /// <param name="quotes"></param>
-        /// <returns></returns>
+        // add in an arraylist, 
+        // used to create   xxx in (aaa,bbb,ccc,...)
+        // for where clauses ONLY...
         public int Add(string colName, ArrayList items, bool quotes)
         {
             int Result;
@@ -505,7 +480,7 @@ namespace DMTServices
 
         public int Add(string colName, object o, bool NoNulls)
         {
-            if (o != null && !(o is System.DBNull))
+            if (o != null)
             {
                 if (o is string)
                     return Add(colName, (string)o);
@@ -525,7 +500,7 @@ namespace DMTServices
                                     if (o is byte[])
                                         return Add(colName, (byte[])o);
                                     else
-                                        if (o.GetType().IsValueType)
+                                        if(o.GetType().IsValueType)
                                             try
                                             {
                                                 return Add(colName, o.ToString(), false);
@@ -601,7 +576,7 @@ namespace DMTServices
         }
 
 
-        // 'older' Oracle's connection stuff doesn't appear to have the GetSchema function?
+        // Orcale's connection stuff doesn't appear to have the GetSchema function?
 #if !ORACLEDB
         // pass in 2 table names and create a
         //   'select ... table1 union select ... table2' string
@@ -617,7 +592,7 @@ namespace DMTServices
 
                     List<string> fields1 = new List<string>(conn.FieldList(tableName1));
                     List<string> fields2 = new List<string>(conn.FieldList(tableName2));
-                    foreach (string field in fields1)
+                    foreach(string field in fields1)
                     {
                         table1 += field + ",";
                         if (fields2.Contains(field))
@@ -805,6 +780,7 @@ namespace DMTServices
                 }
                 else
                 {
+                    // ToDo: add in CompareList stuff...
                     // they may not have set the comparison operator, default to '=' ...
                     if (i < CompareList.Count)
                         Compare = CompareList[i];
@@ -877,39 +853,19 @@ namespace DMTServices
         public string[] Compare(SqlHelper qcmp)
         {
             List<string> rc = new List<string>();
-            for (int i = 0; i < ColumnList.Count; i++)
-            {
-                bool add = true;
-                if (qcmp != null)
+                for (int i = 0; i < ColumnList.Count; i++)
                 {
-                    int j = qcmp.FindIndex(ColumnList[i]);
-                    if (j >= 0)
-                        add = ((string)qcmp.ValueList[j] != (string)ValueList[i]);
+                    bool add = true;
+                    if (qcmp != null)
+                    {
+                        int j = qcmp.FindIndex(ColumnList[i]);
+                        if (j >= 0)
+                            add = ((string)qcmp.ValueList[j] != (string)ValueList[i]);
+                    }
+                    if (add)
+                        rc.Add(ColumnList[i]);
                 }
-                if (add)
-                    rc.Add(ColumnList[i]);
-            }
             return rc.ToArray();
-        }
-    }
-
-    // this adds a function to the SqlStmt class 'automatically',
-    // beats me how!?  Anyway, it allows us to get at the stmt.Add()
-    // function in dbfunc.cs without messing up any others that use the
-    // SqlStmt class....
-    public static class SqlStmtExt
-    {
-        // if you are getting "Cannot define a new extension method because the compiler required type..." error
-        // you need to add NET20 to the project's 'Conditional compilation symbols' under the Build tab in project properties...
-        public static int Add(this SqlStmt stmt, SqlHelper query, string colName, string bindName, object value)
-        {
-            stmt.Add(bindName, value);
-            return query.Add(colName, bindName, false);
-        }
-
-        public static int Add(this SqlStmt stmt, SqlHelper query, string colName, object value)
-        {
-            return Add(stmt, query, colName, "@" + colName, value);
         }
     }
 
@@ -917,8 +873,8 @@ namespace DMTServices
     {
         public static string CreateIndex(string name, string table, string fields)
         {
-            string rc = "CREATE INDEX [" + name + "] ON ";
-            if (table.Contains("."))
+            string rc  = "CREATE INDEX [" + name + "] ON ";
+            if(table.Contains("."))
                 rc += table;
             else
                 rc += "[" + table + "]";
@@ -944,10 +900,10 @@ namespace DMTServices
                 rc += table;
             else
                 rc += "[" + table + "]";
-            if (Alter)
+            if(Alter)
                 rc += " ALTER COLUMN ";
             else
-                rc += " ADD ";
+            rc += " ADD ";
             rc += "[" + column + "] " + colDesc;
             return rc;
         }
