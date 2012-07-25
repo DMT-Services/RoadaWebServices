@@ -839,6 +839,10 @@ namespace DMTServices
             return DoSQL(selectStr, selectStr.StartsWith("SELECT", StringComparison.CurrentCultureIgnoreCase) || selectStr.StartsWith("EXEC", StringComparison.CurrentCultureIgnoreCase));
         }
 
+        public bool DoSQLFormat(string selectStr, params object[] args)
+        {
+            return DoSQL(string.Format(selectStr, args));
+        }
 
         /// <summary>Executes a query with OR WITHOUT a result set</summary>
         /// <param name="selectStr">SQL string to execute</param>
