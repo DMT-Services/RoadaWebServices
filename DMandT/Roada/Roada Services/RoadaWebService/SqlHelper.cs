@@ -288,7 +288,7 @@ namespace DMTServices
                         // it could already have quotes around it
                         if (rc.StartsWith("'") && rc.EndsWith("'"))
                         {
-                            l -= -2;         // so we need to ignore them in length check...
+                            l -= 2;         // so we need to ignore them in length check...
                             if (l > LengthList[p])
                                 rc = rc.Substring(1, LengthList[p] + 1) + "'";
                         }
@@ -662,17 +662,22 @@ namespace DMTServices
             return Field;
         }
 
+        public string BuildCmd(string table, bool insert, string suffix)
+        {
+            return BuildCmd(table, insert, suffix, false);
+        }
+
         /// <summary>
         /// function uses the BuildInsert or BuildUpdate methods to make the SQL query
         /// </summary>
-        public string BuildCmd(string table, bool insert, string suffix)
+        public string BuildCmd(string table, bool insert, string suffix, bool rowLock)
         {
             string Result;
 
             if (insert)
                 Result = BuildInsert("INSERT INTO " + table);
             else
-                Result = BuildUpdate("UPDATE " + table, suffix);
+                Result = BuildUpdate("UPDATE " + table + ((rowLock)? " with (rowlock)" : ""), suffix);
 
             return Result;
         }
