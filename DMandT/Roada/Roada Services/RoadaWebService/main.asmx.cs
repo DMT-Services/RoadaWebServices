@@ -50,48 +50,54 @@ namespace RoadaWebService
                     if (mConn.dbConnect())
                     {
                         SqlStmt stmt = new SqlStmt(mConn);
-                        bool rc = stmt.DoSQL("SELECT * FROM customer");   // main database customer that points to all customers
-                        while (rc)
+                        try
                         {
-                            string user = stmt.fetch("wserv_user");
-                            if (user != "")
+                            bool rc = stmt.DoSQL("SELECT * FROM customer");     // main database customer that points to all customers
+                            while (rc)
                             {
-                                MQueue q = new MQueue();
-                                q.CustCode = stmt.fetch("cust_code");
-                                custCodes.Add(q.CustCode);
-                                q.ConnectionString = stmt.fetch("connectionStrings");
-                                q.UserName = user;
-                                q.Password = stmt.fetch("wserv_password");
-                                q.QName = string.Format(@".\private$\{0}", q.CustCode);
-                                bool qok = true;
-                                if (! MessageQueue.Exists(q.QName))
+                                string user = stmt.fetch("wserv_user");
+                                if (user != "")
                                 {
-                                    try
-                                    {   
-                                        MessageQueue.Create(q.QName, true);
-                                    }
-                                    catch (Exception ex)
+                                    MQueue q = new MQueue();
+                                    q.CustCode = stmt.fetch("cust_code");
+                                    custCodes.Add(q.CustCode);
+                                    q.ConnectionString = stmt.fetch("connectionStrings");
+                                    q.UserName = user;
+                                    q.Password = stmt.fetch("wserv_password");
+                                    q.QName = string.Format(@".\private$\{0}", q.CustCode);
+                                    bool qok = true;
+                                    if (! MessageQueue.Exists(q.QName))
                                     {
-                                        Global.messLog.Flush(String.Format("MessageQueue Create Exception: {0}", ex.Message));
-                                        qok = false;
+                                        try
+                                        {   
+                                            MessageQueue.Create(q.QName, true);
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            Global.messLog.Flush(String.Format("MessageQueue Create Exception: {0}", ex.Message));
+                                            qok = false;
+                                        }
+                                    }
+                                    // make sure the queue was created ok
+                                    if(qok)
+                                    {
+                                        q.MyMessage = new System.Messaging.Message(q.QName);
+                                        q.MessageTx = new MessageQueueTransaction();
+                                        q.MessageQ = new MessageQueue(q.QName);
+                                        queueList.Add(q);
                                     }
                                 }
-                                // make sure the queue was created ok
-                                if(qok)
-                                {
-                                    q.MyMessage = new System.Messaging.Message(q.QName);
-                                    q.MessageTx = new MessageQueueTransaction();
-                                    q.MessageQ = new MessageQueue(q.QName);
-                                    queueList.Add(q);
-                                }
+                                rc = stmt.dbSkip();
                             }
-                            rc = stmt.dbSkip();
+                            if (queueList.Count == 0)
+                                Global.messLog.Flush("No customer records found with web service privileges");
+                            else
+                                Global.messLog.Flush("Customer Queue List Refreshed");
                         }
-                        if (queueList.Count == 0)
-                            Global.messLog.Flush("No customer records found with web service privileges");
-                        else
-                            Global.messLog.Flush("Customer Queue List Refreshed");
-                        stmt.Close();
+                        finally
+                        {
+                            stmt.Close();                   // Always force closing.
+                        }
                     }
                     else
                         Global.messLog.Flush("ReadQueueList: Error connecting to main database!");
@@ -610,9 +616,10 @@ namespace RoadaWebService
             {
                 SqlStmt stmt = new SqlStmt("mainconn");
                 stmt.Mess = Global.messLog;
+                List<string> objList = null;
                 try
                 {
-                    List<string> objList = new List<string>();
+                    objList = new List<string>();
                     string objPath = MessLog.ApplicationPath() + OBJECTS_PATH;
                     foreach (VersionInfo v in versions)
                     {
@@ -642,6 +649,8 @@ namespace RoadaWebService
                 finally
                 {
                     stmt.Close();
+                    if (objList != null)
+                        objList.Clear();                    // Always force clearing (just in case of exception).
                 }
             }
             return Result;
@@ -656,9 +665,10 @@ namespace RoadaWebService
             {
                 SqlStmt stmt = new SqlStmt("MainConn");
                 stmt.Mess = Global.messLog;
+                SqlHelper sql = null;
                 try
                 {
-                    SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
+                    sql = new SqlHelper(SqlHelper.dbType.SqlServer);
                     sql.AddNow("objdate");
                     string objs = string.Empty;
                     foreach(string s in objList)
@@ -675,7 +685,8 @@ namespace RoadaWebService
                 finally
                 {
                     stmt.Close();
-
+                    if (sql != null)
+                        sql.Clear();    // Is this really necessary?
                 }
             }
             return Result;
@@ -690,10 +701,11 @@ namespace RoadaWebService
                 block = -2;     // failed security check!
             else
             {
+                FileStream fs = null;
                 try
                 {
                     string objectName = MessLog.ApplicationPath() + OBJECTS_PATH + Path.GetFileName(fileName);
-                    FileStream fs = new FileStream(objectName, FileMode.Open, FileAccess.Read);
+                    fs = new FileStream(objectName, FileMode.Open, FileAccess.Read);
                     fs.Seek(block * 50000, SeekOrigin.Begin);
                     Result = new byte[50000];
                     count = fs.Read(Result, 0, 50000);
@@ -702,11 +714,14 @@ namespace RoadaWebService
                     else
                         block++;        // next block
                     fs.Close();
+                    fs = null;
                 }
                 catch(Exception ex)
                 {
                     Global.messLog.Flush("GetFileBlock Excp: " + ex.Message);
                     block = -2;     // error reading file
+                    if (fs != null)
+                        fs.Close();     // In case we do not make it to the end.
                 }
             }
             return Result;
@@ -720,16 +735,20 @@ namespace RoadaWebService
             {
                 string destName = MessLog.ApplicationPath() + RECVD_PATH + Path.GetFileName(fileName);
                 Global.messLog.Flush("Path " + destName);
+                FileStream fs = null;
                 try
                 {
-                    FileStream fs = new FileStream(destName, FileMode.Append, FileAccess.Write);
+                    fs = new FileStream(destName, FileMode.Append, FileAccess.Write);
                     fs.Write(data, 0, count);
                     fs.Close();
+                    fs = null;
                     Result = true;
                 }
                 catch
                 {
                     Global.messLog.Flush(string.Format("Failed writing block of file {0}", fileName));
+                    if (fs != null)
+                        fs.Close();     // In case we do not make it to the end.
                 }
             }
             return Result;
@@ -766,12 +785,13 @@ namespace RoadaWebService
             {
                 SqlConn mConn = new SqlConn("MainConn");
                 SqlStmt stmt = null;
+                List<Client> clients = null;
                 try
                 {
                     mConn.Mess = Global.messLog;
                     if (mConn.dbConnect())
                     {
-                        List<Client> clients = new List<Client>();
+                        clients = new List<Client>();
                         stmt = new SqlStmt(mConn);
                         // made a change, get the comma separated list of db_codes from the soft_activate table
                         stmt.DoSQL(string.Format("SELECT db_codes FROM soft_activate WHERE pc_code = '{0}'", request.CustCode));
@@ -792,6 +812,8 @@ namespace RoadaWebService
                 catch (Exception ex)
                 {
                     Global.messLog.Flush("Excp in GetClients: " + ex.Message);
+                    if (clients != null)
+                        clients.Clear();                    // In case we do not make it to the end.
                 }
                 finally
                 {
@@ -904,12 +926,13 @@ namespace RoadaWebService
                     if (foundConn)
                     {
                         SqlStmt stmt = null;
+                        List<ReplicationData> repList = null;
                         try
                         {
                             if (cConn.dbConnect())
                             {
                                 stmt = new SqlStmt(cConn);
-                                List<ReplicationData> repList = new List<ReplicationData>();
+                                repList = new List<ReplicationData>();
                                 bool rc = stmt.DoSQL(string.Format("SELECT * FROM datarep WHERE record_id > {0} and client_id != {1} ORDER BY record_id", startRecord, request.CustId));
                                 while (rc)
                                 {
@@ -933,6 +956,8 @@ namespace RoadaWebService
                         catch (Exception ex)
                         {
                             Global.messLog.Flush(string.Format("Exception GetRecplicationData {0}", ex.Message));
+                            if (repList != null)
+                                repList.Clear();            // In case we do not make it to the end.
                         }
                         finally
                         {
