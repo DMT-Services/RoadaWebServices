@@ -886,10 +886,43 @@ namespace RoadaWebService
             return Result;
         }
 
+#region Check Region
+        /*  This does an attempted check to see if a region the data to be replicated can be 'easily'
+            established, and if so, disqualify data (set to NULL) that does NOT belong to the "region" we want.
+            There is better ways to do this, but many require changes through-out entire project, so this was
+            an attempted quickie, added by KRS 8/27/2012. */
+
+//        private int[] HandCodes;
+//        private string[] Units;
+
+        private void PreloadRegion( SqlStmt stmt, string region)
+        {
+            // Taken out for now (wasn't completed anyway) ...
+        }
+
+        private void CheckRegion( SqlStmt stmt, string region, ref ReplicationData data )
+        {
+            // Taken out for now (wasn't completed anyway) ...
+        }
+#endregion
+
 
         [WebMethod(Description = "Retrieves replication data from the server")]
-        public ReplicationData[] GetReplicationData(Request request, string dbCode, int startRecord)
+        public ReplicationData[] GetReplicationData( Request request, string dbCode, int startRecord )
         {
+            // I needed to preserve this older version for backwards compatibility.
+            return GetReplicationDataX(request, dbCode, "", -1, startRecord);
+        }
+
+        [WebMethod(Description = "Retrieves replication data from the server")]
+        public ReplicationData[] GetReplicationDataX( Request request,
+                                                      string dbCode, string region, int histMax, int startRecord )
+        {
+            /* Note:    For DB that have multiple regions (and a lot of data across them), we can narrow what
+             *          we replicate by "region" name (see 'yard' table).  As well, should there be a lot of
+             *          data in a database, and we only want more recent material, we can limit by how many
+             *          months maximum (in "histMax") we want (value of -1 will have this parameter ignored).
+             */
             ReplicationData[] Result = new ReplicationData[0];
             if (LowSecurityCheck(request))
             {
@@ -932,8 +965,34 @@ namespace RoadaWebService
                             if (cConn.dbConnect())
                             {
                                 stmt = new SqlStmt(cConn);
+
+                                DateTime max = DateTime.MinValue;
+
+                                if (histMax > -1)
+                                {
+                                    if (stmt.DoSQL("SELECT GETDATE() AS date"))
+                                    {
+                                        max = stmt.dtfetch("date");
+
+                                        max = max.AddMonths(0 - histMax);
+                                    }
+                                    if (max < new DateTime(2000, 1, 1))
+                                        histMax = -1;       // Turn data sync maximum off ...
+                                }
+
                                 repList = new List<ReplicationData>();
-                                bool rc = stmt.DoSQL(string.Format("SELECT * FROM datarep WHERE record_id > {0} and client_id != {1} ORDER BY record_id", startRecord, request.CustId));
+
+                                string sql;
+
+                                if (histMax > -1)           // New mode added by KRS 8/27/2012.
+                                    sql = string.Format("SELECT * FROM datarep WHERE record_id > {0} and client_id != {1} AND idate >= '{2}' ORDER BY record_id",
+                                                        startRecord, request.CustId, max.ToString("yyyy-MM-dd"));
+
+                                else
+                                    sql = string.Format("SELECT * FROM datarep WHERE record_id > {0} and client_id != {1} ORDER BY record_id",
+                                                        startRecord, request.CustId);
+
+                                bool rc = stmt.DoSQL(sql);
                                 while (rc)
                                 {
                                     ReplicationData r = new ReplicationData();
@@ -946,7 +1005,13 @@ namespace RoadaWebService
                                     if (par.Trim().Length > 0)
                                         r.Params = (SQLParameter[])DeserializeObject(par, tmpParam.GetType());
                                     r.RecordId = stmt.ifetch("record_id");
-                                    repList.Add(r);
+
+/* ->                                    if (region != string.Empty)                 // New mode added by KRS 8/27/2012.
+                                        CheckRegion(region, ref r);
+
+                                    if (r != null) <- Taken out for now! */
+                                        repList.Add(r);
+
                                     rc = stmt.dbSkip();
                                 }
                                 Result = repList.ToArray();
