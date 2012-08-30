@@ -452,6 +452,19 @@ namespace DMTServices
         }
 
         /// <summary>
+        /// Adds all the values from the List
+        /// used to create   xxx in (aaa,bbb,ccc,...) for where clause
+        /// </summary>
+        /// <param name="colName"></param>
+        /// <param name="o"></param>
+        /// <param name="quotes"></param>
+        /// <returns></returns>
+        public int Add(string colName, List<int> o)
+        {
+            return Add(colName, new ArrayList(o), false);
+        }
+
+        /// <summary>
         /// add in an arraylist, 
         /// used to create   xxx in (aaa,bbb,ccc,...)
         /// for where clauses ONLY...
@@ -797,7 +810,10 @@ namespace DMTServices
                     string s = "";
                     for (int j = 0; j < av.Count; j++)
                     {
-                        v = (string)av[j];
+                        if (av[j] is int)
+                            v = ((int)av[j]).ToString();
+                        else
+                            v = (string)av[j];
                         if (QuotedList[i] || (v.Length == 0))
                             v = "'" + FixUp(v) + "'";
 
