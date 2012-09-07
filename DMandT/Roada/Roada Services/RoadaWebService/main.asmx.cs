@@ -886,26 +886,6 @@ namespace RoadaWebService
             return Result;
         }
 
-#region Check Region
-        /*  This does an attempted check to see if a region the data to be replicated can be 'easily'
-            established, and if so, disqualify data (set to NULL) that does NOT belong to the "region" we want.
-            There is better ways to do this, but many require changes through-out entire project, so this was
-            an attempted quickie, added by KRS 8/27/2012. */
-
-//        private int[] HandCodes;
-//        private string[] Units;
-
-        private void PreloadRegion( SqlStmt stmt, string region)
-        {
-            // Taken out for now (wasn't completed anyway) ...
-        }
-
-        private void CheckRegion( SqlStmt stmt, string region, ref ReplicationData data )
-        {
-            // Taken out for now (wasn't completed anyway) ...
-        }
-#endregion
-
 
         [WebMethod(Description = "Retrieves replication data from the server")]
         public ReplicationData[] GetReplicationData( Request request, string dbCode, int startRecord )
@@ -918,9 +898,9 @@ namespace RoadaWebService
         public ReplicationData[] GetReplicationDataX( Request request,
                                                       string dbCode, string region, int histMax, int startRecord )
         {
-            /* Note:    For DB that have multiple regions (and a lot of data across them), we can narrow what
-             *          we replicate by "region" name (see 'yard' table).  As well, should there be a lot of
-             *          data in a database, and we only want more recent material, we can limit by how many
+            /* Note:    For DB that have multiple regions (and a lot of data across them), we can narrow what we
+             *          replicate by "region" (see 'yard' table, 'name' field).  As well, should there be a lot
+             *          of data in a database, and we only want more recent material, we can limit by how many
              *          months maximum (in "histMax") we want (value of -1 will have this parameter ignored).
              */
             ReplicationData[] Result = new ReplicationData[0];
@@ -960,6 +940,7 @@ namespace RoadaWebService
                     {
                         SqlStmt stmt = null;
                         List<ReplicationData> repList = null;
+                        CheckSQLForRegion xRegion = null;                       // New mode added by KRS 8/27/2012.
                         try
                         {
                             if (cConn.dbConnect())
@@ -978,6 +959,13 @@ namespace RoadaWebService
                                     }
                                     if (max < new DateTime(2000, 1, 1))
                                         histMax = -1;       // Turn data sync maximum off ...
+                                }
+
+                                if (region != string.Empty)                     // New mode added by KRS 8/27/2012.
+                                {
+                                    xRegion = new CheckSQLForRegion();
+
+                                    xRegion.PreloadRegion(stmt, region);
                                 }
 
                                 repList = new List<ReplicationData>();
@@ -1006,10 +994,10 @@ namespace RoadaWebService
                                         r.Params = (SQLParameter[])DeserializeObject(par, tmpParam.GetType());
                                     r.RecordId = stmt.ifetch("record_id");
 
-/* ->                                    if (region != string.Empty)                 // New mode added by KRS 8/27/2012.
-                                        CheckRegion(region, ref r);
+                                    if (region != string.Empty)                 // New mode added by KRS 8/27/2012.
+                                        xRegion.CheckRegion(region, ref r);
 
-                                    if (r != null) <- Taken out for now! */
+                                    if (r != null)
                                         repList.Add(r);
 
                                     rc = stmt.dbSkip();
@@ -1026,6 +1014,8 @@ namespace RoadaWebService
                         }
                         finally
                         {
+                            if (xRegion != null)
+                                xRegion.Clear();
                             if (stmt != null)
                                 stmt.Close();
                             cConn.Close();
