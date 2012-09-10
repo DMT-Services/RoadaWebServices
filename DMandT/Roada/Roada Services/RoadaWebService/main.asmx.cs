@@ -32,6 +32,9 @@ namespace RoadaWebService
         const string RECVD_PATH = @"Recvd\";
         const string OBJECTS_PATH = @"objects\";
 
+
+        private const int MaxDownloadBatchSize = 1000;
+
         private void InitializeComponent()
         {
 
@@ -968,6 +971,8 @@ namespace RoadaWebService
                                     xRegion.PreloadRegion(stmt, region);
                                 }
 
+                                int count = 0;
+
                                 repList = new List<ReplicationData>();
 
                                 string sql;
@@ -998,7 +1003,18 @@ namespace RoadaWebService
                                         xRegion.CheckRegion(region, ref r);
 
                                     if (r != null)
+                                    {
                                         repList.Add(r);
+
+                                        count++;
+
+                                        if (histMax > -1 || region != string.Empty)
+                                            if (count >= MaxDownloadBatchSize)
+                                            {
+                                                Global.messLog.Flush(string.Format("GetReplication hit the Maximum download Batch Size of {0} records; please sync the client again to get the rest.", MaxDownloadBatchSize));
+                                                break;
+                                            }
+                                    }
 
                                     rc = stmt.dbSkip();
                                 }
