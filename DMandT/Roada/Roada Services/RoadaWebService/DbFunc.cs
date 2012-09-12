@@ -994,8 +994,11 @@ namespace DMTServices
                         TimeOverEvent(this, new TimeSpan(DateTime.Now.Ticks).Subtract(ts).TotalSeconds, "dbSkip", cmd.CommandText);
                     return Result;
                 }
-                catch
+                catch (Exception e)
                 {
+                    if (fParent.Mess != null)
+                        fParent.Mess.Flush("dbSkip() Exception - " + e.Message);
+                    LastError = e.Message;
                     return false;
                 }
             }
