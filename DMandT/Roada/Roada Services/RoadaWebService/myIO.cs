@@ -254,4 +254,67 @@ namespace DMTServices
             return rc;
         }
     }
+
+    public static class Export
+    {
+        public static string ExportCSV(System.Data.DataTable data, string aPath)
+        {
+            string fn = System.IO.Path.GetTempFileName();
+            if (!aPath.EndsWith("\\"))
+                aPath = aPath + "\\";
+            string fileName = System.IO.Path.GetFileNameWithoutExtension(fn) + ".csv";
+            try
+            {
+                if (myFile.Exists(aPath + "\\" + fileName))
+                    myFile.Delete(aPath + "\\" + fileName);
+
+                // open / create the file...
+                FileStream fsw = new FileStream(aPath + "\\" + fileName, FileMode.OpenOrCreate);//, FileAccess.ReadWrite);//, FileShare.ReadWrite);
+                try
+                {
+                    // create the 'writer' to the file...
+                    StreamWriter sw = new StreamWriter(fsw);
+                    try
+                    {
+                        // write column header names
+                        string line = string.Empty;
+
+                        for (int i = 0; i < data.Columns.Count; i++)
+                        {
+                            if (i > 0)
+                                line += ",";
+                            line += data.Columns[i].ColumnName;
+                        }
+                        sw.WriteLine(line);
+
+                        // Write data
+                        foreach (System.Data.DataRow row in data.Rows)
+                        {
+                            line = string.Empty;
+                            for (int i = 0; i < data.Columns.Count; i++)
+                            {
+                                if (i > 0)
+                                    line += ",";
+                                line += row[i];
+                            }
+                            sw.WriteLine(line);
+                        }
+                    }
+                    finally
+                    {
+                        sw.Close();
+                    }
+                }
+                finally
+                {
+                    fsw.Close();
+                }
+            }
+            catch // (Exception e)
+            {
+                // e.Message);
+            }
+            return fileName;
+        }
+    }
 }
