@@ -401,7 +401,7 @@ namespace DMTServices
         /// </summary>
         public int Add(string colName, DateTime dt)
         {
-            if (dt <= DateTime.MinValue)
+            if (dt == DateTime.MinValue)
                 return Add(colName, "null", false);
             else
                 if (DataSource == dbType.Oracle)
@@ -419,7 +419,10 @@ namespace DMTServices
         /// </summary>
         public int Add(string colName, string dt, string format)
         {
-            return Add(colName, "to_date('" + dt + "','" + format + "')", false);
+            if (DataSource == dbType.Oracle)
+                return Add(colName, "to_date('" + dt + "','" + format + "')", false);
+            else
+                return Add(colName, dt);     // if not Oracle, should still do something?!
         }
 
         public int Add(string colName, byte[] bt)
