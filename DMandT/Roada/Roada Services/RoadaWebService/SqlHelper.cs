@@ -662,7 +662,7 @@ namespace DMTServices
         /// <summary>
         /// double up any quotes that are in a string
         /// </summary>
-        private string FixUp(string Value)
+        public static string FixUp(string Value)
         {
             return Value.Replace("'", "''");
         }
