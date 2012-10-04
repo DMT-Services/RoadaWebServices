@@ -693,7 +693,7 @@ namespace DMTServices
             if (insert)
                 Result = BuildInsert("INSERT INTO " + table);
             else
-                Result = BuildUpdate("UPDATE " + table + ((rowLock)? " with (rowlock)" : ""), suffix);
+                Result = BuildUpdate("UPDATE " + table + ((rowLock) ? " with (rowlock)" : ""), suffix);
 
             return Result;
         }
@@ -711,24 +711,24 @@ namespace DMTServices
         /// </summary>
         public string BuildUpdate(string prefix, string suffix)
         {
-            string sqlcmd = prefix + " SET ";
+            StringBuilder sqlcmd = new StringBuilder(prefix + " SET ");
 
             for (int i = 0; i < ColumnList.Count; i++)
             {
                 if (i != 0)
-                    sqlcmd = sqlcmd + ", ";     // need comma if not the first entry
+                    sqlcmd.Append(",");     // need comma if not the first entry
 
-                sqlcmd = sqlcmd + FieldFixUp(ColumnList[i]) + "=";
+                sqlcmd.Append(FieldFixUp(ColumnList[i]) + "=");
                 string v = ValueList[i].ToString();
                 if ((QuotedList[i]) || (v.Length == 0))
-                    sqlcmd = sqlcmd + "'" + FixUp(v) + "'";
+                    sqlcmd.Append("'" + FixUp(v) + "'");
                 else
-                    sqlcmd = sqlcmd + v;
+                    sqlcmd.Append(v);
             }
             if (suffix.Length > 0)
-                sqlcmd = sqlcmd + " " + suffix;
+                sqlcmd.Append(" " + suffix);
 
-            return sqlcmd;
+            return sqlcmd.ToString();
         }
 
         /// <summary>
@@ -744,26 +744,26 @@ namespace DMTServices
         /// </summary>
         public string BuildInsert(string prefix, string mid, string suffix)
         {
-            string sqlcmd = prefix + " (";
+            StringBuilder sqlcmd = new StringBuilder(prefix + " (");
 
             for (int i = 0; i < ColumnList.Count; i++)
             {
                 if (i != 0)
-                    sqlcmd += ", ";
-                sqlcmd = sqlcmd + FieldFixUp(ColumnList[i]);
+                    sqlcmd.Append(",");
+                sqlcmd.Append(FieldFixUp(ColumnList[i]));
             }
-            sqlcmd = sqlcmd + ") " + mid + " (";
+            sqlcmd.Append(") " + mid + " (");
             for (int i = 0; i < ValueList.Count; i++)
             {
                 if (i != 0)
-                    sqlcmd = sqlcmd + ", ";
+                    sqlcmd.Append(",");
                 string v = (string)ValueList[i];
                 if ((QuotedList[i]) || (v.Length == 0))
-                    sqlcmd = sqlcmd + "'" + FixUp(v) + "'";
+                    sqlcmd.Append("'" + FixUp(v) + "'");
                 else
-                    sqlcmd = sqlcmd + v;
+                    sqlcmd.Append(v);
             }
-            return sqlcmd + ")" + suffix;
+            return sqlcmd.Append(")" + suffix).ToString();
         }
 
         /// <summary>
@@ -788,9 +788,9 @@ namespace DMTServices
         {
             string Conjunct, Compare, v;
 
-            string sqlcmd = "";
+            StringBuilder sqlcmd = new StringBuilder("");
             if (prefix.Length > 0)
-                sqlcmd += (prefix + " ");
+                sqlcmd.Append(prefix + " ");
 
             for (int i = 0; i < ColumnList.Count; i++)
             {
@@ -804,7 +804,7 @@ namespace DMTServices
                     //else
                     Conjunct = "and";
 
-                    sqlcmd += (" " + Conjunct + " ");
+                    sqlcmd.Append(" " + Conjunct + " ");
                 }
 
                 if (ValueList[i] is ArrayList)
@@ -824,7 +824,7 @@ namespace DMTServices
                             s += ",";
                         s += v;
                     }
-                    sqlcmd += (FieldFixUp(ColumnList[i]) + " in (" + s + ")");
+                    sqlcmd.Append(FieldFixUp(ColumnList[i]) + " in (" + s + ")");
                 }
                 else
                 {
@@ -838,20 +838,20 @@ namespace DMTServices
                     if ((Compare == "=") && (v.ToLower() == "null"))
                         Compare = " is ";
 
-                    sqlcmd += (FieldFixUp(ColumnList[i]) + Compare);
+                    sqlcmd.Append(FieldFixUp(ColumnList[i]) + Compare);
 
                     if (QuotedList[i] || (v.Length == 0))
-                        sqlcmd += ("'" + FixUp(v) + "'");
+                        sqlcmd.Append("'" + FixUp(v) + "'");
                     else
-                        sqlcmd += v;
+                        sqlcmd.Append(v);
                 }
             }
 
             // may never need this, but it's here...
             if (suffix.Length > 0)
-                sqlcmd += (" " + suffix);
+                sqlcmd.Append(" " + suffix);
 
-            return sqlcmd;
+            return sqlcmd.ToString();
         }
 
         public string BuildWhere()
