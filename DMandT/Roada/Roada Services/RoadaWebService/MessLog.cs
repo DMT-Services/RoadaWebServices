@@ -125,6 +125,17 @@ namespace DMTServices
                 Flush("");
         }
 
+        public int AddToLast(string mess)
+        {
+            int rc = Count;
+            if (Count > 0)
+                base[Count - 1] += mess;
+            else
+                rc = Add(mess);
+
+            return rc;
+        }
+
         public override int Add(object mess)
         {
             int rc = base.Add(DateTime.Now.ToString(DATEFORMAT) + " - " + mess);
