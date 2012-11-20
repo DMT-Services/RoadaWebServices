@@ -810,6 +810,19 @@ namespace DMTServices
         }
 
         /// <summary>
+        /// Executes a query, fills and returns a DataTable with the results
+        /// </summary>
+        /// <param name="selectStr"></param>
+        /// <returns>DataTable</returns>
+        public DataTable DoSQLdt(string selectStr)
+        {
+            myDataReader rdr =DoSql(selectStr, selectStr.StartsWith("SELECT", StringComparison.CurrentCultureIgnoreCase) || selectStr.StartsWith("EXEC", StringComparison.CurrentCultureIgnoreCase));
+            DataTable dt = new DataTable();
+            dt.Load(rdr);
+            return dt;
+        }
+
+        /// <summary>
         /// Executes a query, but DOES NOT do the DataReader.Read (or dbSkip() as we call it)
         /// </summary>
         /// <param name="selectStr"></param>
