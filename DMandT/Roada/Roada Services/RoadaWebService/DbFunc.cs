@@ -816,9 +816,8 @@ namespace DMTServices
         /// <returns>DataTable</returns>
         public DataTable DoSQLdt(string selectStr)
         {
-            myDataReader rdr =DoSql(selectStr, selectStr.StartsWith("SELECT", StringComparison.CurrentCultureIgnoreCase) || selectStr.StartsWith("EXEC", StringComparison.CurrentCultureIgnoreCase));
             DataTable dt = new DataTable();
-            dt.Load(rdr);
+            dt.Load(DoSQLnr(selectStr));
             return dt;
         }
 
