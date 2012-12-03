@@ -85,6 +85,7 @@ namespace DMTServices
         private myTransaction trans = null;
 
         public string ConnectionData = string.Empty;   // this is the actual connection info
+        public int defTimeOut = 120;
         public MessLog Mess = null;
         public string LastError = string.Empty;
 
@@ -768,8 +769,6 @@ namespace DMTServices
         public int RowsAffected = 0;
         private bool createdSqlConn = false;
         
-        private int defTimeOut = 120;
-
         private List<string> frdrFields = new List<string>();
 
         /// <summary>
@@ -935,7 +934,7 @@ namespace DMTServices
                         
                         SQLParams.Clear();
                     }
-                    cmd.CommandTimeout = defTimeOut;
+                    cmd.CommandTimeout = fParent.defTimeOut;
                     RowsAffected = 0;
                     if (select)
                         rdr = cmd.ExecuteReader();
@@ -1321,8 +1320,8 @@ namespace DMTServices
 
         public int cmdTimeOut
         {
-            get { return defTimeOut; }
-            set { defTimeOut = value; }
+            get { return fParent.defTimeOut; }
+            set { fParent.defTimeOut = value; }
         }
 
         // fills the ArrayList keys with any and all @xxxx data found in the string select
