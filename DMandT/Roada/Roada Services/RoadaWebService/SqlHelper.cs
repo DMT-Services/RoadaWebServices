@@ -707,6 +707,18 @@ namespace DMTServices
         }
 
         /// <summary>
+        /// Fixup CR/LF by substituting with char(13) + char(10)
+        /// </summary>
+        /// <param name="s"></param>
+        /// <returns>with + char(13) + char(10) appended to the string</returns>
+        public string FixCRLF(string Value)
+        {
+            if (DataSource == dbType.SqlServer)
+                Value = Value.Replace("\r\n", "' + char(13) + char(10) + '");
+            return Value;
+        }
+        
+        /// <summary>
         /// build an SQL update statement from the value pairs
         /// </summary>
         public string BuildUpdate(string prefix, string suffix)
@@ -721,7 +733,7 @@ namespace DMTServices
                 sqlcmd.Append(FieldFixUp(ColumnList[i]) + "=");
                 string v = ValueList[i].ToString();
                 if ((QuotedList[i]) || (v.Length == 0))
-                    sqlcmd.Append("'" + FixUp(v) + "'");
+                    sqlcmd.Append("'" + FixCRLF(FixUp(v)) + "'");
                 else
                     sqlcmd.Append(v);
             }
