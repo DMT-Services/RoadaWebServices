@@ -85,7 +85,7 @@ namespace DMTServices
         private myTransaction trans = null;
 
         public string ConnectionData = string.Empty;   // this is the actual connection info
-        public int defTimeOut = 120;
+        public int defTimeOut = 120; 
         public MessLog Mess = null;
         public string LastError = string.Empty;
 
@@ -671,21 +671,13 @@ namespace DMTServices
             return GetConnectionString(string.Empty);
         }
 
-        private string GetConnectionString(bool mobil)
-        {
-            if (mobil)
-                return GetConnectionString("MobileDataConnectionString");       // this was the name in our first .net project....
-            else
-                return GetConnectionString("LocalSqlServer");
-        }
-
         private string GetConnectionString(string ConnectName)
         {
 #if ! NO_CONNECTION_MANAGER
             // You have to include 'System.configuration' in your Project to get the following to compile
             //  (right click References and select Add Reference... in Solution Explorer  --> )
             if (ConnectName.Length == 0)
-                ConnectName = "MobileDataConnectionString";             // default to this if passed as ""
+                ConnectName = "DbConnectionString";             // default to this if passed as ""
 
             // To avoid storing the connection string in your code, 
             // you can retrieve it from a configuration file, using the 
@@ -1116,6 +1108,22 @@ namespace DMTServices
         public bool nullDate(string field)
         {
             return dtfetch(field) == DateTime.MinValue;
+        }
+
+        public void cmdAbort()
+        {
+            // cancel any command
+            // (you MUST do this when you DON'T get all rows from the 'select' otherwise
+            //  you might have to wait for them to be returned anyway!)
+            if (cmd != null)
+            {
+                try
+                {
+                    cmd.Cancel();
+                }
+                catch { }
+                cmd = null;
+            }
         }
 
         /// <summary>
