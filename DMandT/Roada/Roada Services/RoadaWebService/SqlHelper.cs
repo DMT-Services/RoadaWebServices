@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Globalization;
 using System.Data;
+using System.Linq;
 
 #if NET20
 namespace System.Runtime.CompilerServices
@@ -449,6 +450,7 @@ namespace DMTServices
         /// <param name="o"></param>
         /// <param name="quotes"></param>
         /// <returns></returns>
+#if CRAP
         public int Add(string colName, List<string> o, bool quotes)
         {
             return Add(colName, new ArrayList(o), quotes);
@@ -465,6 +467,27 @@ namespace DMTServices
         public int Add(string colName, List<int> o)
         {
             return Add(colName, new ArrayList(o), false);
+        }
+#endif
+
+        public int Add(string colName, HashSet<string> items, bool quotes)
+        {
+            return Add(colName, new ArrayList(items.ToArray()), quotes);
+        }
+
+        public int Add(string colName, HashSet<int> items)
+        {
+            return Add(colName, new ArrayList(items.ToArray()), false);
+        }
+
+        public int Add(string colName, List<int> items)
+        {
+            return Add(colName, new ArrayList(items), false);
+        }
+
+        public int Add(string colName, List<string> items, bool quotes)
+        {
+            return Add(colName, new ArrayList(items), quotes);
         }
 
         /// <summary>
@@ -660,11 +683,35 @@ namespace DMTServices
 #endif
 
         /// <summary>
+        /// Fixup CR/LF by substituting with char(13) + char(10)
+        /// </summary>
+        /// <param name="s"></param>
+        /// <returns>with + char(13) + char(10) appended to the string</returns>
+        public string FixCRLF(string Value)
+        {
+            if (DataSource == dbType.SqlServer)
+                Value = Value.Replace("\r\n", "'+char(13)+char(10)+'");
+            return Value;
+        }
+
+        /// <summary>
         /// double up any quotes that are in a string
         /// </summary>
         public static string FixUp(string Value)
         {
             return Value.Replace("'", "''");
+        }
+
+        /// <summary>
+        /// double up any quotes that are in a string AND
+        /// Fixup CR/LF by substituting with char(13) + char(10) (if SqlServer, not sure how to do it for other DataSources)
+        /// </summary>
+        public string FixUpEx(string Value)
+        {
+            Value = Value.Replace("'", "''");
+            if (DataSource == dbType.SqlServer)
+                Value = Value.Replace("\r\n", "'+char(13)+char(10)+'");
+            return Value;
         }
 
         /// <summary>
@@ -707,18 +754,6 @@ namespace DMTServices
         }
 
         /// <summary>
-        /// Fixup CR/LF by substituting with char(13) + char(10)
-        /// </summary>
-        /// <param name="s"></param>
-        /// <returns>with + char(13) + char(10) appended to the string</returns>
-        public string FixCRLF(string Value)
-        {
-            if (DataSource == dbType.SqlServer)
-                Value = Value.Replace("\r\n", "' + char(13) + char(10) + '");
-            return Value;
-        }
-        
-        /// <summary>
         /// build an SQL update statement from the value pairs
         /// </summary>
         public string BuildUpdate(string prefix, string suffix)
@@ -733,7 +768,7 @@ namespace DMTServices
                 sqlcmd.Append(FieldFixUp(ColumnList[i]) + "=");
                 string v = ValueList[i].ToString();
                 if ((QuotedList[i]) || (v.Length == 0))
-                    sqlcmd.Append("'" + FixCRLF(FixUp(v)) + "'");
+                    sqlcmd.Append("'" + FixUpEx(v) + "'");
                 else
                     sqlcmd.Append(v);
             }
@@ -771,7 +806,7 @@ namespace DMTServices
                     sqlcmd.Append(",");
                 string v = (string)ValueList[i];
                 if ((QuotedList[i]) || (v.Length == 0))
-                    sqlcmd.Append("'" + FixUp(v) + "'");
+                    sqlcmd.Append("'" + FixUpEx(v) + "'");
                 else
                     sqlcmd.Append(v);
             }
@@ -830,7 +865,7 @@ namespace DMTServices
                         else
                             v = (string)av[j];
                         if (QuotedList[i] || (v.Length == 0))
-                            v = "'" + FixUp(v) + "'";
+                            v = "'" + FixUpEx(v) + "'";
 
                         if (j > 0)
                             s += ",";
@@ -853,7 +888,7 @@ namespace DMTServices
                     sqlcmd.Append(FieldFixUp(ColumnList[i]) + Compare);
 
                     if (QuotedList[i] || (v.Length == 0))
-                        sqlcmd.Append("'" + FixUp(v) + "'");
+                        sqlcmd.Append("'" + FixUpEx(v) + "'");
                     else
                         sqlcmd.Append(v);
                 }
@@ -902,7 +937,7 @@ namespace DMTServices
                     sqlcmd = sqlcmd + ", ";
                 string v = (string)ValueList[i];
                 if ((QuotedList[i]) || (v.Length == 0))
-                    sqlcmd = sqlcmd + "'" + FixUp(v) + "'";
+                    sqlcmd = sqlcmd + "'" + FixUpEx(v) + "'";
                 else
                     sqlcmd = sqlcmd + v;
             }
