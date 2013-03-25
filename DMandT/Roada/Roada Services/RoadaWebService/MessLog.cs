@@ -138,7 +138,12 @@ namespace DMTServices
 
         public override int Add(object mess)
         {
-            int rc = base.Add(DateTime.Now.ToString(DATEFORMAT) + " - " + mess);
+            int rc = 0;
+            try
+            {
+                rc = base.Add(DateTime.Now.ToString(DATEFORMAT) + " - " + mess);
+            }
+            catch { }
             if (maxItems > 0)
                 if (Count >= maxItems)
                 {
