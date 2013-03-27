@@ -129,7 +129,11 @@ namespace DMTServices
         {
             int rc = Count;
             if (Count > 0)
-                base[Count - 1] += mess;
+                try
+                {
+                    base[Count - 1] += mess;
+                }
+                catch { }
             else
                 rc = Add(mess);
 
