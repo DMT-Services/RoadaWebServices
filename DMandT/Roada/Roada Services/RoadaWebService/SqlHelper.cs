@@ -241,6 +241,40 @@ namespace DMTServices
         }
 
         /// <summary>
+        /// add a double amount to a fieldname and value pair in the list
+        /// (it will be added if it doesn't already exist)
+        /// </summary>
+        public int AddAmount(string colName, double value)
+        {
+            int Result;
+
+            Result = FindIndex(colName);    // make sure doesn't already exist
+            if (Result == -1)
+                Result = Add(colName, value);
+            else
+                ValueList[Result] = (Convert.ToDouble(ValueList[Result]) + value).ToString();
+
+            return Result;
+        }
+
+        /// <summary>
+        /// add a integer amount to a fieldname and value pair in the list
+        /// (it will be added if it doesn't already exist)
+        /// </summary>
+        public int AddAmount(string colName, int value)
+        {
+            int Result;
+            
+            Result = FindIndex(colName);    // make sure doesn't already exist
+            if (Result == -1)
+                Result = Add(colName, value);
+            else
+                ValueList[Result] = (Convert.ToInt32(ValueList[Result]) + value).ToString();
+
+            return Result;
+        }
+
+        /// <summary>
         /// </summary>
         public int Change(string colName, string value)
         {
