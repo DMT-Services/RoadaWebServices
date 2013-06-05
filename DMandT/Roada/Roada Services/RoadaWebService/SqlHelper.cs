@@ -673,6 +673,16 @@ namespace DMTServices
         }
 
 
+        /// <summary>
+        /// return the date formatted to {ts 'date'}
+        /// </summary>
+        /// <param name="date"></param>
+        /// <returns></returns>
+        public static string timeStamp(DateTime date)
+        {
+            return "{ts '" + date.ToString("yyyy-MM-dd HH:mm:ss") + "'}";
+        }
+
         // 'older' Oracle's connection stuff doesn't appear to have the GetSchema function?
 #if !ORACLEDB
         // pass in 2 table names and create a
