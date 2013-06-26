@@ -292,10 +292,13 @@ namespace DMTServices
 
         public string CheckCols(string colName)
         {
-            string[] check = { "order", "desc", "key", "user", "type" };
-            foreach (string s in check)
-                if (colName == s)
-                    return "[" + colName + "]";
+            if (DataSource == dbType.SqlServer)
+            {
+                string[] check = { "order", "desc", "key", "user", "type" };
+                foreach (string s in check)
+                    if (colName == s)
+                        return "[" + colName + "]";
+            }
             return colName;
         }
 
