@@ -677,6 +677,30 @@ namespace DMTServices
 
 
         /// <summary>
+        /// Static version of above function
+        /// NOTE!! Slightly different, uses the _id_seq sequencer name in Oracle, above non-status DOES NOT!
+        /// </summary>
+        /// <param name="field"></param>
+        /// <param name="tablename"></param>
+        /// <returns></returns>
+        public string LastAutoIncId(string field, string tablename)
+        {
+            string res;
+            switch (DataSource)
+            {
+                case dbType.Oracle:
+                    res = string.Format("select {0}_id_seq.currval as {1} from dual", tablename, field);
+                    break;
+                //case dbType.SqlServer:
+                default:
+                    res = string.Format("SELECT IDENT_CURRENT('{0}') as {1}", tablename, field);
+                    break;
+            }
+            return res;
+        }
+
+
+        /// <summary>
         /// return the date formatted to {ts 'date'}
         /// </summary>
         /// <param name="date"></param>
