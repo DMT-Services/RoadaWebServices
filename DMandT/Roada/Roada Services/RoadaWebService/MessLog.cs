@@ -175,83 +175,92 @@ namespace DMTServices
         private void iFlush(string msg)
         {
             // add in any message passed to this function...
-            if (msg.Length > 0)
-                Add(msg);
-
-            if (Count > 0)
+            try
             {
-                int nDayOfWeek;
-                // A 'new' log file each day...
-                if (OnePerDay)
-                {
-                    if (FullMonth)
-                        nDayOfWeek = DateTime.Now.Day;
-                    else
-                        nDayOfWeek = (int)DateTime.Now.DayOfWeek + 1;       // Sunday is 0, make it 1
-
-                    if (LDayOfWeek != nDayOfWeek)
-                    {
-                        OpenFile = GetDtFileName();
-                        if (OverWrite)
-                        {
-                            if (myFile.Exists(OpenFile))
-                                myFile.Delete(OpenFile);
-                            AddVersion = !noStartMsg;
-                        }
-                    }
-                }
-
-                try
-                {
-                    // open the file for read/write and allow others to share it too...
-                    FileStream fsw = new FileStream(OpenFile, FileMode.OpenOrCreate);//, FileAccess.ReadWrite);//, FileShare.ReadWrite);
+                if (msg.Length > 0)
                     try
                     {
-                        // create the 'writer' to the file...
-                        StreamWriter sw = new StreamWriter(fsw);
+                        base.Add(DateTime.Now.ToString(DATEFORMAT) + " - " + msg);
+                    }
+                    catch { }
+
+
+                if (Count > 0)
+                {
+                    int nDayOfWeek;
+                    // A 'new' log file each day...
+                    if (OnePerDay)
+                    {
+                        if (FullMonth)
+                            nDayOfWeek = DateTime.Now.Day;
+                        else
+                            nDayOfWeek = (int)DateTime.Now.DayOfWeek + 1;       // Sunday is 0, make it 1
+
+                        if (LDayOfWeek != nDayOfWeek)
+                        {
+                            OpenFile = GetDtFileName();
+                            if (OverWrite)
+                            {
+                                if (myFile.Exists(OpenFile))
+                                    myFile.Delete(OpenFile);
+                                AddVersion = !noStartMsg;
+                            }
+                        }
+                    }
+
+                    try
+                    {
+                        // open the file for read/write and allow others to share it too...
+                        FileStream fsw = new FileStream(OpenFile, FileMode.OpenOrCreate);//, FileAccess.ReadWrite);//, FileShare.ReadWrite);
                         try
                         {
-                            // go to end of file...
-                            fsw.Seek(0, SeekOrigin.End);
-
-                            if (AddVersion)
+                            // create the 'writer' to the file...
+                            StreamWriter sw = new StreamWriter(fsw);
+                            try
                             {
-                                try
+                                // go to end of file...
+                                fsw.Seek(0, SeekOrigin.End);
+
+                                if (AddVersion)
                                 {
-                                    sw.WriteLine(".....................  Version - " + Assembly.GetExecutingAssembly().GetName().Version.ToString());
+                                    try
+                                    {
+                                        sw.WriteLine(".....................  Version - " + Assembly.GetExecutingAssembly().GetName().Version.ToString());
+                                    }
+                                    catch { }
+                                    AddVersion = false;
                                 }
-                                catch { }
-                                AddVersion = false;
+
+                                for (int i = 0; i < Count; i++)
+                                    sw.WriteLine(this[i]);
+                                // clear out the ArrayList...
+                                this.Clear();
                             }
-                            
-                            for (int i = 0; i < Count; i++)
-                                sw.WriteLine(this[i]);
-                            // clear out the ArrayList...
-                            this.Clear();
+                            //catch (Exception e)
+                            //{
+                            //    Add("Ex - sw: " + e.Message);
+                            //}
+                            finally
+                            {
+                                sw.Close();
+                            }
                         }
                         //catch (Exception e)
                         //{
-                        //    Add("Ex - sw: " + e.Message);
+                        //    Add("Ex - fsw: " + e.Message);
                         //}
                         finally
                         {
-                            sw.Close();
+                            fsw.Close();
                         }
                     }
-                    //catch (Exception e)
-                    //{
-                    //    Add("Ex - fsw: " + e.Message);
-                    //}
-                    finally
+                    catch // (Exception e)
                     {
-                        fsw.Close();
+                        // Add("OverAll -" + e.Message);
                     }
                 }
-                catch // (Exception e)
-                {
-                      // Add("OverAll -" + e.Message);
-                }
             }
+            catch { }
         }
 
         public string GetDtFileName()
