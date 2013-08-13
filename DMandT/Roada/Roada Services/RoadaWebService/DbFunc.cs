@@ -1864,6 +1864,48 @@ namespace DMTServices
             }
         }
 
+        // these 2 funcs are not really doing what you might think, but they will give a value
+        // based on the first 3 chars of the string...
+        public static Int64 AsciiToInt(object o)
+        {
+            return AsciiToInt(o, 0);
+        }
+
+        public static Int64 AsciiToInt(object o, int def)
+        {
+            try
+            {
+                if (o == null || o is System.DBNull)
+                    return def;
+                else
+                {
+                    if (o is string || o is char)
+                    {
+                        string val = (o is char) ? ((char)o).ToString() : (string)o;
+                        Int64 i = 0;
+                        int j = 0;
+                        foreach (char c in val) 
+                        {
+                            i *= 255;
+                            i += c;
+                            if (++j > 2)
+                                break;
+                        }
+                        for (; j < 3; j++)
+                            i *= 255;
+
+                        return i;
+                    }
+                    else
+                        return def;
+                }
+            }
+            catch
+            {
+                return def;
+            }
+        }
+
         public static Int64 ToInt64(object o)
         {
             return ToInt64(o, 0);
