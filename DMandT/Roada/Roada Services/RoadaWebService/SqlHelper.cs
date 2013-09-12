@@ -136,6 +136,21 @@ namespace DMTServices
             return ColumnList.Count > 0;
         }
 
+        public bool Empty()
+        {
+            bool rc = true;
+            for (int i = 0; i < ColumnList.Count; i++)
+            {
+                if (!string.IsNullOrEmpty(ValueList[i].ToString()))     // this 'might' need some work, what if it's 0.0 ?
+                    if (ValueList[i].ToString().ToLower() != "null" && ValueList[i].ToString() != "0")
+                    {
+                        rc = false;
+                        break;
+                    }
+            }
+            return rc;
+        }
+
         /// <summary>
         /// find the columns index
         /// </summary>
