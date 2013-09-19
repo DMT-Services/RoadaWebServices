@@ -2022,8 +2022,12 @@ namespace DMTServices
             if (time.Length > l)
                 time = time.Substring(time.Length - l);
             else
-                time = ((new string('0', l)) + time).Substring(time.Length);
-            return date.Date + myConvert.ToDateTime(time, DateTime.MinValue, fmt).TimeOfDay;
+                time = time.PadLeft(fmt.Length, '0');
+
+            DateTime rc = ToDateTime(time, DateTime.MinValue, fmt);
+            if (rc != DateTime.MinValue)
+                rc = date.Date.Add(rc.TimeOfDay);
+            return rc;
         }
 
         public static byte[] ToByteArray(object o)
