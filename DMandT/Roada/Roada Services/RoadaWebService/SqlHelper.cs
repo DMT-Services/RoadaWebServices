@@ -136,17 +136,34 @@ namespace DMTServices
             return ColumnList.Count > 0;
         }
 
+        /// <summary>
+        /// check all ValueList values for a non-zero (or DateTime.MinValue or string.Empty or etc) value
+        /// </summary>
+        /// <returns></returns>
         public bool Empty()
         {
             bool rc = true;
             for (int i = 0; i < ColumnList.Count; i++)
             {
-                if (!string.IsNullOrEmpty(ValueList[i].ToString()))     // this 'might' need some work, what if it's 0.0 ?
-                    if (ValueList[i].ToString().ToLower() != "null" && ValueList[i].ToString() != "0")
+                if (ValueList[i].ToString().ToLower() != "null")
+                    switch (Type.GetTypeCode(ValueList[i].GetType()))
                     {
-                        rc = false;
-                        break;
+                        case TypeCode.DateTime:
+                            rc = ((DateTime)ValueList[i] == DateTime.MinValue);
+                            break;
+                        case TypeCode.Int32:
+                            rc = ((int)ValueList[i] == 0);
+                            break;
+                        case TypeCode.Double:
+                            rc = ((Double)ValueList[i] == 0.0);
+                            break;
+                        default:
+                            // these checks 'might' need some work?
+                            rc = (string.IsNullOrEmpty(ValueList[i].ToString()) || ValueList[i].ToString() == "0");
+                            break;
                     }
+                if (!rc)
+                    break;
             }
             return rc;
         }
@@ -417,6 +434,38 @@ namespace DMTServices
                 return Add(colName, 1);
             else
                 return Add(colName, 0);
+        }
+
+        public int AddnotEmtpy(string colName, double value)
+        {
+            int rc = -1;
+            if (value != 0.0)
+                rc = Add(colName, value);
+            return rc;
+        }
+
+        public int AddnotEmtpy(string colName, int value)
+        {
+            int rc = -1;
+            if (value != 0)
+                rc = Add(colName, value);
+            return rc;
+        }
+
+        public int AddnotEmtpy(string colName, string value)
+        {
+            int rc = -1;
+            if (!string.IsNullOrEmpty(value))
+                rc = Add(colName, value);
+            return rc;
+        }
+
+        public int AddnotEmtpy(string colName, DateTime value)
+        {
+            int rc = -1;
+            if (value != DateTime.MinValue)
+                rc = Add(colName, value);
+            return rc;
         }
 
         /// <summary>
