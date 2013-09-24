@@ -1465,7 +1465,8 @@ namespace DMTServices
         public object ofetch(string field)
         {
             if (ColumnExists(field))
-                return dr[field];
+                if (!(dr[field] is System.DBNull))
+                    return dr[field];
             return null;
         }
 
