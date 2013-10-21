@@ -2026,8 +2026,8 @@ namespace DMTServices
                 time = time.PadLeft(fmt.Length, '0');
 
             DateTime rc = ToDateTime(time, DateTime.MinValue, fmt);
-            if (rc != DateTime.MinValue)
-                rc = date.Date.Add(rc.TimeOfDay);
+            //if (rc != DateTime.MinValue)      if time passed in is "0", rc WILL BE MinValue, but we should still add it to date.Date
+            rc = date.Date.Add(rc.TimeOfDay);
             return rc;
         }
 
