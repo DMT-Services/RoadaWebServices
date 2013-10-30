@@ -5,6 +5,7 @@ using System;
 using System.Data;
 using System.Data.Common;
 using System.Text;
+using System.Linq;
 using System.Configuration;
 using System.Collections;
 using System.Collections.Generic;
@@ -746,7 +747,22 @@ namespace DMTServices
         /// <param name="func">function name which called it</param>
         /// <param name="cmd">SQL command string</param>
         public delegate void TimeOverEventHandler(object sender, double totSecs, string func, string cmd);
-        static public event TimeOverEventHandler TimeOverEvent = null;
+
+        static private event TimeOverEventHandler timeOverEvent = null;
+        static public event TimeOverEventHandler TimeOverEvent
+        {
+            add
+            {
+                if (timeOverEvent == null || !timeOverEvent.GetInvocationList().Contains(value))
+                {
+                    timeOverEvent += value;
+                }
+            }
+            remove
+            {
+                timeOverEvent -= value;
+            }
+        }
 
         private myDbCommand cmd = null;
         private myDataReader rdr = null;
@@ -946,8 +962,8 @@ namespace DMTServices
                     }
                     try
                     {
-                        if (TimeOverEvent != null)
-                            TimeOverEvent(this, new TimeSpan(DateTime.Now.Ticks).Subtract(ts).TotalSeconds, "DoSQL", selectStr);
+                        if (timeOverEvent != null)
+                            timeOverEvent(this, new TimeSpan(DateTime.Now.Ticks).Subtract(ts).TotalSeconds, "DoSQL", selectStr);
                     }
                     catch { }
                 }
@@ -993,8 +1009,8 @@ namespace DMTServices
                 {
                     TimeSpan ts = new TimeSpan(DateTime.Now.Ticks);
                     bool Result = rdr.Read();
-                    if (TimeOverEvent != null)
-                        TimeOverEvent(this, new TimeSpan(DateTime.Now.Ticks).Subtract(ts).TotalSeconds, "dbSkip", cmd.CommandText);
+                    if (timeOverEvent != null)
+                        timeOverEvent(this, new TimeSpan(DateTime.Now.Ticks).Subtract(ts).TotalSeconds, "dbSkip", cmd.CommandText);
                     return Result;
                 }
                 catch (Exception e)
