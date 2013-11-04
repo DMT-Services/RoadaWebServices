@@ -468,6 +468,68 @@ namespace DMTServices
             return rc;
         }
 
+
+        /// <summary>
+        /// add in the double value, but ONLY if stmt has no data, or different data than what is in stmt
+        /// </summary>
+        /// <param name="colName"></param>
+        /// <param name="value"></param>
+        /// <param name="stmt"></param>
+        /// <returns>greater than 0, added</returns>
+        public int addDiff(string colName, double value, SqlStmt stmt)
+        {
+            int rc = -1;
+            if (!stmt.hasData() || value != stmt.dfetch(colName))
+                rc = Add(colName, value);
+            return rc;
+        }
+
+        /// <summary>
+        /// add in the int value, but ONLY if stmt has no data, or different data than what is in stmt
+        /// </summary>
+        /// <param name="colName"></param>
+        /// <param name="value"></param>
+        /// <param name="stmt"></param>
+        /// <returns>greater than 0, added</returns>
+        public int addDiff(string colName, int value, SqlStmt stmt)
+        {
+            int rc = -1;
+            if (!stmt.hasData() || value != stmt.ifetch(colName))
+                rc = Add(colName, value);
+            return rc;
+        }
+
+        /// <summary>
+        /// add in the string value, but ONLY if stmt has no data, or different data than what is in stmt
+        /// </summary>
+        /// <param name="colName"></param>
+        /// <param name="value"></param>
+        /// <param name="stmt"></param>
+        /// <returns>greater than 0, added</returns>
+        public int addDiff(string colName, string value, SqlStmt stmt)
+        {
+            int rc = -1;
+            if (!stmt.hasData() || value != stmt.fetch(colName))
+                rc = Add(colName, value);
+            return rc;
+        }
+
+        /// <summary>
+        /// add in the DateTime value, but ONLY if stmt has no data, or different data than what is in stmt
+        /// </summary>
+        /// <param name="colName"></param>
+        /// <param name="value"></param>
+        /// <param name="stmt"></param>
+        /// <returns>greater than 0, added</returns>
+        public int addDiff(string colName, DateTime value, SqlStmt stmt)
+        {
+            int rc = -1;
+            if (!stmt.hasData() || value != stmt.dtfetch(colName))
+                rc = Add(colName, value);
+            return rc;
+        }
+
+
         /// <summary>
         /// add the database now() 
         /// <param name="colName">SQL column to store it to</param>
@@ -718,6 +780,36 @@ namespace DMTServices
             DataSource = typ;
         }
 
+
+        /*
+            Please note the following information on SQLServer for the 3 ways to get Identity Insert values:
+
+            SELECT @@IDENTITY
+             It returns the last IDENTITY value produced on a connection, 
+             regardless of the table that produced the value, and regardless 
+             of the scope of the statement that produced the value.
+             @@IDENTITY will return the last identity value entered into a table 
+             in your current session. While @@IDENTITY is limited to the current 
+             session, it is not limited to the current scope. If you have a trigger 
+             on a table that causes an identity to be created in another table, 
+             you will get the identity that was created last, even if it was the 
+             trigger that created it.
+
+            SELECT SCOPE_IDENTITY()
+             It returns the last IDENTITY value produced on a connection and by 
+             a statement in the same scope, regardless of the table that produced the value.
+             SCOPE_IDENTITY(), like @@IDENTITY, will return the last identity value created 
+             in the current session, but it will also limit it to your current scope as well. 
+             In other words, it will return the last identity value that you explicitly created, 
+             rather than any identity that was created by a trigger or a user defined function.
+
+            SELECT IDENT_CURRENT(‘tablename’)
+             It returns the last IDENTITY value produced in a table, regardless of the connection 
+             that created the value, and regardless of the scope of the statement that produced the value.
+             IDENT_CURRENT is not limited by scope and session; it is limited to a specified table. 
+             IDENT_CURRENT returns the identity value generated for a specific table in any session 
+             and any scope. 
+        */
         /// <summary>
         /// returns the query string that would get the value of the last auto increment 
         /// <param name="field">fieldname the value would be fetched from</param>
@@ -729,11 +821,12 @@ namespace DMTServices
             switch (DataSource)
             {
                 case dbType.Oracle:
-                    res = "select " + tablename + ".currval as " + field + " from dual";
+                    res = string.Format("select {0}.currval as {1} from dual", tablename, field);
                     break;
                 //case dbType.SqlServer:
                 default:
-                    res = "SELECT IDENT_CURRENT('" + tablename + "') as " + field;
+                    res = string.Format("SELECT IDENT_CURRENT('{0}') as {1}", tablename, field);
+                    //res = string.Format("SELECT SCOPE_IDENTITY() as {0}", field);
                     break;
             }
             return res;
@@ -758,6 +851,7 @@ namespace DMTServices
                 //case dbType.SqlServer:
                 default:
                     res = string.Format("SELECT IDENT_CURRENT('{0}') as {1}", tablename, field);
+                    //res = string.Format("SELECT SCOPE_IDENTITY() as {0}", field);
                     break;
             }
             return res;

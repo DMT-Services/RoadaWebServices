@@ -749,6 +749,7 @@ namespace DMTServices
         public delegate void TimeOverEventHandler(object sender, double totSecs, string func, string cmd);
 
         static private event TimeOverEventHandler timeOverEvent = null;
+        // this is to prevent 'adding in' the event multiple times...
         static public event TimeOverEventHandler TimeOverEvent
         {
             add
@@ -776,7 +777,9 @@ namespace DMTServices
 
         public int RowsAffected = 0;
         private bool createdSqlConn = false;
-        
+
+        private bool rdrEOF = true; // best to start with EOF on, until we DoSql()...
+
         private List<string> frdrFields = new List<string>();
 
         /// <summary>
@@ -876,6 +879,7 @@ namespace DMTServices
 
                 // if you call DoSql in a loop, you need to .Close the previous result set...
                 rdrClose();
+                rdrEOF = true;
 
                 // this is here to support older versions...
                 //if (createdSqlConn)
@@ -980,6 +984,9 @@ namespace DMTServices
                 LastError = e.Message;
                 rdrClose();
             }
+            
+            if (rdr != null)
+                rdrEOF = !rdr.HasRows;
 
             return rdr;
         }
@@ -1003,26 +1010,25 @@ namespace DMTServices
         /// <summary>gets the next result record from an sql statement</summary>
         public bool dbSkip()
         {
+            bool rc = false;
             if (rdr != null)
             {
                 try
                 {
                     TimeSpan ts = new TimeSpan(DateTime.Now.Ticks);
-                    bool Result = rdr.Read();
+                    rc = rdr.Read();
                     if (timeOverEvent != null)
                         timeOverEvent(this, new TimeSpan(DateTime.Now.Ticks).Subtract(ts).TotalSeconds, "dbSkip", cmd.CommandText);
-                    return Result;
                 }
                 catch (Exception e)
                 {
                     if (fParent.Mess != null)
                         fParent.Mess.Flush("dbSkip() Exception - " + e.Message);
                     LastError = e.Message;
-                    return false;
                 }
             }
-            else
-                return false;
+            rdrEOF = !rc;
+            return rc;
         }
 
         /// <summary>Adds fields for binding to a sql statement</summary>
@@ -1044,6 +1050,12 @@ namespace DMTServices
         public void Clear()
         {
             SQLParams.Clear();
+            rdrEOF = true;
+        }
+
+        public bool hasData()
+        {
+            return !rdrEOF;
         }
 
         public object ofetch(int column)
