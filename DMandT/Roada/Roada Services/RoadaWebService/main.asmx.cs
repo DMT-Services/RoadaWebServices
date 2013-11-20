@@ -897,9 +897,17 @@ namespace RoadaWebService
             return GetReplicationDataX(request, dbCode, "", -1, startRecord);
         }
 
+
         [WebMethod(Description = "Retrieves replication data from the server")]
-        public ReplicationData[] GetReplicationDataX( Request request,
-                                                      string dbCode, string region, int histMax, int startRecord )
+        public ReplicationData[] GetReplicationDataX(Request request,
+                                                      string dbCode, string region, int histMax, int startRecord)
+        {
+            return GetReplicationDataY(request, dbCode, region, histMax, startRecord, 0);
+        }
+
+        [WebMethod(Description = "Retrieves replication data from the server")]
+        public ReplicationData[] GetReplicationDataY( Request request,
+                                                      string dbCode, string region, int histMax, int startRecord, int limit )
         {
             /* Note:    For DB that have multiple regions (and a lot of data across them), we can narrow what we
              *          replicate by "region" (see 'yard' table, 'name' field).  As well, should there be a lot
@@ -975,16 +983,14 @@ namespace RoadaWebService
 
                                 repList = new List<ReplicationData>();
 
-                                string sql;
-
-                                if (histMax > -1)           // New mode added by KRS 8/27/2012.
-                                    sql = string.Format("SELECT * FROM datarep WHERE record_id > {0} and client_id != {1} AND idate >= '{2}' ORDER BY record_id",
-                                                        startRecord, request.CustId, max.ToString("yyyy-MM-dd"));
-
-                                else
-                                    sql = string.Format("SELECT * FROM datarep WHERE record_id > {0} and client_id != {1} ORDER BY record_id",
+                                string sql = "SELECT ";
+                                if (limit > 0)      // added a limit
+                                    sql += string.Format("TOP {0} ", limit);
+                                sql += string.Format("* FROM datarep WHERE record_id > {0} and client_id != {1}",
                                                         startRecord, request.CustId);
-
+                                if (histMax > -1)
+                                    sql +=  string.Format(" AND idate >= '{0}'", max.ToString("yyyy-MM-dd"));
+                                sql += " ORDER BY record_id";
                                 bool rc = stmt.DoSQL(sql);
                                 while (rc)
                                 {
