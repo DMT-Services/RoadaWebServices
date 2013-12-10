@@ -736,7 +736,7 @@ namespace DMTServices
         /// <param name="param">passed parameters to the SQL string</param>
         public delegate void ReplicationEventHandler(object sender, myDbCommand cmd);
         static public event ReplicationEventHandler ReplicationEvent;
-        public bool IgnoreReplicate = false;
+        public bool IgnoreReplicate = true;
 #endif
         /// <summary>
         /// this event is called provided it's not null
@@ -1915,13 +1915,13 @@ namespace DMTServices
                         int j = 0;
                         foreach (char c in val) 
                         {
-                            i *= 255;
+                            i *= 256;
                             i += c;
                             if (++j > 2)
                                 break;
                         }
                         for (; j < 3; j++)
-                            i *= 255;
+                            i *= 256;
 
                         return i;
                     }
