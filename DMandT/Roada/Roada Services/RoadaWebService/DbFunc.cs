@@ -545,6 +545,68 @@ namespace DMTServices
             return myConvert.DataTableToStringArray(GetSchema(tableName, index));
         }
 
+        // check if ALL strings in fields are also in nFields
+        private int checkFields(List<string> nFields, string[] fields)
+        {
+            int rc = 0;
+            if (nFields.Count > 0)
+            {
+                bool ok = true;
+                foreach (string field in fields)
+                    if (nFields.Contains(field.ToLower()))
+                        nFields.Remove(field.ToLower());
+                    else
+                    {
+                        ok = false;
+                        break;
+                    }
+
+                
+                if (ok)
+                    if (nFields.Count() == 0)
+                        rc = 1;
+                    else
+                        // if there is one 'extra' field and it's 'id', allow that as a match (but return 2 to indicate this)
+                        if (nFields.Count() == 1 && nFields[0] == "id")
+                            rc = 2;
+            }
+
+            return rc;
+        }
+
+        public string checkIndex(string tableName, string indexName, string[] fields)
+        {
+            string rc = string.Empty;
+            DataTable dat = GetSchema(tableName, true);
+            string ndxName = "-=-=-";
+            List<string> nFields = new List<string>();
+            foreach (DataRow dr in dat.Rows)
+            {
+                string indxName = dr["index_name"].ToString().ToLower();
+                if (indxName != ndxName)
+                {
+                    int ok = checkFields(nFields, fields);
+                    nFields.Clear();
+                    if (ok > 0)
+                    {
+                        rc = ndxName;
+                        if (ok == 1)    // if ok == 2, then match found but had 3rd column; id
+                            break;
+                    }
+                    ndxName = indxName;
+                }
+
+                string col = dr["column_name"].ToString().ToLower();
+                nFields.Add(col);
+            }
+
+            if (rc == string.Empty)
+                if (checkFields(nFields, fields) > 0)
+                    rc = ndxName;
+
+            return rc;
+        }
+
         private string GetUser()
         {
             DbConnectionStringBuilder builder = new DbConnectionStringBuilder();
