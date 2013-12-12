@@ -85,6 +85,9 @@ namespace DMTServices
         private myDbConnection connDb = null;
         private myTransaction trans = null;
 
+        /// <summary>
+        /// This is the actual connection string
+        /// </summary>
         public string ConnectionData = string.Empty;   // this is the actual connection info
         public int defTimeOut = 120; 
         public MessLog Mess = null;
@@ -96,13 +99,16 @@ namespace DMTServices
         private List<SqlStmt> stmts = new List<SqlStmt>();
 
         /// <summary>
-        /// Create the handle with nothing...
+        /// Create the handle passing in the Connection name in the .config file...
         /// </summary>
         public SqlConn(string connStr)
         {
             ConfigStr = connStr;
         }
 
+        /// <summary>
+        /// Create the handle with no connection data
+        /// </summary>
         public SqlConn()
         {
         }
@@ -574,23 +580,32 @@ namespace DMTServices
             return rc;
         }
 
-        public string checkIndex(string tableName, string indexName, string[] fields)
+        public string checkIndex(string tableName, string[] fields)
         {
+            int dummy;
+            return checkIndex(tableName, fields, out dummy);
+        }
+
+        public string checkIndex(string tableName, string[] fields, out int idInc)
+        {
+            idInc = 0;
             string rc = string.Empty;
             DataTable dat = GetSchema(tableName, true);
             string ndxName = "-=-=-";
+            int ok = 0;
             List<string> nFields = new List<string>();
             foreach (DataRow dr in dat.Rows)
             {
                 string indxName = dr["index_name"].ToString().ToLower();
                 if (indxName != ndxName)
                 {
-                    int ok = checkFields(nFields, fields);
+                    ok = checkFields(nFields, fields);
                     nFields.Clear();
                     if (ok > 0)
                     {
+                        idInc = ok;
                         rc = ndxName;
-                        if (ok == 1)    // if ok == 2, then match found but had 3rd column; id
+                        if (ok == 1)    // if ok == 2, then match found but had 3rd column; id so keep looking for exact match
                             break;
                     }
                     ndxName = indxName;
@@ -600,21 +615,50 @@ namespace DMTServices
                 nFields.Add(col);
             }
 
-            if (rc == string.Empty)
-                if (checkFields(nFields, fields) > 0)
-                    rc = ndxName;
-
+            if (idInc != 1)
+            {
+                ok = checkFields(nFields, fields);
+                if (ok > 0)
+                {
+                    idInc = ok;
+                    if (ok == 1 || rc == string.Empty)
+                        rc = ndxName;
+                }
+            }
             return rc;
         }
 
         private string GetUser()
         {
+            return getConnKey(new string[] { "user id", "uid" });
+        }
+
+        /// <summary>
+        /// Return the value of a key in the connection string
+        /// (ie. pass 'Data Source', returns ServerName)
+        /// </summary>
+        /// <param name="keys"></param>
+        /// <returns></returns>
+        public string getConnKey(string key)
+        {
+            return getConnKey(new string[] { key });
+        }
+
+        /// <summary>
+        /// Return the value of a key in the connection string
+        /// will search for a match to any string in the string[] keys
+        /// </summary>
+        /// <param name="keys"></param>
+        /// <returns></returns>
+        public string getConnKey(string[] keys)
+        {
             DbConnectionStringBuilder builder = new DbConnectionStringBuilder();
             builder.ConnectionString = ConnectionData;
             foreach (string key in builder.Keys)
             {
-                if (key.ToLower() == "user id" || key.ToLower() == "uid")
-                    return (string)builder[key];
+                foreach (string k in keys)
+                    if (key.ToLower() == k.ToLower())
+                        return (string)builder[key];
             }
             return string.Empty;
         }
