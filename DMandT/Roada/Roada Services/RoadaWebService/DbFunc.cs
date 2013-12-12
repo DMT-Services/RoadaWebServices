@@ -590,39 +590,42 @@ namespace DMTServices
         {
             idInc = 0;
             string rc = string.Empty;
-            DataTable dat = GetSchema(tableName, true);
-            string ndxName = "-=-=-";
-            int ok = 0;
-            List<string> nFields = new List<string>();
-            foreach (DataRow dr in dat.Rows)
+            if (fields.Length > 0)
             {
-                string indxName = dr["index_name"].ToString().ToLower();
-                if (indxName != ndxName)
+                string ndxName = "-=-=-";
+                int ok = 0;
+                List<string> nFields = new List<string>();
+                DataTable dat = GetSchema(tableName, true); 
+                foreach (DataRow dr in dat.Rows)
+                {
+                    string indxName = dr["index_name"].ToString().ToLower();
+                    if (indxName != ndxName)
+                    {
+                        ok = checkFields(nFields, fields);
+                        nFields.Clear();
+                        if (ok > 0)
+                        {
+                            idInc = ok;
+                            rc = ndxName;
+                            if (ok == 1)    // if ok == 2, then match found but had 3rd column; id so keep looking for exact match
+                                break;
+                        }
+                        ndxName = indxName;
+                    }
+
+                    string col = dr["column_name"].ToString().ToLower();
+                    nFields.Add(col);
+                }
+
+                if (idInc != 1)     // if we haven't found an 'exact' match, we need to check the final group
                 {
                     ok = checkFields(nFields, fields);
-                    nFields.Clear();
                     if (ok > 0)
                     {
                         idInc = ok;
-                        rc = ndxName;
-                        if (ok == 1)    // if ok == 2, then match found but had 3rd column; id so keep looking for exact match
-                            break;
+                        if (ok == 1 || rc == string.Empty)
+                            rc = ndxName;
                     }
-                    ndxName = indxName;
-                }
-
-                string col = dr["column_name"].ToString().ToLower();
-                nFields.Add(col);
-            }
-
-            if (idInc != 1)
-            {
-                ok = checkFields(nFields, fields);
-                if (ok > 0)
-                {
-                    idInc = ok;
-                    if (ok == 1 || rc == string.Empty)
-                        rc = ndxName;
                 }
             }
             return rc;
