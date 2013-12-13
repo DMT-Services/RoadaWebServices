@@ -441,6 +441,13 @@ namespace DMTServices
         {
             return GetTableNames(view, owner, false);
         }
+        
+        public bool tableExists(string tableName)
+        {
+            bool rc = false;
+            rc = GetTableNames(false, string.Empty, false).Contains(tableName, StringComparer.OrdinalIgnoreCase);
+            return rc;
+        }
 
         /// <summary>
         /// Return an array of strings representing the table names / views in the current connection...
