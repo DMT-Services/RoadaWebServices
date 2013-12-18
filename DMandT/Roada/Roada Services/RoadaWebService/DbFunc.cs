@@ -78,6 +78,17 @@ using myParameter = System.Data.SqlClient.SqlParameter;
 using myTransaction = System.Data.SqlClient.SqlTransaction;
 #endif
 
+#if NET20
+namespace System.Runtime.CompilerServices
+{
+    [AttributeUsage(AttributeTargets.Method)]
+    public sealed class ExtensionAttribute : Attribute
+    {
+        public ExtensionAttribute() { }
+    }
+}
+#endif
+
 namespace DMTServices
 {
     public class SqlConn
@@ -327,12 +338,9 @@ namespace DMTServices
                 List<string> CollectionNames;
                 List<string> RestrictionNames;
 
-                myDataRow mdr = new myDataRow();
                 foreach (DataRow dr in schemaTable.Rows)
                 {
-                    mdr.DataRow = dr;
-
-                    string cn = mdr.fetch("CollectionName").ToLower();
+                    string cn = dr.fetch("CollectionName").ToLower();
                     for (int l = 0; l < 2; l++)
                     {
                         if (l == 0)
@@ -348,7 +356,7 @@ namespace DMTServices
                         // is this one we are 'interested' in?
                         if (CollectionNames.Contains(cn))
                         {
-                            string rn = mdr.fetch("RestrictionName").ToLower();
+                            string rn = dr.fetch("RestrictionName").ToLower();
                             if (RestrictionNames.Contains(rn))
                             {
                                 int sndx = SchemaGet.FindIndex(ByName(cn));
@@ -361,7 +369,7 @@ namespace DMTServices
                                     sndx = SchemaGet.FindIndex(ByName(cn));
                                 }
 
-                                int r = mdr.ifetch("RestrictionNumber");
+                                int r = dr.ifetch("RestrictionNumber");
 
 #if !MYSQL
                                 // only MYSQL appears to be 0 based (so far)
@@ -477,13 +485,11 @@ namespace DMTServices
                 }
 
                 string s;
-                myDataRow mdr = new myDataRow();
                 foreach (DataRow dr in schemaTable.Rows)
                 {
-                    mdr.DataRow = dr;
                     if (all)
                     {
-                        s = mdr.sfetch(oname);
+                        s = dr.sfetch(oname);
                         if (s.Length > 0)
                             s += ".";
                     }
@@ -503,11 +509,11 @@ namespace DMTServices
                     bool ok = true;
                     // where as all the others use the table_type field to determine view or table...
                     if (!view)
-                        ok = (mdr.sfetch("TABLE_TYPE").ToLower() != "view");
+                        ok = (dr.sfetch("TABLE_TYPE").ToLower() != "view");
                     if (ok)
 #endif
 #endif
-                    Result.Add(s + mdr.sfetch(fieldName));
+                    Result.Add(s + dr.sfetch(fieldName));
 
                 }
                 schemaTable = null;
@@ -768,11 +774,9 @@ namespace DMTServices
         {
             bool rc = false;
             DataTable dt = GetSchema(Table, false);
-            myDataRow mdr = new myDataRow();
             foreach (DataRow dr in dt.Rows)
             {
-                mdr.DataRow = dr;
-                if (mdr.sfetch("COLUMN_NAME").ToLower() == Field.ToLower())
+                if (dr.sfetch("COLUMN_NAME").ToLower() == Field.ToLower())
                 {
                     rc = true;
                     break;
@@ -1354,11 +1358,9 @@ namespace DMTServices
                     DataTable dt = rdr.GetSchemaTable();
                     if (dt != null)
                     {
-                        myDataRow mdr = new myDataRow();
                         foreach (DataRow dr in dt.Rows)
                         {
-                            mdr.DataRow = dr;
-                            rc.Add(mdr.fetch("DataType"));
+                            rc.Add(dr.fetch("DataType"));
                         }
                     }
                 }
@@ -1554,6 +1556,99 @@ namespace DMTServices
                 keys[i] = keys[i].ToString().ToLower();
 
             return nselect;
+        }
+
+        public static int CountChars(string ch, string s)
+        {
+            return s.Length - s.Replace(ch, string.Empty).Length;
+        }
+    }
+
+    public static class DataRowExt
+    {
+        public static bool ColumnExists(this DataRow dr, string field)
+        {
+            bool rc = false;
+            if (dr.Table != null)
+                rc = dr.Table.Columns.Contains(field);
+            return rc;
+        }
+
+        public static object ofetch(this DataRow dr, string field)
+        {
+            if (dr.ColumnExists(field))
+                return dr[field];
+            return null;
+        }
+
+        public static string fetch(this DataRow dr, string field)
+        {
+            return myConvert.ToString(dr.ofetch(field)).TrimEnd(null);
+        }
+
+        public static string sfetch(this DataRow dr, string field)
+        {
+            return myConvert.ToString(dr.ofetch(field)).TrimEnd(null);
+        }
+
+        public static bool bfetch(this DataRow dr, string field)
+        {
+            return myConvert.ToBoolean(dr.ofetch(field));
+        }
+
+        public static double dfetch(this DataRow dr, string field)
+        {
+            return myConvert.ToDouble(dr.ofetch(field));
+        }
+
+        public static int ifetch(this DataRow dr, string field)
+        {
+            return myConvert.ToInt32(dr.ofetch(field));
+        }
+
+        /// <summary>
+        /// get int from datarow
+        /// </summary>
+        /// <param name="dn">column name</param>
+        /// <param name="d">out int</param>
+        /// <returns>true if there was data and in valid integer format</returns>
+        public static bool ifetch(this DataRow dr, string dn, out int i)
+        {
+            i = 0;
+            bool rc = false;
+            try
+            {
+                object o = dr.ofetch(dn);
+                if (o != null)
+                {
+                    i = Convert.ToInt32(o);
+                    rc = true;
+                }
+            }
+            catch
+            {
+                rc = false;
+            }
+            return rc;
+        }
+
+
+        public static long lfetch(this DataRow dr, string field)
+        {
+            return myConvert.ToInt64(dr.ofetch(field));
+        }
+
+        public static DateTime dtfetch(this DataRow dr, string field)
+        {
+            return myConvert.ToDateTime(dr.ofetch(field));
+        }
+
+        public static DateTime UtcFetch(this DataRow dr, string field)
+        {
+            DateTime dt = dr.dtfetch(field);
+            if (dt != DateTime.MinValue)
+                dt = UTC.ConvertDateTime(dt);
+            return dt;
         }
     }
 
