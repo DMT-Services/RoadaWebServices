@@ -78,41 +78,38 @@ namespace DMTServices
                     LengthList.Clear();
 
                     DataTable dt = conn.GetSchema(tableName);
-                    myDataRow myRow = new myDataRow();
 #if CRAP
                     foreach (DataRow dr in dt.Rows)
                     {
-                        myRow.DataRow = dr;
                         Log("========");
                         foreach (DataColumn c in dt.Columns)
-                            Log(c.ColumnName + " - " + myRow.sfetch(c));
+                            Log(c.ColumnName + " - " + dr.sfetch(c));
                     }
 #endif
                     foreach (DataRow dr in dt.Rows)
                     {
                         try
                         {
-                            myRow.DataRow = dr;
 #if ORACLEDB20
-                            if (myRow.sfetch("DATATYPE").Contains("CHAR"))
+                            if (dr.sfetch("DATATYPE").Contains("CHAR"))
                             {
                                 int l = 0;
-                                if (myRow.ifetch("LENGTH", out l))
+                                if (dr.ifetch("LENGTH", out l))
                                 {
                                     if (l > 0)
                                     {
-                                        FieldList.Add(myRow.sfetch("COLUMN_NAME").ToLower());
+                                        FieldList.Add(dr.sfetch("COLUMN_NAME").ToLower());
                                         LengthList.Add(l);
                                     }
                                 }
                             }
 #else
                             int l = 0;
-                            if (myRow.ifetch("CHARACTER_MAXIMUM_LENGTH", out l))
+                            if (dr.ifetch("CHARACTER_MAXIMUM_LENGTH", out l))
                             {
                                 if (l > 0)
                                 {
-                                    FieldList.Add(myRow.sfetch("COLUMN_NAME").ToLower());
+                                    FieldList.Add(dr.sfetch("COLUMN_NAME").ToLower());
                                     LengthList.Add(l);
                                 }
                             }
@@ -746,16 +743,6 @@ namespace DMTServices
         }
 
         public int Add(string colName, DataRow dr, string dn, bool NoNulls)
-        {
-            return Add(colName, new myDataRow(dr), dn, NoNulls);
-        }
-
-        public int Add(string colName, myDataRow dr, string dn)
-        {
-            return Add(colName, dr, dn, false);
-        }
-
-        public int Add(string colName, myDataRow dr, string dn, bool NoNulls)
         {
             int rc = -1;
             object o = dr.ofetch(dn);
