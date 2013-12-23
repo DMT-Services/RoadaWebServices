@@ -38,6 +38,45 @@ namespace RoadaWebService
         public int UniqueId;
     }
 
+    public class XBeeCommResponse
+    {
+        public string CustCode;
+        public int PanId;
+        public int TzOff;
+        public int GwyId;
+        public int PollRt;
+        public bool DSTApp;
+    }
+
+    public class XBAck
+    {
+        public string Addr;     // address of device
+        public bool rOn;        // remote on request
+        public bool rOff;       // remote off request
+        public bool sReq;       // settings request
+    }
+
+    public class XBResp
+    {
+        public string Addr;     // address of device
+        public bool rOn;        // remote on request
+        public bool rOff;       // remote off request
+        public bool sReq;       // settings request
+        public int rTim;       // burner run time
+        public int[] wTim;      // week day times
+        public double mTemp;    // minimum temperature
+        public DateTime oDay;   // override day
+    }
+
+    public class XBData
+    {
+        public string Addr; // address of device
+        public int In;      // input status
+        public bool tV;     // temperature is valid
+        public double tVal; // temperature value
+        public int Tim;     // current running time left, minutes
+    }
+
     public class MQueue
     {
         public string CustCode;
@@ -45,6 +84,7 @@ namespace RoadaWebService
         public string UserName;
         public string Password;
         public string QName;
+        public string Name;
         public System.Messaging.Message MyMessage;
         public MessageQueueTransaction MessageTx;
         public MessageQueue MessageQ;
@@ -67,6 +107,8 @@ namespace RoadaWebService
         public bool TowInp;
         public bool Moving;
         public bool Stopped;
+        public int CellStrength;
+        public DateTime IDate;
     }
 
     public class ACEData
@@ -128,5 +170,18 @@ namespace RoadaWebService
         public string CustCode;
         public string Name;
         public bool SaveData;
+    }
+
+    public class Vehicle
+    {
+        public int DevId;
+        public string UnitNum;
+        public string License;
+        public int Type;
+        public string TypeDesc;
+        public bool HasPlow;
+        public bool HasWing;
+        public bool HasTow;
+        public bool HasSpreader;
     }
 }

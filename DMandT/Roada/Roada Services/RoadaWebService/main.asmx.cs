@@ -27,11 +27,12 @@ namespace RoadaWebService
         private System.Object lockThis = new System.Object();
         public const int MAX_RECORDS = 500;
         private List<MQueue> queueList = new List<MQueue>();
+        private List<MQueue> custList = new List<MQueue>();
         const string DEFAULT_USER = "DMTServices";
         const string DEFAULT_PASSWORD = "1Secr3t2";
         const string RECVD_PATH = @"Recvd\";
         const string OBJECTS_PATH = @"objects\";
-
+        const string LONG_DATE = "yyyy-MM-dd HH:mm:ss";
 
         private const int MaxDownloadBatchSize = 1000;
 
@@ -118,6 +119,51 @@ namespace RoadaWebService
             return custCodes.ToArray();
         }
 
+        private void ReadCustomers(bool forceRefresh)
+        {
+            if (queueList.Count == 0 || forceRefresh)
+            {
+                SqlConn mConn = new SqlConn("MainConn");
+                try
+                {
+                    custList.Clear();
+                    mConn.Mess = Global.messLog;
+                    if (mConn.dbConnect())
+                    {
+                        SqlStmt stmt = new SqlStmt(mConn);
+                        try
+                        {
+                            bool rc = stmt.DoSQL("SELECT * FROM customer ORDER BY cust_code");     // main database customer that points to all customers
+                            while (rc)
+                            {
+                                MQueue q = new MQueue();
+                                q.CustCode = stmt.fetch("cust_code");
+                                q.ConnectionString = stmt.fetch("connectionStrings");
+                                q.Name = stmt.fetch("name");
+                                custList.Add(q);
+                                rc = stmt.dbSkip();
+                            }
+                        }
+                        finally
+                        {
+                            stmt.Close();                   // Always force closing.
+                        }
+                    }
+                    else
+                        Global.messLog.Flush("ReadCustomers: Error connecting to main database!");
+                }
+                catch (Exception ex)
+                {
+                    Global.messLog.Flush(string.Format("Excp ReadCustomers: {0}", ex.Message));
+                }
+                finally
+                {
+                    if (mConn != null)
+                        mConn.Close();
+                }
+            }
+        }
+
         private Response GetResponse(int err)
         {
             Response r = new Response();
@@ -144,6 +190,16 @@ namespace RoadaWebService
             }
 
             return r;
+        }
+
+        private bool CheckCredentials(Request request)
+        {
+            bool Result = false;
+            if (request.Password == "1ac355web" && request.UserName == "webservice")
+                Result = true;
+            else
+                Global.messLog.Flush("CheckCredentials() User {0} Pass {1} failure!", request.UserName, request.Password);
+            return Result;
         }
 
         private MQueue GetQueue(Request request, bool checkBin, bool ignoreAuth)
@@ -223,6 +279,7 @@ namespace RoadaWebService
             if (request.UserName == "randy@dmtserv.com" && request.BinPassword == "1secret2")
             {
                 custCodes = ReadQueueList(true);
+                ReadCustomers(true);
                 Result = GetResponse(0);
             }
             else
@@ -895,6 +952,386 @@ namespace RoadaWebService
         {
             // I needed to preserve this older version for backwards compatibility.
             return GetReplicationDataX(request, dbCode, "", -1, startRecord);
+        }
+
+        [WebMethod(Description = "Retrieve customer list from the server")]
+        public Client[] GetClientList(Request request)
+        {
+            Client[] Result = null;
+            if (!CheckCredentials(request))
+                return Result;
+
+            List<Client> clients = new List<Client>();
+            ReadCustomers(false);
+            foreach (MQueue mq in custList)
+            {
+                Client c = new Client();
+                c.CustCode = mq.CustCode;
+                c.Name = mq.Name;
+                clients.Add(c);
+            }
+            Result = clients.ToArray();
+            clients.Clear();
+            return Result;
+        }
+
+        private string CustConnectionString(Request request)
+        {
+            string Result = string.Empty;
+
+            ReadCustomers(false);
+            foreach (MQueue mq in custList)
+                if (mq.CustCode == request.CustCode)
+                {
+                    Result = mq.ConnectionString;
+                    break;
+
+                }
+            return Result;
+        }
+
+        [WebMethod(Description = "Send XBee Acknowledge")]
+        public int AckXBee(Request request, XBAck[] dat)
+        {
+            int Result = 0;
+
+            Global.messLog.Flush("in ackXbee");
+            if (CheckCredentials(request))
+            {
+                string connStr = CustConnectionString(request);
+                SqlStmt stmt = null;
+                try
+                {
+                    if (GetStmt(connStr, out stmt))
+                    {
+                        Global.messLog.Flush("got in ackXbee");
+                        Result = 1;
+                        SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
+                        foreach (XBAck x in dat)
+                        {
+                            sql.Clear();
+                            if (x.rOn)
+                                sql.Add("rem_req_on", false);
+                            if (x.rOff)
+                                sql.Add("rem_req_off", false);
+                            if (x.sReq)
+                                sql.Add("sch_req", false);
+                            if (sql.AnyQuery())
+                            {
+                                string sqlStr = string.Format(sql.BuildUpdate("UPDATE heater with (rowlock)", "WHERE xbee_addr = '{0}'"), x.Addr);
+                                Global.messLog.Flush(sqlStr);
+                                stmt.DoSQL(sqlStr);
+                            }
+
+                        }
+                    }
+                }
+                catch (Exception x)
+                {
+                    Global.messLog.Flush("StatXBee() Excp: {0}", x.Message);
+                }
+                finally
+                {
+                    if (stmt != null)
+                        stmt.Close();
+                }
+            }
+            return Result;
+        }
+
+        [WebMethod(Description = "Send XBee Status Data")]
+        public XBResp[] StatXBee(Request request, XBData[] dat)
+        {
+            XBResp[] Result = null;
+
+            if (CheckCredentials(request))
+            {
+                string connStr = CustConnectionString(request);
+                SqlStmt stmt = null;
+                try
+                {
+                    if (GetStmt(connStr, out stmt))
+                    {
+                        SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
+                        // update the gateway last_date so we know the gateway is alive!
+                        SqlConn mConn = new SqlConn("MainConn");
+                        mConn.Mess = Global.messLog;
+                        if (mConn.dbConnect())
+                        {
+                            SqlStmt stmt2 = new SqlStmt(mConn);
+                            sql.AddNow("last_date");
+                            // since it's already there, we use CustId as the gateway id
+                            stmt2.DoSQLFormat(sql.BuildUpdate("UPDATE gateway with (rowlock)", "WHERE id = {0}"), request.CustId);
+                            stmt2.Close();
+                            mConn.Close();
+                        }
+                        // iterate through the responses from the ConnectPort X2 gateway
+                        List<XBResp> resp = new List<XBResp>();
+                        foreach(XBData x in dat)
+                        {
+                            sql.Clear();
+                            sql.AddNow("last_date");
+                            sql.Add("xbee_addr", x.Addr);
+                            sql.Add("ign_inp", (x.In & 1) != 0);
+                            sql.Add("start_inp", (x.In & 2) != 0);
+                            sql.Add("curr_run_time", x.Tim);
+                            sql.Add("temp_valid", x.tV);
+                            if (x.tV)
+                                sql.Add("temp_value", x.tVal);
+                            else
+                                sql.Add("temp_value", "NULL", false);
+                            string sqlStr;
+                            if (stmt.DoSQLFormat("SELECT * FROM heater with (nolock) WHERE xbee_addr = '{0}'", x.Addr))
+                            {
+                                int id = stmt.ifetch("id");
+                                sqlStr = sql.BuildUpdate("UPDATE heater with (rowlock)", string.Format("WHERE id = {0}", id));
+                                bool sendFlag = false;
+                                XBResp xb = new XBResp();
+                                xb.Addr = x.Addr;
+                                if (stmt.tfetch("rem_req_on"))
+                                {
+                                    xb.rOn = true;
+                                    sendFlag = true;
+                                }
+                                if (stmt.tfetch("rem_req_off"))
+                                {
+                                    xb.rOff = true;
+                                    sendFlag = true;
+                                }
+                                if (stmt.tfetch("sch_req"))
+                                {
+                                    xb.rTim = stmt.ifetch("def_run_time");
+                                    xb.mTemp = stmt.dfetch("min_temp");
+                                    xb.wTim = new int[7];
+                                    DateTime td;
+                                    int ival;
+                                    for(int i = 1; i <= 7; i++)
+                                    {
+                                        td = stmt.dtfetch(string.Format("daywk_{0}", i));
+                                        ival = td.Hour * 60 + td.Minute;
+                                        xb.wTim[i-1] = ival;
+                                    }
+                                    xb.oDay = stmt.dtfetch("day_ovrd");
+                                    xb.sReq = true;
+                                    sendFlag = true;
+                                }
+                                if (sendFlag)
+                                    resp.Add(xb);
+
+                            }
+                            else
+                            {
+                                sql.AddNow("idate");        // commission date
+                                sql.Add("rem_req_on", false);
+                                sql.Add("rem_req_off", false);
+                                sql.Add("sch_req", false);
+                                sqlStr = sql.BuildInsert("INSERT INTO heater");
+                            }
+                            stmt.DoSQL(sqlStr);
+                            Global.messLog.Flush(sqlStr);
+                        }
+                        if (resp.Count > 0)
+                        {
+                            Result = resp.ToArray();
+                            resp.Clear();
+                        }
+                    }
+                }
+                catch (Exception x)
+                {
+                    Global.messLog.Flush("StatXBee() Excp: {0}", x.Message);
+                }
+                finally
+                {
+                    if (stmt != null)
+                        stmt.Close();
+                }
+            }
+            return Result;
+        }
+
+
+        [WebMethod(Description = "Request a pan Id for an XBee Gateway")]
+        public XBeeCommResponse CommissionXBee(Request request, string addr)
+        {
+            XBeeCommResponse Result = null;
+
+            if (CheckCredentials(request))
+            {
+                SqlConn mConn = new SqlConn("MainConn");
+                try
+                {
+                    mConn.Mess = Global.messLog;
+                    if (mConn.dbConnect())
+                    {
+                        SqlStmt stmt = new SqlStmt(mConn);
+                        SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
+                        bool insFlag = true;
+                        // look for a valid commissioned gateway
+                        if (stmt.DoSQLFormat("SELECT * FROM gateway WHERE xbee_addr = '{0}'", stmt.FixQuote(addr)))
+                        {
+                            insFlag = false;
+                            if (stmt.ifetch("pan_id") > 0 && stmt.fetch("cust_code").Length > 3)
+                            {
+                                Result = new XBeeCommResponse();
+                                Result.CustCode = stmt.fetch("cust_code");
+                                Result.PanId = stmt.ifetch("pan_id");
+                                Result.DSTApp = stmt.tfetch("dst_applies");
+                                Result.TzOff = stmt.ifetch("tz_offset");
+                                Result.GwyId = stmt.ifetch("id");
+                                Result.PollRt = stmt.ifetch("poll_rate");
+
+                                sql.AddNow("req_date");
+                                // update the gateways req_date as to when we requested the pan_id and cust code
+                                stmt.DoSQLFormat(sql.BuildUpdate("UPDATE gateway", "WHERE xbee_addr = '{0}'"), stmt.FixQuote(addr));
+                            }
+                        }
+                        // add a record so we know on the server what the xbee_addr of the gateway is!
+                        if (insFlag)
+                        {
+                            sql.Add("xbee_addr", addr);
+                            sql.AddNow("comm_date");
+                            stmt.DoSQL(sql.BuildInsert("INSERT INTO gateway"));
+                        }
+                        stmt.Close();
+                    }
+                }
+                catch(Exception x)
+                {
+                    Global.messLog.Flush("CommissionGateway() Excp: {0}", x.Message);
+                }
+                finally
+                {
+                    if (mConn != null)
+                        mConn.Close();
+                }
+            }
+            return Result;
+        }
+
+
+        [WebMethod(Description = "Retrieve vehicle listing")]
+        public Vehicle[] GetVehicleList(Request request)
+        {
+            Vehicle[] Result = null;
+
+            if (!CheckCredentials(request))
+                return Result;
+
+            string connStr = CustConnectionString(request);
+            SqlStmt stmt = null;
+            try
+            {
+                if (GetStmt(connStr, out stmt))
+                {
+                    List<Vehicle> vehicles = new List<Vehicle>();
+                    bool rc = stmt.DoSQL("SELECT * FROM vehicles LEFT JOIN vehicle_type ON vehicles.type = vehicle_type.type ORDER BY vehicles.unit_num");
+                    while(rc)
+                    {
+                        Vehicle v = new Vehicle();
+                        v.DevId = stmt.ifetch("hand_code");
+                        v.UnitNum = stmt.fetch("unit_num");
+                        v.HasPlow = stmt.tfetch("has_plow");
+                        v.HasSpreader = stmt.tfetch("has_spreader");
+                        v.HasTow = stmt.tfetch("has_tow");
+                        v.HasWing = stmt.tfetch("has_wing");
+                        v.License = stmt.fetch("license");
+                        v.Type = stmt.ifetch("type");
+                        v.TypeDesc = stmt.fetch("description");
+                        vehicles.Add(v);
+                        rc = stmt.dbSkip();
+                    }
+                    Result = vehicles.ToArray();
+                    vehicles.Clear();
+                }
+            }
+            catch(Exception x)
+            {
+                Global.messLog.Flush("GetVehicleList() Excp: {0}", x.Message);
+            }
+            finally
+            {
+                if (stmt != null)
+                    stmt.Close();
+            }
+            return Result;
+        }
+
+        private bool GetStmt(string connStr, out SqlStmt stmt)
+        {
+            stmt = new SqlStmt();
+            stmt.Mess = Global.messLog;
+            stmt.ConnectionData = connStr;
+            bool Result = stmt.dbConnect();
+            if (! Result)
+                Global.messLog.Flush("Failed to connect to {0}", connStr);
+            return Result;
+        }
+
+        [WebMethod(Description = "Retrieve current GPS readings")]
+        public GPSData[] GPSDataRequest(Request request, bool firstFlag, int devId, string unitNum)
+        {
+            GPSData[] Result = null;
+
+            if (!CheckCredentials(request))
+                return Result;
+
+            string connStr = CustConnectionString(request);
+            SqlStmt stmt = null;
+            try
+            {
+                if (GetStmt(connStr, out stmt))
+                {
+                    if (unitNum != string.Empty)
+                    {
+                        if (stmt.DoSQLFormat("SELECT hand_code FROM vehicles WHERE unit_num = '{0}'", stmt.FixQuote(unitNum)))
+                            devId = stmt.ifetch("hand_code");
+                    }
+                    if (stmt.DoSQLFormat("SELECT * FROM handheld WHERE hand_code = {0}", devId))
+                    {
+                        DateTime lastDate = stmt.dtfetch("last_date");
+                        if (firstFlag)
+                            lastDate = lastDate.AddHours(-12.0);
+                        bool rc = stmt.DoSQLFormat("SELECT TOP 6 * FROM messagein WHERE hand_code = {0} and rdate > {{ts '{1}'}} ORDER BY rdate DESC", devId, lastDate.ToString(LONG_DATE));
+                        if (rc)
+                        {
+                            List<GPSData> gpsdata = new List<GPSData>();
+                            while (rc)
+                            {
+                                GPSData g = new GPSData();
+                                g.DevId = devId;
+                                g.UTCDate = stmt.dtfetch("rdate");
+                                g.SOG = stmt.ifetch("speed");
+                                g.COG = stmt.ifetch("degrees");
+                                g.Latitude = stmt.dfetch("latitude");
+                                g.Longitude = stmt.dfetch("longitude");
+                                g.PlowInp = stmt.tfetch("plow");
+                                g.WingInp = stmt.tfetch("wing");
+                                g.TowInp = stmt.tfetch("tow");
+                                g.TempAir = stmt.dfetch("temp_air");
+                                g.TempSurface = stmt.dfetch("temp_road");
+                                g.CellStrength = stmt.ifetch("cell_string");
+                                g.IDate = stmt.dtfetch("idate");
+                                gpsdata.Add(g);
+                                rc = stmt.dbSkip();
+                            }
+                            Result = gpsdata.ToArray();
+                            gpsdata.Clear();
+                        }
+                    }
+                }
+            }
+            catch (Exception x)
+            {
+                Global.messLog.Flush("GetVehicleList() Excp: {0}", x.Message);
+            }
+            finally
+            {
+                if (stmt != null)
+                    stmt.Close();
+            }
+
+            return Result;
         }
 
 
