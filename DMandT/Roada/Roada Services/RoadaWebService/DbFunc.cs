@@ -1642,14 +1642,6 @@ namespace DMTServices
         {
             return myConvert.ToDateTime(dr.ofetch(field));
         }
-
-        public static DateTime UtcFetch(this DataRow dr, string field)
-        {
-            DateTime dt = dr.dtfetch(field);
-            if (dt != DateTime.MinValue)
-                dt = UTC.ConvertDateTime(dt);
-            return dt;
-        }
     }
 
     public class myDataRow
