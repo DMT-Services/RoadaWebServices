@@ -41,6 +41,7 @@ namespace RoadaWebService
     public class XBeeCommResponse
     {
         public string CustCode;
+        public int CustId;
         public int PanId;
         public int TzOff;
         public int GwyId;

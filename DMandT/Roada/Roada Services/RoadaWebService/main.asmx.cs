@@ -15,7 +15,7 @@ using System.Diagnostics;
 namespace RoadaWebService
 {
     /// <summary>
-    /// Summary description for Service1
+    /// Roada Web Service, used for Wabasto Heaters among other things
     /// </summary>
     [WebService(Namespace = "http://www.roada.ca/")]
     [WebServiceBinding(ConformsTo = WsiProfiles.BasicProfile1_1)]
@@ -33,7 +33,7 @@ namespace RoadaWebService
         const string RECVD_PATH = @"Recvd\";
         const string OBJECTS_PATH = @"objects\";
         const string LONG_DATE = "yyyy-MM-dd HH:mm:ss";
-
+        const int DEFAULT_RUN_TIME = 40;
         private const int MaxDownloadBatchSize = 1000;
 
         private void InitializeComponent()
@@ -1028,7 +1028,7 @@ namespace RoadaWebService
                 }
                 catch (Exception x)
                 {
-                    Global.messLog.Flush("StatXBee() Excp: {0}", x.Message);
+                    Global.messLog.Flush("AckXBee() Excp: {0}", x.Message);
                 }
                 finally
                 {
@@ -1056,11 +1056,18 @@ namespace RoadaWebService
                         // update the gateway last_date so we know the gateway is alive!
                         SqlConn mConn = new SqlConn("MainConn");
                         mConn.Mess = Global.messLog;
+                        int defRunTime = DEFAULT_RUN_TIME;
                         if (mConn.dbConnect())
                         {
                             SqlStmt stmt2 = new SqlStmt(mConn);
-                            sql.AddNow("last_date");
+                            // get the default run time to use
                             // since it's already there, we use CustId as the gateway id
+                            stmt2.DoSQLFormat("SELECT def_run_time FROM gateway (nolock) WHERE id = {0}", request.CustId);
+                            defRunTime = stmt2.ifetch("def_run_time");
+                            // we can't have a zero run time!
+                            if (defRunTime == 0)
+                                defRunTime = DEFAULT_RUN_TIME;
+                            sql.AddNow("last_date");
                             stmt2.DoSQLFormat(sql.BuildUpdate("UPDATE gateway with (rowlock)", "WHERE id = {0}"), request.CustId);
                             stmt2.Close();
                             mConn.Close();
@@ -1072,63 +1079,82 @@ namespace RoadaWebService
                             sql.Clear();
                             sql.AddNow("last_date");
                             sql.Add("xbee_addr", x.Addr);
-                            sql.Add("ign_inp", (x.In & 1) != 0);
-                            sql.Add("start_inp", (x.In & 2) != 0);
-                            sql.Add("curr_run_time", x.Tim);
-                            sql.Add("temp_valid", x.tV);
-                            if (x.tV)
-                                sql.Add("temp_value", x.tVal);
-                            else
-                                sql.Add("temp_value", "NULL", false);
-                            string sqlStr;
-                            if (stmt.DoSQLFormat("SELECT * FROM heater with (nolock) WHERE xbee_addr = '{0}'", x.Addr))
-                            {
-                                int id = stmt.ifetch("id");
-                                sqlStr = sql.BuildUpdate("UPDATE heater with (rowlock)", string.Format("WHERE id = {0}", id));
-                                bool sendFlag = false;
-                                XBResp xb = new XBResp();
-                                xb.Addr = x.Addr;
-                                if (stmt.tfetch("rem_req_on"))
-                                {
-                                    xb.rOn = true;
-                                    sendFlag = true;
-                                }
-                                if (stmt.tfetch("rem_req_off"))
-                                {
-                                    xb.rOff = true;
-                                    sendFlag = true;
-                                }
-                                if (stmt.tfetch("sch_req"))
-                                {
-                                    xb.rTim = stmt.ifetch("def_run_time");
-                                    xb.mTemp = stmt.dfetch("min_temp");
-                                    xb.wTim = new int[7];
-                                    DateTime td;
-                                    int ival;
-                                    for(int i = 1; i <= 7; i++)
-                                    {
-                                        td = stmt.dtfetch(string.Format("daywk_{0}", i));
-                                        ival = td.Hour * 60 + td.Minute;
-                                        xb.wTim[i-1] = ival;
-                                    }
-                                    xb.oDay = stmt.dtfetch("day_ovrd");
-                                    xb.sReq = true;
-                                    sendFlag = true;
-                                }
-                                if (sendFlag)
-                                    resp.Add(xb);
-
-                            }
-                            else
+                            // check for special commission command!
+                            bool heaterFound = stmt.DoSQLFormat("SELECT * FROM heater with (nolock) WHERE xbee_addr = '{0}'", x.Addr);
+                            if (x.In == 99)
                             {
                                 sql.AddNow("idate");        // commission date
                                 sql.Add("rem_req_on", false);
                                 sql.Add("rem_req_off", false);
                                 sql.Add("sch_req", false);
-                                sqlStr = sql.BuildInsert("INSERT INTO heater");
+                                sql.Add("def_run_time", defRunTime);
+                                if (! heaterFound)
+                                    stmt.DoSQL(sql.BuildInsert("INSERT INTO heater"));
+                                XBResp xbr = new XBResp();
+                                xbr.Addr = x.Addr;
+                                resp.Add(xbr);
                             }
-                            stmt.DoSQL(sqlStr);
-                            Global.messLog.Flush(sqlStr);
+                            else
+                            {
+                                // just standard data, store it away
+                                sql.Add("ign_inp", (x.In & 1) != 0);
+                                sql.Add("start_inp", (x.In & 2) != 0);
+                                sql.Add("curr_run_time", x.Tim);
+                                sql.Add("temp_valid", x.tV);
+                                if (x.tV)
+                                    sql.Add("temp_value", x.tVal);
+                                else
+                                    sql.Add("temp_value", "NULL", false);
+                                string sqlStr;
+                                if (heaterFound)
+                                {
+                                    int id = stmt.ifetch("id");
+                                    sqlStr = sql.BuildUpdate("UPDATE heater with (rowlock)", string.Format("WHERE id = {0}", id));
+                                    bool sendFlag = false;
+                                    XBResp xb = new XBResp();
+                                    xb.Addr = x.Addr;
+                                    if (stmt.tfetch("rem_req_on"))
+                                    {
+                                        xb.rOn = true;
+                                        sendFlag = true;
+                                    }
+                                    if (stmt.tfetch("rem_req_off"))
+                                    {
+                                        xb.rOff = true;
+                                        sendFlag = true;
+                                    }
+                                    if (stmt.tfetch("sch_req"))
+                                    {
+                                        xb.rTim = stmt.ifetch("def_run_time");
+                                        xb.mTemp = stmt.dfetch("min_temp");
+                                        xb.wTim = new int[7];
+                                        DateTime td;
+                                        int ival;
+                                        for (int i = 1; i <= 7; i++)
+                                        {
+                                            td = stmt.dtfetch(string.Format("daywk_{0}", i));
+                                            ival = td.Hour * 60 + td.Minute;
+                                            xb.wTim[i - 1] = ival;
+                                        }
+                                        xb.oDay = stmt.dtfetch("day_ovrd");
+                                        xb.sReq = true;
+                                        sendFlag = true;
+                                    }
+                                    if (sendFlag)
+                                        resp.Add(xb);
+                                    stmt.DoSQL(sqlStr);
+                                    Global.messLog.Flush(sqlStr);
+                                }
+                                else
+                                {
+                                    sql.AddNow("idate");        // commission date
+                                    sql.Add("rem_req_on", false);
+                                    sql.Add("rem_req_off", false);
+                                    sql.Add("sch_req", false);
+                                    sql.Add("def_run_time", defRunTime);
+                                    stmt.DoSQL(sql.BuildInsert("INSERT INTO heater"));
+                                }
+                            }
                         }
                         if (resp.Count > 0)
                         {
@@ -1152,7 +1178,7 @@ namespace RoadaWebService
 
 
         [WebMethod(Description = "Request a pan Id for an XBee Gateway")]
-        public XBeeCommResponse CommissionXBee(Request request, string addr)
+        public XBeeCommResponse CommissionXBee(Request request, string addr, string ipaddr)
         {
             XBeeCommResponse Result = null;
 
@@ -1180,8 +1206,11 @@ namespace RoadaWebService
                                 Result.TzOff = stmt.ifetch("tz_offset");
                                 Result.GwyId = stmt.ifetch("id");
                                 Result.PollRt = stmt.ifetch("poll_rate");
-
+                                // we now need Cust Id as well
+                                stmt.DoSQLFormat("SELECT id FROM customer WHERE cust_code = '{0}'", Result.CustCode);
+                                Result.CustId = stmt.ifetch("id");
                                 sql.AddNow("req_date");
+                                sql.Add("ip_addr", ipaddr);
                                 // update the gateways req_date as to when we requested the pan_id and cust code
                                 stmt.DoSQLFormat(sql.BuildUpdate("UPDATE gateway", "WHERE xbee_addr = '{0}'"), stmt.FixQuote(addr));
                             }
@@ -1190,7 +1219,9 @@ namespace RoadaWebService
                         if (insFlag)
                         {
                             sql.Add("xbee_addr", addr);
+                            sql.Add("ip_addr", ipaddr);
                             sql.AddNow("comm_date");
+                            sql.Add("def_run_time", DEFAULT_RUN_TIME);
                             stmt.DoSQL(sql.BuildInsert("INSERT INTO gateway"));
                         }
                         stmt.Close();
