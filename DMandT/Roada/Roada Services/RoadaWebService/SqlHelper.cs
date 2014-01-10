@@ -133,11 +133,16 @@ namespace DMTServices
             return ColumnList.Count > 0;
         }
 
+        public bool Empty()
+        {
+            return Empty(string.Empty);
+        }
+
         /// <summary>
         /// check all ValueList values for a non-zero (or DateTime.MinValue or string.Empty or etc) value
         /// </summary>
         /// <returns></returns>
-        public bool Empty()
+        public bool Empty(string empDate)
         {
             bool rc = true;
             for (int i = 0; i < ColumnList.Count; i++)
@@ -156,7 +161,7 @@ namespace DMTServices
                             break;
                         default:
                             // these checks 'might' need some work?
-                            rc = (string.IsNullOrEmpty(ValueList[i].ToString()) || ValueList[i].ToString() == "0");
+                            rc = (string.IsNullOrEmpty(ValueList[i].ToString()) || ValueList[i].ToString() == "0" || ValueList[i].ToString() == empDate);
                             break;
                     }
                 if (!rc)
