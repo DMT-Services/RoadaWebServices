@@ -995,7 +995,6 @@ namespace RoadaWebService
         {
             int Result = 0;
 
-            Global.messLog.Flush("in ackXbee");
             if (CheckCredentials(request))
             {
                 string connStr = CustConnectionString(request);
@@ -1004,7 +1003,6 @@ namespace RoadaWebService
                 {
                     if (GetStmt(connStr, out stmt))
                     {
-                        Global.messLog.Flush("got in ackXbee");
                         Result = 1;
                         SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
                         foreach (XBAck x in dat)
@@ -1019,7 +1017,6 @@ namespace RoadaWebService
                             if (sql.AnyQuery())
                             {
                                 string sqlStr = string.Format(sql.BuildUpdate("UPDATE heater with (rowlock)", "WHERE xbee_addr = '{0}'"), x.Addr);
-                                Global.messLog.Flush(sqlStr);
                                 stmt.DoSQL(sqlStr);
                             }
 
@@ -1029,6 +1026,66 @@ namespace RoadaWebService
                 catch (Exception x)
                 {
                     Global.messLog.Flush("AckXBee() Excp: {0}", x.Message);
+                }
+                finally
+                {
+                    if (stmt != null)
+                        stmt.Close();
+                }
+            }
+            return Result;
+        }
+
+        private DateTime StringToDateTime(string s)
+        {
+            DateTime rc = DateTime.MinValue;
+            try
+            {
+                rc = DateTime.ParseExact(s, "yyyyMMddHHmmss", null);
+            }
+            catch 
+            {
+                Global.messLog.Flush("Bad Date String {0}", s);    
+            }
+            return rc;
+        }
+
+        [WebMethod(Description = "Handle iButton Data")]
+        public int iButtXBee(Request request, XBiB[] dat)
+        {
+            int Result = 0;
+
+            if (CheckCredentials(request))
+            {
+                string connStr = CustConnectionString(request);
+                SqlStmt stmt = null;
+                try
+                {
+                    if (GetStmt(connStr, out stmt))
+                    {
+                        Result = 1;
+                        SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
+                        foreach (XBiB x in dat)
+                        {
+                            sql.Clear();
+                            sql.Add("xbee_addr", x.Addr);
+                            sql.Add("rdate", StringToDateTime(x.Td));
+                            sql.Add("ibutton_code", x.Code);
+                            sql.AddNow("idate");
+                            // get the employee id based on the ibutton hex code
+                            if (stmt.DoSQLFormat("SELECT id FROM employee with (nolock) WHERE ibutton_code = '{0}'", x.Code))
+                                sql.Add("employee_id", stmt.ifetch("id"));
+                            // get the vehicle_id from the heater table
+                            if (stmt.DoSQLFormat("SELECT vehicle_id FROM heater with (nolock) WHERE xbee_addr = '{0}' and vehicle_id IS NOT NULL", x.Addr))
+                                sql.Add("vehicle_id", stmt.ifetch("vehicle_id"));
+                            string sqlStr = sql.BuildInsert("INSERT INTO logstatus");
+                            stmt.DoSQL(sqlStr);
+                        }
+                    }
+                }
+                catch (Exception x)
+                {
+                    Global.messLog.Flush("iButtXBee() Excp: {0}", x.Message);
                 }
                 finally
                 {
@@ -1062,7 +1119,7 @@ namespace RoadaWebService
                             SqlStmt stmt2 = new SqlStmt(mConn);
                             // get the default run time to use
                             // since it's already there, we use CustId as the gateway id
-                            stmt2.DoSQLFormat("SELECT def_run_time FROM gateway (nolock) WHERE id = {0}", request.CustId);
+                            stmt2.DoSQLFormat("SELECT def_run_time FROM gateway with (nolock) WHERE id = {0}", request.CustId);
                             defRunTime = stmt2.ifetch("def_run_time");
                             // we can't have a zero run time!
                             if (defRunTime == 0)
@@ -1105,6 +1162,7 @@ namespace RoadaWebService
                                     sql.Add("temp_value", x.tVal);
                                 else
                                     sql.Add("temp_value", "NULL", false);
+                                sql.Add("soft_ver", x.Ver);
                                 string sqlStr;
                                 if (heaterFound)
                                 {
@@ -1143,7 +1201,6 @@ namespace RoadaWebService
                                     if (sendFlag)
                                         resp.Add(xb);
                                     stmt.DoSQL(sqlStr);
-                                    Global.messLog.Flush(sqlStr);
                                 }
                                 else
                                 {
@@ -1176,6 +1233,12 @@ namespace RoadaWebService
             return Result;
         }
 
+        private int ConvertToUnixTimestamp(DateTime date)
+        {
+            DateTime origin = new DateTime(1970, 1, 1, 0, 0, 0, 0);
+            TimeSpan diff = date.ToUniversalTime() - origin;
+            return (int)Math.Floor(diff.TotalSeconds);
+        }
 
         [WebMethod(Description = "Request a pan Id for an XBee Gateway")]
         public XBeeCommResponse CommissionXBee(Request request, string addr, string ipaddr)
@@ -1206,6 +1269,7 @@ namespace RoadaWebService
                                 Result.TzOff = stmt.ifetch("tz_offset");
                                 Result.GwyId = stmt.ifetch("id");
                                 Result.PollRt = stmt.ifetch("poll_rate");
+                                Result.UnixTim = ConvertToUnixTimestamp(DateTime.UtcNow);
                                 // we now need Cust Id as well
                                 stmt.DoSQLFormat("SELECT id FROM customer WHERE cust_code = '{0}'", Result.CustCode);
                                 Result.CustId = stmt.ifetch("id");

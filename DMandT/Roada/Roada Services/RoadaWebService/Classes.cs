@@ -47,6 +47,7 @@ namespace RoadaWebService
         public int GwyId;
         public int PollRt;
         public bool DSTApp;
+        public int UnixTim;
     }
 
     public class XBAck
@@ -55,6 +56,13 @@ namespace RoadaWebService
         public bool rOn;        // remote on request
         public bool rOff;       // remote off request
         public bool sReq;       // settings request
+    }
+
+    public class XBiB
+    {
+        public string Addr;     // address of device
+        public string Td;       // time and date of iButton read
+        public string Code;     // iButton code
     }
 
     public class XBResp
@@ -76,6 +84,7 @@ namespace RoadaWebService
         public bool tV;     // temperature is valid
         public double tVal; // temperature value
         public int Tim;     // current running time left, minutes
+        public string Ver;  // software version
     }
 
     public class MQueue
