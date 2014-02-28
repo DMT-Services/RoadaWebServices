@@ -5,7 +5,9 @@ using System;
 using System.Data;
 using System.Data.Common;
 using System.Text;
+#if !NET20
 using System.Linq;
+#endif
 using System.Configuration;
 using System.Collections;
 using System.Collections.Generic;
@@ -85,6 +87,33 @@ namespace System.Runtime.CompilerServices
     public sealed class ExtensionAttribute : Attribute
     {
         public ExtensionAttribute() { }
+    }
+}
+
+public static class ArrayExtensions
+{
+    public static bool Contains<T>(this T[] array, T searchValue, IEqualityComparer si) where T : class
+    {
+        bool rc = false;
+        foreach (T av in array)
+            if (si.Equals(av, searchValue))
+            {
+                rc = true;
+                break;
+            }
+        return rc;
+    }
+
+    public static bool Contains<T>(this T[] array, T searchValue)
+    {
+        bool rc = false;
+        foreach (T av in array)
+            if (EqualityComparer<T>.Default.Equals(av, searchValue))
+            {
+                rc = true;
+                break;
+            }
+        return rc;
     }
 }
 #endif
@@ -452,9 +481,7 @@ namespace DMTServices
         
         public bool tableExists(string tableName)
         {
-            bool rc = false;
-            rc = GetTableNames(false, string.Empty, false).Contains(tableName, StringComparer.OrdinalIgnoreCase);
-            return rc;
+            return GetTableNames(false, string.Empty, false).Contains(tableName, StringComparer.OrdinalIgnoreCase);
         }
 
         /// <summary>
@@ -582,11 +609,11 @@ namespace DMTServices
 
                 
                 if (ok)
-                    if (nFields.Count() == 0)
+                    if (nFields.Count == 0)
                         rc = 1;
                     else
                         // if there is one 'extra' field and it's 'id', allow that as a match (but return 2 to indicate this)
-                        if (nFields.Count() == 1 && nFields[0] == "id")
+                        if (nFields.Count == 1 && nFields[0] == "id")
                             rc = 2;
             }
 

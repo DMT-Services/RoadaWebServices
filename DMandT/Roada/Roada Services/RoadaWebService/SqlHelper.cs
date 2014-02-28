@@ -4,17 +4,8 @@ using System.Collections.Generic;
 using System.Text;
 using System.Globalization;
 using System.Data;
+#if !NET20
 using System.Linq;
-
-#if NET20
-namespace System.Runtime.CompilerServices
-{
-    [AttributeUsage(AttributeTargets.Method)]
-    public sealed class ExtensionAttribute : Attribute
-    {
-        public ExtensionAttribute() { }
-    }
-}
 #endif
 
 namespace DMTServices
@@ -635,6 +626,7 @@ namespace DMTServices
         }
 #endif
 
+#if !NET20
         public int Add(string colName, HashSet<string> items, bool quotes)
         {
             return Add(colName, new ArrayList(items.ToArray()), quotes);
@@ -644,7 +636,7 @@ namespace DMTServices
         {
             return Add(colName, new ArrayList(items.ToArray()), false);
         }
-
+#endif
         public int Add(string colName, List<int> items)
         {
             return Add(colName, new ArrayList(items), false);
