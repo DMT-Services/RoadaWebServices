@@ -1604,7 +1604,8 @@ namespace DMTServices
         public static object ofetch(this DataRow dr, string field)
         {
             if (dr.ColumnExists(field))
-                return dr[field];
+                if (!(dr[field] is System.DBNull))
+                    return dr[field];
             return null;
         }
 
@@ -1646,7 +1647,7 @@ namespace DMTServices
             try
             {
                 object o = dr.ofetch(dn);
-                if (o != null && !(o is DBNull))
+                if (o != null)
                 {
                     i = Convert.ToInt32(o);
                     rc = true;
@@ -2293,7 +2294,7 @@ namespace DMTServices
         {
             try
             {
-                if (o != null)
+                if (o != null && !(o is DBNull))
                     return (byte[])o;
                 else
                     return null;
