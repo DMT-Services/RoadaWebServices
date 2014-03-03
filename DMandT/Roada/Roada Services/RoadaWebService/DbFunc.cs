@@ -1646,7 +1646,7 @@ namespace DMTServices
             try
             {
                 object o = dr.ofetch(dn);
-                if (o != null)
+                if (o != null && !(o is DBNull))
                 {
                     i = Convert.ToInt32(o);
                     rc = true;
