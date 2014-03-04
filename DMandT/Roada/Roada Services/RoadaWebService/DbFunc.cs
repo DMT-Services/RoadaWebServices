@@ -885,6 +885,8 @@ namespace DMTServices
         static public event ReplicationEventHandler ReplicationEvent;
         public bool IgnoreReplicate = true;
 #endif
+        static public MessLog sMess;
+
         /// <summary>
         /// this event is called provided it's not null
         /// it's called for every DoSQL as well as dbSkip method call
@@ -1450,7 +1452,8 @@ namespace DMTServices
         {
             fParent = new SqlConn(configString);
             fParent.AddStmt(this);
-
+            if (sMess != null)
+                fParent.Mess = sMess;
             createdSqlConn = true;  // force the parent (the connection) to be closed when we close...
         }
 
