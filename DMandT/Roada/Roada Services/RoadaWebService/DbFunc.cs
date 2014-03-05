@@ -1202,7 +1202,11 @@ namespace DMTServices
             rdrEOF = true;
         }
 
-        public MessLog stmtMess
+        /// <summary>
+        /// set this once in your program and ALL SqlStmts created will
+        /// default to using the MessLog you set it to...
+        /// </summary>
+        public static MessLog stmtMess
         {
             set { _sMess = value; }
         }
