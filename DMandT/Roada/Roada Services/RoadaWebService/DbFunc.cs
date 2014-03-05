@@ -885,8 +885,6 @@ namespace DMTServices
         static public event ReplicationEventHandler ReplicationEvent;
         public bool IgnoreReplicate = true;
 #endif
-        static public MessLog sMess;
-
         /// <summary>
         /// this event is called provided it's not null
         /// it's called for every DoSQL as well as dbSkip method call
@@ -930,6 +928,8 @@ namespace DMTServices
         private bool rdrEOF = true; // best to start with EOF on, until we DoSql()...
 
         private List<string> frdrFields = new List<string>();
+
+        static private MessLog _sMess = null;
 
         /// <summary>
         /// Create the handle, passing in the connection class...
@@ -1202,6 +1202,11 @@ namespace DMTServices
             rdrEOF = true;
         }
 
+        public MessLog stmtMess
+        {
+            set { _sMess = value; }
+        }
+
         public bool hasData()
         {
             return !rdrEOF;
@@ -1452,8 +1457,10 @@ namespace DMTServices
         {
             fParent = new SqlConn(configString);
             fParent.AddStmt(this);
-            if (sMess != null)
-                fParent.Mess = sMess;
+            
+            if (_sMess != null)
+                fParent.Mess = _sMess;
+
             createdSqlConn = true;  // force the parent (the connection) to be closed when we close...
         }
 
