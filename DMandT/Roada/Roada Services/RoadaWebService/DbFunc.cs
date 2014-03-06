@@ -1166,6 +1166,7 @@ namespace DMTServices
                 {
                     TimeSpan ts = new TimeSpan(DateTime.Now.Ticks);
                     rc = rdr.Read();
+                    rdrEOF = !rc;
                     if (timeOverEvent != null)
                         timeOverEvent(this, new TimeSpan(DateTime.Now.Ticks).Subtract(ts).TotalSeconds, "dbSkip", cmd.CommandText);
                 }
@@ -1176,7 +1177,6 @@ namespace DMTServices
                     LastError = e.Message;
                 }
             }
-            rdrEOF = !rc;
             return rc;
         }
 
@@ -1209,6 +1209,7 @@ namespace DMTServices
         public static MessLog stmtMess
         {
             set { _sMess = value; }
+            get { return _sMess; }
         }
 
         public bool hasData()
