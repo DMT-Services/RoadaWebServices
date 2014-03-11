@@ -975,8 +975,10 @@ namespace DMTServices
         /// <returns>DataTable</returns>
         public DataTable DoSQLdt(string selectStr)
         {
+            myDataReader dr = DoSQLnr(selectStr);
             DataTable dt = new DataTable();
-            dt.Load(DoSQLnr(selectStr));
+            if (dr != null)
+                dt.Load(dr);
             return dt;
         }
 
