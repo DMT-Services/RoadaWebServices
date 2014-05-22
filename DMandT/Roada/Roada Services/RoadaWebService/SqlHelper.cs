@@ -469,7 +469,7 @@ namespace DMTServices
         /// <param name="value"></param>
         /// <param name="stmt"></param>
         /// <returns>greater than 0, added</returns>
-        public int addDiff(string colName, double value, SqlStmt stmt)
+        public int AddDiff(string colName, double value, SqlStmt stmt)
         {
             int rc = -1;
             if (!stmt.hasData() || value != stmt.dfetch(colName))
@@ -484,7 +484,7 @@ namespace DMTServices
         /// <param name="value"></param>
         /// <param name="stmt"></param>
         /// <returns>greater than 0, added</returns>
-        public int addDiff(string colName, int value, SqlStmt stmt)
+        public int AddDiff(string colName, int value, SqlStmt stmt)
         {
             int rc = -1;
             if (!stmt.hasData() || value != stmt.ifetch(colName))
@@ -499,7 +499,7 @@ namespace DMTServices
         /// <param name="value"></param>
         /// <param name="stmt"></param>
         /// <returns>greater than 0, added</returns>
-        public int addDiff(string colName, string value, SqlStmt stmt)
+        public int AddDiff(string colName, string value, SqlStmt stmt)
         {
             int rc = -1;
             if (!stmt.hasData() || value != stmt.fetch(colName))
@@ -514,7 +514,7 @@ namespace DMTServices
         /// <param name="value"></param>
         /// <param name="stmt"></param>
         /// <returns>greater than 0, added</returns>
-        public int addDiff(string colName, DateTime value, SqlStmt stmt)
+        public int AddDiff(string colName, DateTime value, SqlStmt stmt)
         {
             int rc = -1;
             if (!stmt.hasData() || value != stmt.dtfetch(colName))
