@@ -849,7 +849,12 @@ namespace DMTServices
         /// <returns></returns>
         public static string timeStamp(DateTime date)
         {
-            return "{ts '" + date.ToString("yyyy-MM-dd HH:mm:ss") + "'}";
+            return timeStamp(date, false);
+        }
+
+        public static string timeStamp(DateTime date, bool incMs)
+        {
+            return "{ts '" + date.ToString("yyyy-MM-dd HH:mm:ss" + ((incMs) ? ".fff" : "")) + "'}";
         }
 
         public static string timeStamp(DateTime date, dbType dbtype)
