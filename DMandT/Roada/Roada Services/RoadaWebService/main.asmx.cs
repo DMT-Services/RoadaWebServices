@@ -206,7 +206,7 @@ namespace RoadaWebService
         {
             MQueue Result = null;
             ReadQueueList(false);      // always must check if we have read the connection list
-            if(request.CustCode.Length == 4)
+            if (request.CustCode.Length == 4)
             {
                 foreach (MQueue q in queueList)
                 {
@@ -597,7 +597,10 @@ namespace RoadaWebService
 
         private bool LowSecurityCheck(Request request)
         {
-            return (request.UserName == DEFAULT_USER && request.Password == DEFAULT_PASSWORD);
+            bool Result = (request.UserName == DEFAULT_USER && request.Password == DEFAULT_PASSWORD);
+            if (!Result)
+                Global.messLog.Flush("LowSecurityCheck() failed with {0} and {1}", request.UserName, request.Password);
+            return Result;
         }
 
         [WebMethod(Description = "Commission Software")]
@@ -958,20 +961,52 @@ namespace RoadaWebService
         public Client[] GetClientList(Request request)
         {
             Client[] Result = null;
-            if (!CheckCredentials(request))
+            if (!LowSecurityCheck(request))
                 return Result;
 
-            List<Client> clients = new List<Client>();
-            ReadCustomers(false);
-            foreach (MQueue mq in custList)
+            SqlConn mConn = new SqlConn("MainConn");
+            SqlStmt stmt = null;
+            List<Client> clients = null;
+            try
             {
-                Client c = new Client();
-                c.CustCode = mq.CustCode;
-                c.Name = mq.Name;
-                clients.Add(c);
+                mConn.Mess = Global.messLog;
+                if (mConn.dbConnect())
+                {
+                    ReadQueueList(false);      // always must check if we have read the connection list
+                    clients = new List<Client>();
+                    stmt = new SqlStmt(mConn);
+                    // made a change, get the comma separated list of db_codes from the soft_activate table
+                    stmt.DoSQL(string.Format("SELECT db_codes FROM soft_activate WHERE pc_code = '{0}'", request.CustCode));
+                    string[] dbCodes = stmt.fetch("db_codes").Split(new char[] { ',' });
+                    foreach (string dbcode in dbCodes)
+                    {
+                        Client c = new Client();
+                        c.CustCode = dbcode;
+                        if (stmt.DoSQLFormat("SELECT name FROM customer WHERE cust_code = '{0}'", dbcode))
+                            c.Name = stmt.fetch("name");
+                        else
+                            c.Name = "Not Found!";
+                        c.SaveData = false;
+                        clients.Add(c);
+                    }
+                    Result = clients.ToArray();
+                    clients.Clear();
+                }
             }
-            Result = clients.ToArray();
-            clients.Clear();
+            catch (Exception ex)
+            {
+                Global.messLog.Flush("Excp in GetClients: " + ex.Message);
+                if (clients != null)
+                    clients.Clear();                    // In case we do not make it to the end.
+            }
+            finally
+            {
+                if (stmt != null)
+                    stmt.Close();
+                if (mConn != null)
+                    mConn.Close();
+            }
+
             return Result;
         }
 
@@ -1304,13 +1339,101 @@ namespace RoadaWebService
             return Result;
         }
 
+        [WebMethod(Description = "Retrieve DCD device info for a specific devId")]
+        public DeviceInfo GetDeviceInfo(Request request, int devId)
+        {
+            DeviceInfo dInfo = null;
+
+            if (! LowSecurityCheck(request))
+                return dInfo;
+
+            string connStr = CustConnectionString(request);
+            SqlStmt stmt = null;
+            try
+            {
+                if (GetStmt(connStr, out stmt))
+                {
+                    if (stmt.DoSQLFormat("SELECT * FROM handheld WHERE hand_code = {0}", devId))
+                    {
+                        dInfo = new DeviceInfo();
+                        dInfo.DevId = devId;
+                        dInfo.ServerDate = DateTime.UtcNow;
+                        dInfo.LoginDate = stmt.dtfetch("log_date");
+                        dInfo.GPSDate = stmt.dtfetch("last_date");
+                        dInfo.Latitude = stmt.dfetch("last_lat");
+                        dInfo.Longitude = stmt.dfetch("last_long");
+                        dInfo.Speed = stmt.ifetch("speed");
+                        dInfo.FirmVers = stmt.fetch("firmware_version");
+                        dInfo.ModemVers = stmt.fetch("modem_version");
+                        if (! stmt.IsNull("cell_strength"))
+                            dInfo.CellStrength = stmt.ifetch("cell_strength");
+                        if (stmt.DoSQLFormat("SELECT TOP 1 * FROM messagein WHERE hand_code = {0} and rdate >= {{ts '{1}'}}", devId, dInfo.GPSDate.ToString("yyyy-MM-dd HH:mm:ss")))
+                        {
+                            dInfo.WriteDate = stmt.dtfetch("idate");
+                            dInfo.Degrees = stmt.ifetch("degrees");
+                            dInfo.Plow = stmt.tfetch("plow");
+                            dInfo.Wing = stmt.tfetch("wing");
+                            dInfo.Tow = stmt.tfetch("tow");
+                            double roadTemp = stmt.dfetch("temp_road");
+                            double airTemp = stmt.dfetch("temp_air");
+                            if (roadTemp != 0 || airTemp != 0)     // if both zero, then not likely connected
+                            {
+                                dInfo.RoadTemp = roadTemp;
+                                dInfo.AirTemp = airTemp;
+                            }
+                        }
+                       
+                        if (stmt.DoSQLFormat("SELECT Max(id) as maxid FROM spreader_activity WHERE hand_code = {0} and rdate >= {{ts '{1}'}}", devId, DateTime.UtcNow.AddMinutes(-30).ToString(LONG_DATE)))
+                        {
+                            if (!stmt.IsNull("maxid"))
+                            {
+                                int maxId = stmt.ifetch("maxid");
+                                stmt.DoSQLFormat("SELECT * FROM spreader_activity WHERE id = {0}", maxId);
+                                dInfo.SpreadDate = stmt.dtfetch("rdate");
+                                dInfo.SpreadDry = stmt.tfetch("start_spread_dry");
+                                dInfo.SpreadWet = stmt.tfetch("start_spread_liq");
+                                dInfo.DryRate = stmt.dfetch("dry_rate");
+                                dInfo.WetRate = stmt.dfetch("wet_rate");
+                            }
+                        }
+
+                        if (stmt.DoSQLFormat("SELECT Max(id) as maxid FROM EngineIn WHERE hand_code = {0} and rdate >= {{ts '{1}'}}", devId, DateTime.UtcNow.AddMinutes(-30).ToString(LONG_DATE)))
+                        {
+                            if (!stmt.IsNull("maxid"))
+                            {
+                                int maxId = stmt.ifetch("maxid");
+                                stmt.DoSQLFormat("SELECT * FROM EngineIn WHERE id = {0}", maxId);
+                                dInfo.ECMDate = stmt.dtfetch("rdate");
+                                if (stmt.tfetch("rpm_valid"))
+                                    dInfo.RPM = stmt.dfetch("avgrpm");
+                                if (stmt.tfetch("cool_valid"))
+                                    dInfo.CoolTemp = stmt.dfetch("avg_cool");
+                                if (stmt.tfetch("oilp_valid"))
+                                    dInfo.OilPress = stmt.dfetch("avg_oilp");
+                            }
+                        }
+                    
+                    }
+                }
+            }
+            catch (Exception x)
+            {
+                Global.messLog.Flush("GetDeviceInfo() Excp: {0}", x.Message);
+            }
+            finally
+            {
+                if (stmt != null)
+                    stmt.Close();
+            }
+            return dInfo;
+        }
 
         [WebMethod(Description = "Retrieve vehicle listing")]
         public Vehicle[] GetVehicleList(Request request)
         {
             Vehicle[] Result = null;
 
-            if (!CheckCredentials(request))
+            if (! LowSecurityCheck(request))
                 return Result;
 
             string connStr = CustConnectionString(request);
@@ -1320,19 +1443,14 @@ namespace RoadaWebService
                 if (GetStmt(connStr, out stmt))
                 {
                     List<Vehicle> vehicles = new List<Vehicle>();
-                    bool rc = stmt.DoSQL("SELECT * FROM vehicles LEFT JOIN vehicle_type ON vehicles.type = vehicle_type.type ORDER BY vehicles.unit_num");
+                    bool rc = stmt.DoSQL("SELECT * FROM vehicles ORDER BY unit_num");
                     while(rc)
                     {
                         Vehicle v = new Vehicle();
                         v.DevId = stmt.ifetch("hand_code");
                         v.UnitNum = stmt.fetch("unit_num");
-                        v.HasPlow = stmt.tfetch("has_plow");
-                        v.HasSpreader = stmt.tfetch("has_spreader");
-                        v.HasTow = stmt.tfetch("has_tow");
-                        v.HasWing = stmt.tfetch("has_wing");
                         v.License = stmt.fetch("license");
                         v.Type = stmt.ifetch("type");
-                        v.TypeDesc = stmt.fetch("description");
                         vehicles.Add(v);
                         rc = stmt.dbSkip();
                     }
@@ -1343,6 +1461,50 @@ namespace RoadaWebService
             catch(Exception x)
             {
                 Global.messLog.Flush("GetVehicleList() Excp: {0}", x.Message);
+            }
+            finally
+            {
+                if (stmt != null)
+                    stmt.Close();
+            }
+            return Result;
+        }
+
+        [WebMethod(Description = "Retrieve vehicle types listing")]
+        public VehicleType[] GetVehicleTypes(Request request)
+        {
+            VehicleType[] Result = null;
+
+            if (! LowSecurityCheck(request))
+                return Result;
+
+            string connStr = CustConnectionString(request);
+            SqlStmt stmt = null;
+            try
+            {
+                if (GetStmt(connStr, out stmt))
+                {
+                    List<VehicleType> vehicleTypes = new List<VehicleType>();
+                    bool rc = stmt.DoSQL("SELECT * FROM vehicle_type ORDER BY type");
+                    while (rc)
+                    {
+                        VehicleType v = new VehicleType();
+                        v.Type = stmt.ifetch("type");
+                        v.HasPlow = stmt.tfetch("has_plow");
+                        v.HasSpreader = stmt.tfetch("has_spreader");
+                        v.HasTow = stmt.tfetch("has_tow");
+                        v.HasWing = stmt.tfetch("has_wing");
+                        v.TypeDesc = stmt.fetch("description");
+                        vehicleTypes.Add(v);
+                        rc = stmt.dbSkip();
+                    }
+                    Result = vehicleTypes.ToArray();
+                    vehicleTypes.Clear();
+                }
+            }
+            catch (Exception x)
+            {
+                Global.messLog.Flush("GetVehicleTypes() Excp: {0}", x.Message);
             }
             finally
             {
@@ -1368,7 +1530,7 @@ namespace RoadaWebService
         {
             GPSData[] Result = null;
 
-            if (!CheckCredentials(request))
+            if (! LowSecurityCheck(request))
                 return Result;
 
             string connStr = CustConnectionString(request);
@@ -1418,7 +1580,7 @@ namespace RoadaWebService
             }
             catch (Exception x)
             {
-                Global.messLog.Flush("GetVehicleList() Excp: {0}", x.Message);
+                Global.messLog.Flush("GPSDataRequest() Excp: {0}", x.Message);
             }
             finally
             {

@@ -188,10 +188,46 @@ namespace RoadaWebService
         public string UnitNum;
         public string License;
         public int Type;
+    }
+
+    public class VehicleType
+    {
+        public int Type;
         public string TypeDesc;
         public bool HasPlow;
         public bool HasWing;
         public bool HasTow;
         public bool HasSpreader;
     }
+
+    public class DeviceInfo
+    {
+        public int DevId;
+        public DateTime ServerDate;
+        public DateTime WriteDate;
+        public DateTime LoginDate;
+        public DateTime GPSDate;
+        public DateTime SpreadDate;
+        public DateTime ECMDate;
+        public double Latitude;
+        public double Longitude;
+        public int Degrees;
+        public int Speed;
+        public string FirmVers;
+        public string ModemVers;
+        public int CellStrength;
+        public bool Plow;
+        public bool Wing;
+        public bool Tow;
+        public double RoadTemp;
+        public double AirTemp;
+        public bool SpreadDry;
+        public bool SpreadWet;
+        public double DryRate;
+        public double WetRate;
+        public double RPM;
+        public double CoolTemp;
+        public double OilPress;
+    }
+
 }
