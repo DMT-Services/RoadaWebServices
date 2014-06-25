@@ -1407,9 +1407,9 @@ namespace RoadaWebService
                                 if (stmt.tfetch("rpm_valid"))
                                     dInfo.RPM = stmt.dfetch("avgrpm");
                                 if (stmt.tfetch("cool_valid"))
-                                    dInfo.CoolTemp = stmt.dfetch("avg_cool");
+                                    dInfo.CoolTemp = stmt.dfetch("avgcool");
                                 if (stmt.tfetch("oilp_valid"))
-                                    dInfo.OilPress = stmt.dfetch("avg_oilp");
+                                    dInfo.OilPress = stmt.dfetch("avgoilp");
                             }
                         }
                     
