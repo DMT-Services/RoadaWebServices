@@ -192,16 +192,11 @@ namespace DMTServices
 
         static private DirectorySecurity addASPNet(DirectorySecurity ds)
         {
-            FileSystemRights fsr = FileSystemRights.Modify | FileSystemRights.ListDirectory | FileSystemRights.Read;
+            FileSystemRights fsr = FileSystemRights.Modify | FileSystemRights.ReadAndExecute | FileSystemRights.ListDirectory | FileSystemRights.Read | FileSystemRights.Write;
             try
             {
-                // this one, and the next, are needed to allow the website to read/write/modify a directory
-                ds.AddAccessRule(new FileSystemAccessRule("iusr_" + System.Environment.MachineName, fsr, InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit, PropagationFlags.None, AccessControlType.Allow));
-            }
-            catch { }
-            try
-            {
-                ds.AddAccessRule(new FileSystemAccessRule("iis_wpg", fsr, InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit, PropagationFlags.None, AccessControlType.Allow));
+                // this one is needed to allow the website to read/write/modify a directory
+                ds.AddAccessRule(new FileSystemAccessRule("IIS_WPG", fsr, InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit, PropagationFlags.None, AccessControlType.Allow));
             }
             catch { }
             return ds;
