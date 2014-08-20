@@ -1289,6 +1289,15 @@ namespace DMTServices
             return myConvert.ToByteArray(ofetch(field));
         }
 
+        public List<string> lsfetch(string field, char sep)
+        {
+            List<string> rc = new List<string>();
+            string s = fetch(field);
+            if (s != string.Empty)
+                rc = new List<string>(s.Split(sep));
+            return rc;
+        }
+
         public bool IsNull(string field)
         {
             return ofetch(field) is System.DBNull;
