@@ -1289,6 +1289,11 @@ namespace DMTServices
             return myConvert.ToByteArray(ofetch(field));
         }
 
+        public List<string> lsfetch(string field)
+        {
+            return lsfetch(field, ',');
+        }
+
         public List<string> lsfetch(string field, char sep)
         {
             List<string> rc = new List<string>();
@@ -2040,8 +2045,14 @@ namespace DMTServices
                     if (o is string || o is char)
                     {
                         bool b;
-                        if (!bool.TryParse((o is char) ? ((char)o).ToString() : (string)o, out b))
-                            b = def;
+                        string s = (o is char) ? ((char)o).ToString() : (string)o;
+                        if (!bool.TryParse(s, out b))
+                        {
+                            if (s == "1" || s == "0")
+                                b = s == "1";
+                            else
+                                b = def;
+                        }
                         return b;
                     }
                     else
