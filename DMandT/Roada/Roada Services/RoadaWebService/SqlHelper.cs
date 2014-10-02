@@ -976,7 +976,7 @@ namespace DMTServices
         /// </summary>
         public string BuildCmd(string table, bool insert)
         {
-            return BuildCmd(table, insert, "");
+            return BuildCmd(table, insert, "", false);
         }
 
         /// <summary>
