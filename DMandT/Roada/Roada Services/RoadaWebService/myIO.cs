@@ -229,23 +229,27 @@ namespace DMTServices
         /// <returns>DirectoryInfo of created directory</returns>
         static public DirectoryInfo MakeWriteableDir(string DirectoryName)
         {
-            DirectoryInfo rc;
-            if (!Exists(DirectoryName))
+            DirectoryInfo rc = new DirectoryInfo(string.Empty);
+            try
             {
-                DirectorySecurity ds = new DirectorySecurity();
-                try
+                if (!Exists(DirectoryName))
                 {
-                    // this should allow the administrator user to access (FullControl)...
-                    ds.AddAccessRule(new FileSystemAccessRule("Administrators", FileSystemRights.FullControl, InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit, PropagationFlags.None, AccessControlType.Allow));
+                    DirectorySecurity ds = new DirectorySecurity();
+                    try
+                    {
+                        // this should allow the administrator user to access (FullControl)...
+                        ds.AddAccessRule(new FileSystemAccessRule("Administrators", FileSystemRights.FullControl, InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit, PropagationFlags.None, AccessControlType.Allow));
+                    }
+                    catch { }
+                    rc = CreateDirectory(DirectoryName, addASPNet(ds));
                 }
-                catch { }
-                rc = CreateDirectory(DirectoryName, addASPNet(ds));
+                else
+                {
+                    addASPNet(DirectoryName);
+                    rc = new DirectoryInfo(DirectoryName);
+                }
             }
-            else
-            {
-                addASPNet(DirectoryName);
-                rc = new DirectoryInfo(DirectoryName);
-            }
+            catch { }
             return rc;
         }
     }
