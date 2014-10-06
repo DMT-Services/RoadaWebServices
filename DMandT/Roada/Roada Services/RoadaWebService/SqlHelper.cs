@@ -353,7 +353,7 @@ namespace DMTServices
                         {
                             l -= 2;         // so we need to ignore them in length check...
                             if (l > LengthList[p])
-                                rc = rc.Substring(1, LengthList[p] + 1) + "'";
+                                rc = rc.Substring(0, LengthList[p] + 1) + "'";
                         }
                         else
                             if (l > LengthList[p])
