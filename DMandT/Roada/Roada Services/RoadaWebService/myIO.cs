@@ -229,7 +229,7 @@ namespace DMTServices
         /// <returns>DirectoryInfo of created directory</returns>
         static public DirectoryInfo MakeWriteableDir(string DirectoryName)
         {
-            DirectoryInfo rc = new DirectoryInfo(string.Empty);
+            DirectoryInfo rc = null;
             try
             {
                 if (!Exists(DirectoryName))
