@@ -3,6 +3,7 @@ using System.Xml.Serialization;
 using System.Net;
 using System.Net.Sockets;
 using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 using DMTServices;
 
@@ -27,8 +28,11 @@ namespace DMTServices
         public const int BUFFER_SIZE = 1800;        // this size must be enough to hold the DCD messages!!
         public string IPAddress = null;
 
+        [XmlIgnore]
         public byte[] Buffer = new byte[BUFFER_SIZE];
-        public byte[] Data = new byte[BUFFER_SIZE];
+        // new, now a List
+        public List<byte> Data;
+        [XmlIgnore]
         public byte[] SendBuf = new byte[BUFFER_SIZE];
         public int DataLength = 0;
 
@@ -64,11 +68,13 @@ namespace DMTServices
         public TCPPacketBuffer()
         {
             this.Buffer = new byte[BUFFER_SIZE];
+            this.Data = new List<byte>();
         }
 
         public TCPPacketBuffer(EventHandler<SocketAsyncEventArgs> asyncHandler)
         {
             this.Buffer = new byte[BUFFER_SIZE];
+            this.Data = new List<byte>();
             ReceiveEventArgs.Completed += asyncHandler;
             SendEventArgs.Completed += asyncHandler;
         }
