@@ -46,6 +46,7 @@ namespace DMTServices
         //data size to be received by the server
         //flag that indicates whether prefix was received
         public bool DataSizeReceived = false;
+        public int DataSizeState = 0;
         //place where data is stored
         [XmlIgnore] 
         public SocketAsyncEventArgs ReceiveEventArgs = new SocketAsyncEventArgs();
