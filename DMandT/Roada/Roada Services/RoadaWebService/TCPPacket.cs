@@ -100,6 +100,16 @@ namespace DMTServices
         {
             return WriteCmd(cmd, null, 0);
         }
+
+        public void ResetBusy()
+        {
+            // reset for next message
+            DataLength = 0;
+            DataSizeReceived = false;
+            DataSizeState = 0;
+            DataSize = 0;
+            Busy = false;     // we're done processing!
+        }
     }
 
 }
