@@ -29,6 +29,18 @@ namespace RoadaWebService
         public int CustId;
     }
 
+    public class ImgRec
+    {
+        public int HC;
+        public DateTime rDate;
+        public int EType;
+        public double Lat;
+        public double Lon;
+        public int Sog;
+        public int Cog;
+        public byte[] Img;
+    }
+
     public class CommResponse
     {
         public bool CommFlag;

@@ -1428,6 +1428,56 @@ namespace RoadaWebService
             return dInfo;
         }
 
+        [WebMethod(Description = "Push Camera Image")]
+        public int SendImage(Request req, ImgRec imgRec)
+        {
+            int Result = 0;
+            // low security check, don't want hackers!
+            if (!LowSecurityCheck(req))
+                return -2;
+
+            string connStr = CustConnectionString(req);
+            SqlStmt stmt = null;
+            try
+            {
+                Result = -3;
+                if (GetStmt(connStr, out stmt))
+                {
+                    SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
+                    sql.AddNow("idate");
+                    sql.Add("rdate", imgRec.rDate);
+                    sql.Add("hand_code", imgRec.HC);
+                    if (stmt.DoSQL(String.Format("SELECT unit_num FROM vehicles with (nolock) WHERE hand_code = {0}", imgRec.HC)))
+                        sql.Add("unit_num", stmt.fetch("unit_num"));
+                    sql.Add("evt_type", imgRec.EType);
+                    sql.Add("latitude", imgRec.Lat);
+                    sql.Add("longitude", imgRec.Lon);
+                    sql.Add("speed", imgRec.Sog);
+                    sql.Add("degrees", imgRec.Cog);
+                    stmt.DoSQL(sql.BuildInsert("INSERT INTO img_events"));
+                    // get this record id
+                    stmt.DoSQL("SELECT IDENT_CURRENT('img_events') as temp");
+                    int id = stmt.ifetch("temp");
+                    sql.Clear();
+                    sql.Add("event_id", id);
+                    sql.Add("pic_image", imgRec.Img);
+                    stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO img_photos"));
+                    Result = 1;
+                }
+            }
+            catch (Exception x)
+            {
+                Result = -4;
+                Global.messLog.Flush("SendImage() Excp: {0}", x.Message);
+            }
+            finally
+            {
+                if (stmt != null)
+                    stmt.Close();
+            }
+            return Result;
+        }
+
         [WebMethod(Description = "Retrieve vehicle listing")]
         public Vehicle[] GetVehicleList(Request request)
         {
