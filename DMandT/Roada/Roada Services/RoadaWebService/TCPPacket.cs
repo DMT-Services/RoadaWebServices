@@ -31,7 +31,7 @@ namespace DMTServices
         [XmlIgnore]
         public byte[] Buffer = new byte[BUFFER_SIZE];
         // new, now a List
-        public List<byte> Data;
+        public byte[] Data;
         [XmlIgnore]
         public byte[] SendBuf = new byte[BUFFER_SIZE];
         public int DataLength = 0;
@@ -69,13 +69,13 @@ namespace DMTServices
         public TCPPacketBuffer()
         {
             this.Buffer = new byte[BUFFER_SIZE];
-            this.Data = new List<byte>();
+            this.Data = new byte[0];
         }
 
         public TCPPacketBuffer(EventHandler<SocketAsyncEventArgs> asyncHandler)
         {
             this.Buffer = new byte[BUFFER_SIZE];
-            this.Data = new List<byte>();
+            this.Data = new byte[0];
             ReceiveEventArgs.Completed += asyncHandler;
             SendEventArgs.Completed += asyncHandler;
         }
