@@ -25,12 +25,16 @@ namespace DMTServices
         // this is for timing processes!
         public DateTime lastDate = DateTime.MinValue;
         // size of the buffer
-        public const int BUFFER_SIZE = 1800;        // this size must be enough to hold the DCD messages!!
+        public const int BUFFER_SIZE = 65536;        // this size must be enough to hold the DCD messages!!
         public string IPAddress = null;
 
         [XmlIgnore]
         public byte[] Buffer = new byte[BUFFER_SIZE];
-        // new, now a List
+
+        [XmlIgnore]
+        public byte[] hdrBuffer = new Byte[5];      // for header info (length etc...)
+
+        // Data is now dynamically resized on the fly
         public byte[] Data;
         [XmlIgnore]
         public byte[] SendBuf = new byte[BUFFER_SIZE];
