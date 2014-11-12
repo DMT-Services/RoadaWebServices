@@ -1012,6 +1012,15 @@ namespace DMTServices
             return DoSQL(selectStr, selectStr.StartsWith("SELECT", StringComparison.CurrentCultureIgnoreCase) || selectStr.StartsWith("EXEC", StringComparison.CurrentCultureIgnoreCase));
         }
 
+        public bool DoSQLne(string selectStr)
+        {
+            MessLog m = this.fParent.Mess;
+            this.fParent.Mess = null;
+            bool rc= DoSQL(selectStr, selectStr.StartsWith("SELECT", StringComparison.CurrentCultureIgnoreCase) || selectStr.StartsWith("EXEC", StringComparison.CurrentCultureIgnoreCase));
+            this.fParent.Mess = m;
+            return rc;
+        }
+
         public bool DoSQLFormat(string selectStr, params object[] args)
         {
             return DoSQL(string.Format(selectStr, args));
