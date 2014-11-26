@@ -61,10 +61,15 @@ namespace DMTServices
 
         static public void Move(string fFilename, string tFilename)
         {
-            Move(fFilename, tFilename, false);
+            Move(fFilename, tFilename, false, false);
         }
 
         static public string Move(string fFilename, string tFilename, bool mkUnique)
+        {
+            return Move(fFilename, tFilename, mkUnique, false);
+        }
+
+        static public string Move(string fFilename, string tFilename, bool mkUnique, bool overwrite)
         {
             if (mkUnique)
             {
@@ -75,6 +80,8 @@ namespace DMTServices
             }
             try
             {
+                if (overwrite && File.Exists(tFilename))
+                    File.Delete(tFilename);
                 File.Move(fFilename, tFilename);
             }
             catch
