@@ -186,6 +186,9 @@ namespace RoadaWebService
                 case -5:
                     r.ErrMessage = "Maximum record count exceeded";
                     break;
+                case -6:
+                    r.ErrMessage = "Buffer too large";
+                    break;
                      
             }
 
@@ -307,6 +310,35 @@ namespace RoadaWebService
                         Result = GetResponse(-2);
                         break;
                     }
+                }
+            }
+            return Result;
+        }
+
+        [WebMethod(Description = "Add binary NeoTerra data records")]
+        public Response AddBinaryPacket(Request request, int devId, byte[] buffer)
+        {
+            Response Result;
+            MQueue q = GetQueue(request, false, false);
+            if (q == null)
+            {
+                Result = GetResponse(-1);
+            }
+            else
+            {
+                TCPPacketBuffer b = new TCPPacketBuffer();
+                if (buffer.Length > b.Data.Length)
+                    Result = GetResponse(-6);       // buffer too long
+                else
+                {
+                    Result = GetResponse(0);
+                    b.Vers = 3;
+                    b.lastDate = DateTime.UtcNow;
+                    b.DevId = devId;
+                    b.DataLength = buffer.Length;
+                    Array.Copy(buffer, b.Data, buffer.Length);
+                    if (!AddToMSMQueue(q, b))
+                        Result = GetResponse(-2);
                 }
             }
             return Result;
