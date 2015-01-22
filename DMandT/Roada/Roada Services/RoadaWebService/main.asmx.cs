@@ -68,9 +68,9 @@ namespace RoadaWebService
                                     q.ConnectionString = stmt.fetch("connectionStrings");
                                     q.UserName = user;
                                     q.Password = stmt.fetch("wserv_password");
-                                    q.QName = string.Format(@".\private$\{0}", q.CustCode);
-                                    bool qok = true;
-                                    if (! MessageQueue.Exists(q.QName))
+                                    q.QName = string.Format(@"FormatName:DIRECT=OS:roadaserv\private$\{0}", q.CustCode);
+/*      can't do this to remote queue
+ *                                  if (! MessageQueue.Exists(q.QName))
                                     {
                                         try
                                         {   
@@ -81,15 +81,12 @@ namespace RoadaWebService
                                             Global.messLog.Flush(String.Format("MessageQueue Create Exception: {0}", ex.Message));
                                             qok = false;
                                         }
-                                    }
+                                    } */
                                     // make sure the queue was created ok
-                                    if(qok)
-                                    {
-                                        q.MyMessage = new System.Messaging.Message(q.QName);
-                                        q.MessageTx = new MessageQueueTransaction();
-                                        q.MessageQ = new MessageQueue(q.QName);
-                                        queueList.Add(q);
-                                    }
+                                    q.MyMessage = new System.Messaging.Message(q.QName);
+                                    q.MessageTx = new MessageQueueTransaction();
+                                    q.MessageQ = new MessageQueue(q.QName);
+                                    queueList.Add(q);
                                 }
                                 rc = stmt.dbSkip();
                             }
