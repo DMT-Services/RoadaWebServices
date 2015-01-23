@@ -25,9 +25,14 @@ namespace DMTServices
         // this is for timing processes!
         public DateTime lastDate = DateTime.MinValue;
         // size of the buffer
+#if LARGE_PACKETS
         public const int BUFFER_SIZE = 65536;        // this size must be enough to hold the DCD messages!!
+#else
+        public const int BUFFER_SIZE = 1800;        // this size must be enough to hold the DCD messages!!
+#endif
         public string IPAddress = null;
 
+#if LARGE_PACKETS
         [XmlIgnore]
         public byte[] Buffer = new byte[BUFFER_SIZE];
 
@@ -37,6 +42,10 @@ namespace DMTServices
         // Data is now dynamically resized on the fly
         public byte[] Data;
         [XmlIgnore]
+#else
+        public byte[] Buffer = new byte[BUFFER_SIZE];
+        public byte[] Data = new byte[BUFFER_SIZE];
+#endif
         public byte[] SendBuf = new byte[BUFFER_SIZE];
         public int DataLength = 0;
 
@@ -50,7 +59,9 @@ namespace DMTServices
         //data size to be received by the server
         //flag that indicates whether prefix was received
         public bool DataSizeReceived = false;
+#if LARGE_PACKETS
         public int DataSizeState = 0;
+#endif
         //place where data is stored
         [XmlIgnore] 
         public SocketAsyncEventArgs ReceiveEventArgs = new SocketAsyncEventArgs();
@@ -110,7 +121,9 @@ namespace DMTServices
             // reset for next message
             DataLength = 0;
             DataSizeReceived = false;
+#if LARGE_PACKETS
             DataSizeState = 0;
+#endif
             DataSize = 0;
             Busy = false;     // we're done processing!
         }
