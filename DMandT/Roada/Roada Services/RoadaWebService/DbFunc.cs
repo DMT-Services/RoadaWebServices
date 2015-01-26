@@ -131,6 +131,12 @@ namespace DMTServices
         public string ConnectionData = string.Empty;   // this is the actual connection info
         public int defTimeOut = 120; 
         public MessLog Mess = null;
+        /// <summary>
+        /// If this is >= 0 then, if an sql error occurs the select string will be truncated
+        /// to this length when being written to the log (or will not log the select at all if == 0).
+        /// Helps when you have really, really long sql statements...
+        /// </summary>
+        public int maxErrMess = -1;
         public string LastError = string.Empty;
 
         //private bool closeDBConn = false;
@@ -1138,8 +1144,13 @@ namespace DMTServices
             {
                 if (fParent.Mess != null)
                 {
-                    fParent.Mess.Flush("SQL Error - " + selectStr);
-                    fParent.Mess.Flush("            " + e.Message);
+                    string pfx = "            ";
+                    if (fParent.maxErrMess == 0)    // don't write out the sql that caused the error
+                        pfx = "SQL Error - ";
+                    else
+                        fParent.Mess.Flush("SQL Error - " + ((fParent.maxErrMess > 0 && selectStr.Length > fParent.maxErrMess) ? (selectStr.Substring(0, fParent.maxErrMess) + "...") : selectStr));
+
+                    fParent.Mess.Flush(pfx + e.Message);
                 }
                 LastError = e.Message;
                 rdrClose();
