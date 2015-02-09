@@ -20,6 +20,17 @@ namespace RoadaWebService
         public string ErrMessage;
     }
 
+    public class NeoTerraSystemsGatewayData
+    {
+        public DateTime Dt;
+        public double Lat;
+        public double Lon;
+        public double Speed;
+        public int Direction;
+        public string UnitID;
+        public double Odometer;
+    }
+
     public class Request
     {
         public string CustCode;

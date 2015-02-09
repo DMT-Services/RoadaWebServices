@@ -186,9 +186,13 @@ namespace RoadaWebService
                 case -6:
                     r.ErrMessage = "Buffer too large";
                     break;
+                case -7:
+                    r.ErrMessage = "Buffer too small";
+                    break;
                      
             }
-
+            if (err != 0)
+                Global.messLog.Flush(r.ErrMessage);
             return r;
         }
 
@@ -328,15 +332,65 @@ namespace RoadaWebService
                     Result = GetResponse(-6);       // buffer too long
                 else
                 {
-                    Result = GetResponse(0);
-                    b.Vers = 3;
-                    b.lastDate = DateTime.UtcNow;
-                    b.DevId = devId;
-                    b.DataLength = buffer.Length;
-                    Array.Copy(buffer, b.Data, buffer.Length);
-                    if (!AddToMSMQueue(q, b))
-                        Result = GetResponse(-2);
+                    if (buffer.Length > 2)
+                    {
+                        Result = GetResponse(0);
+                        b.Vers = buffer[1];     // version of the record
+                        b.lastDate = DateTime.UtcNow;
+                        b.DevId = devId;
+                        b.DataLength = buffer.Length;
+                        b.Data[0] = buffer[0];  // the command
+                        b.Data[1] = 0;  // not used
+                        b.Data[2] = 0;
+                        b.Data[3] = 0;
+                        b.Data[4] = 0;
+                        Array.Copy(buffer, 2, b.Data, 5, buffer.Length - 2);
+                        string s = string.Empty;
+                        for (int i = 0; i < 6; i++)
+                            s += string.Format("{0:X2} ", b.Data[i + 5]);
+                        if (!AddToMSMQueue(q, b))
+                            Result = GetResponse(-2);
+                        Global.messLog.Flush("Cmd {0} Ver {1} Id {2} Date {3}", b.Data[0], b.Vers, b.DevId, s);
+                    }
+                    else
+                        Result = GetResponse(-7);
                 }
+            }
+            return Result;
+        }
+
+        [WebMethod(Description = "Add NeoTerra GPS data records")]
+        public Response AddNeoTerraGPSData(Request request, NeoTerraSystemsGatewayData data)
+        {
+            Response Result;
+            MQueue q = GetQueue(request, false, false);
+            if (q == null)
+            {
+                Result = GetResponse(-1);
+            }
+            else
+            {
+                Result = GetResponse(0);    // default to success
+                GPSData g = new GPSData();
+                g.COG = data.Direction;
+                g.DevId = Convert.ToInt32(data.UnitID);
+                g.Latitude = data.Lat;
+                g.Longitude = data.Lon;
+                g.MetersTravelled = 0;
+                g.Moving = false;
+                g.Stopped = false;
+                g.TempAir = 0;
+                g.TempSurface = 0;
+                g.TempValid = false;
+                g.UTCDate = data.Dt;
+                g.SOG = (int)(data.Speed * 100);       // need m/s * 100
+                g.PlowInp = false;
+                g.WingInp = false;
+                g.TowInp = false;
+                TCPPacketBuffer b = MakeGPSReading(g);
+                b.lastDate = DateTime.UtcNow;
+                if (!AddToMSMQueue(q, b))
+                    Result = GetResponse(-2);
             }
             return Result;
         }
