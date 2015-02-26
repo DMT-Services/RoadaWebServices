@@ -389,6 +389,7 @@ namespace RoadaWebService
                 g.TowInp = false;
                 TCPPacketBuffer b = MakeGPSReading(g);
                 b.lastDate = DateTime.UtcNow;
+                Global.messLog.Flush("GPS Data Id {0} Speed {1} Lat {2} Lon {3} Date {4}", b.DevId, data.Speed, data.Lat, data.Lon, data.Dt);
                 if (!AddToMSMQueue(q, b))
                     Result = GetResponse(-2);
             }
