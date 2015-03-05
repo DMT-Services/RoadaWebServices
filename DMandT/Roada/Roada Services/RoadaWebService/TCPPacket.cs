@@ -84,13 +84,17 @@ namespace DMTServices
         public TCPPacketBuffer()
         {
             this.Buffer = new byte[BUFFER_SIZE];
+#if LARGE_PACKETS
             this.Data = new byte[0];
+#endif
         }
 
         public TCPPacketBuffer(EventHandler<SocketAsyncEventArgs> asyncHandler)
         {
             this.Buffer = new byte[BUFFER_SIZE];
+#if LARGE_PACKETS
             this.Data = new byte[0];
+#endif
             ReceiveEventArgs.Completed += asyncHandler;
             SendEventArgs.Completed += asyncHandler;
         }
