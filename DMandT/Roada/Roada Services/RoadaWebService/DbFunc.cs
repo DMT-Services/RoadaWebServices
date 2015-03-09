@@ -1541,7 +1541,13 @@ namespace DMTServices
         public string ConnectionData
         {
             get { return fParent.ConnectionData; }
-            set { fParent.ConnectionData = value; }
+            set { fParent.ConfigStr = ""; fParent.ConnectionData = value; }
+        }
+
+        public string ConfigStr
+        {
+            get { return fParent.ConfigStr; }
+            set { fParent.ConnectionData = ""; fParent.ConfigStr = value; }
         }
 
         public MessLog Mess
