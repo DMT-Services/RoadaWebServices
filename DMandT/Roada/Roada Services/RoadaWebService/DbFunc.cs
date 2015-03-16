@@ -140,7 +140,7 @@ namespace DMTServices
         public string LastError = string.Empty;
 
         //private bool closeDBConn = false;
-        private string ConfigStr = string.Empty;      // this is the name in the .config file that contains the connection info
+        public string ConfigStr = string.Empty;      // this is the name in the .config file that contains the connection info
 
         private List<SqlStmt> stmts = new List<SqlStmt>();
 
