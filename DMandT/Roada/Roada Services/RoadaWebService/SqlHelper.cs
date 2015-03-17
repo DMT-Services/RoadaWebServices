@@ -419,6 +419,14 @@ namespace DMTServices
         }
 
         /// <summary>
+        /// add an extended value to the name value pairs
+        /// </summary>
+        public int Add(string colName, Int64 i64)
+        {
+            return Add(colName, i64.ToString(), false);
+        }
+
+        /// <summary>
         /// add boolean value to the name value pairs, convert to 1 or 0
         /// </summary>
         public int Add(string colName, bool b)
