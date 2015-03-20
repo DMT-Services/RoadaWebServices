@@ -253,4 +253,39 @@ namespace RoadaWebService
         public double OilPress;
     }
 
+
+    public class TPatrol511
+    {
+        public int HandCode;
+        public DateTime FromDate;
+        public DateTime ToDate;
+        public DateTime FromTime;
+        public DateTime ToTime;
+
+        public int FromSegment;
+        public int ToSegment;
+
+        public int PCPercipitationConditions;
+        public string PCPercipitationConditionsAN;
+        public int PCPercipitation;
+        public int PCPercipitationAN;
+        public int ACWind;
+        public int ACWindAN;
+        public string ACWindDirection;
+
+        public int ACVisibility;
+        public int ACVisibilityAN;
+        public int ACSkyCloudConditions;
+        public int ACSkyCloudConditionsAN;
+        public int ACFog;
+        public int ACFogAN;
+        public int ACDrifting;
+        public int ACDriftingAN;
+
+        public int RoadConditions;
+        public int RoadConditionsAN;
+    }
+
+
+
 }

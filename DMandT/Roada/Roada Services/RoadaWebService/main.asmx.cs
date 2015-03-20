@@ -359,6 +359,7 @@ namespace RoadaWebService
             return Result;
         }
 
+
         [WebMethod(Description = "Add NeoTerra GPS data records")]
         public Response AddNeoTerraGPSData(Request request, NeoTerraSystemsGatewayData data)
         {
@@ -383,7 +384,7 @@ namespace RoadaWebService
                 g.TempSurface = 0;
                 g.TempValid = false;
                 g.UTCDate = data.Dt;
-                g.SOG = (int)(data.Speed * 100);       // need m/s * 100
+                g.SOG = (int)(data.Speed * 51.44444);       // need m/s * 100, but speed is in knots
                 g.PlowInp = false;
                 g.WingInp = false;
                 g.TowInp = false;
@@ -684,6 +685,59 @@ namespace RoadaWebService
             bool Result = (request.UserName == DEFAULT_USER && request.Password == DEFAULT_PASSWORD);
             if (!Result)
                 Global.messLog.Flush("LowSecurityCheck() failed with {0} and {1}", request.UserName, request.Password);
+            return Result;
+        }
+
+        [WebMethod(Description = "Add Patrol Weather Information")]
+        public int AddPatrolWeather(Request request, TPatrol511 patrol)
+        {
+            int Result = -1;
+            if (CheckCredentials(request))
+            {
+                string connStr = CustConnectionString(request);
+                SqlStmt stmt = null;
+                try
+                {
+                    Result = -2;
+                    if (GetStmt(connStr, out stmt))
+                    {
+                        SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
+                        sql.Add("hand_code", patrol.HandCode);
+                        sql.Add("start_date", patrol.FromDate);
+                        sql.Add("end_date", patrol.ToDate);
+                        sql.Add("segment_id", -1);
+                        sql.Add("segment", patrol.FromSegment);
+                        sql.Add("perc_cond", patrol.PCPercipitationConditions);
+                        sql.Add("perc_cond_an", patrol.PCPercipitationConditionsAN);
+                        sql.Add("perc", patrol.PCPercipitation);
+                        sql.Add("perc_an", patrol.PCPercipitationAN);
+                        sql.Add("ac_wind", patrol.ACWind);
+                        sql.Add("ac_wind_an", patrol.ACWindAN);
+                        sql.Add("ac_wind_dir", patrol.ACWindDirection);
+                        sql.Add("ac_vis", patrol.ACVisibility);
+                        sql.Add("ac_vis_an", patrol.ACVisibilityAN);
+                        sql.Add("ac_sky_cond", patrol.ACSkyCloudConditions);
+                        sql.Add("ac_sky_cond_an", patrol.ACSkyCloudConditionsAN);
+                        sql.Add("ac_fog", patrol.ACFog);
+                        sql.Add("ac_fog_an", patrol.ACFogAN);
+                        sql.Add("ac_drifting", patrol.ACDrifting);
+                        sql.Add("ac_drifting_an", patrol.ACDriftingAN);
+                        sql.Add("road_cond", patrol.RoadConditions);
+                        sql.Add("road_cond_an", patrol.RoadConditionsAN);
+                        stmt.DoSQL(sql.BuildInsert("INSERT INTO weather_data"));
+                        Result = 1;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Global.messLog.Flush("AddPatrolWeather() Ex: {0}", ex.Message);
+                }
+                finally
+                {
+                    if (stmt != null)
+                        stmt.Close();
+                }
+            }
             return Result;
         }
 
