@@ -1116,7 +1116,7 @@ namespace DMTServices
                         Compare = "=";
                     v = (string)ValueList[i];
 
-                    if ((Compare == "=") && (v.ToLower() == "null"))
+                    if ((Compare == "=") && (v.ToLower() == "null") && !QuotedList[i])
                         Compare = " is ";
 
                     sqlcmd.Append(FieldFixUp(ColumnList[i]) + Compare);
