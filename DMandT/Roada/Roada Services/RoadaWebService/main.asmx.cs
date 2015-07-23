@@ -741,6 +741,162 @@ namespace RoadaWebService
             return Result;
         }
 
+        [WebMethod(Description = "Request list of processed trips")]
+        public Trip[] RequestTrips(Request request, int handCode, DateTime startDate, int rowCount)
+        {
+            Trip[] Result = null;
+            if(LowSecurityCheck(request))
+            {
+                string connStr = CustConnectionString(request);
+                SqlStmt stmt = null;
+                try
+                {
+                    if (GetStmt(connStr, out stmt))
+                    {
+                        List<Trip> trips = new List<Trip>();
+
+                        if (startDate == null)
+                            startDate = DateTime.UtcNow;
+                        bool rc = stmt.DoSQLFormat("SELECT TOP {0} * FROM trip WHERE start_trip < {{ts '{1}'}} and hand_code = {2} and processed = 1 ORDER BY start_trip DESC", rowCount, startDate.ToString(LONG_DATE), handCode);
+                        while (rc)
+                        {
+                            Trip t = new Trip();
+                            t.StartDate = stmt.dtfetch("start_trip");
+                            t.EndDate = stmt.dtfetch("end_trip");
+                            t.TripNumber = stmt.ifetch("trip_number");
+                            trips.Add(t);
+                            rc = stmt.dbSkip();
+                        }
+                        Result = trips.ToArray();
+                        trips.Clear();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Global.messLog.Flush("RequestTrips() Ex: {0}", ex.Message);
+                }
+                finally
+                {
+                    if (stmt != null)
+                        stmt.Close();
+                }
+            }
+            return Result;
+        }
+
+        [WebMethod(Description = "Retrieve range of GPS readings")]
+        public GPSData[] GPSDataRangeRequest(Request request, int devId, string unitNum, int maxRows, bool firstBlock, DateTime start, DateTime end)
+        {
+            GPSData[] Result = null;
+
+            if (! LowSecurityCheck(request))
+                return Result;
+
+            string connStr = CustConnectionString(request);
+            SqlStmt stmt = null;
+            try
+            {
+                if (GetStmt(connStr, out stmt))
+                {
+                    if (unitNum != string.Empty)
+                    {
+                        if (stmt.DoSQLFormat("SELECT hand_code FROM vehicles WHERE unit_num = '{0}'", stmt.FixQuote(unitNum)))
+                            devId = stmt.ifetch("hand_code");
+                    }
+                    if (stmt.DoSQLFormat("SELECT * FROM handheld WHERE hand_code = {0}", devId))
+                    {
+                        bool rc = stmt.DoSQLFormat("SELECT TOP {4} * FROM messagein WHERE hand_code = {0} and rdate >{1} {{ts '{2}'}} and rdate <= {{ts '{3}'}} ORDER BY rdate", devId, firstBlock ? "=" : "", start.ToString(LONG_DATE), end.ToString(LONG_DATE), maxRows);
+                        if (rc)
+                        {
+                            List<GPSData> gpsdata = new List<GPSData>();
+                            while (rc)
+                            {
+                                GPSData g = new GPSData();
+                                g.DevId = devId;
+                                g.UTCDate = stmt.dtfetch("rdate");
+                                g.SOG = stmt.ifetch("speed");
+                                g.COG = stmt.ifetch("degrees");
+                                g.Latitude = stmt.dfetch("latitude");
+                                g.Longitude = stmt.dfetch("longitude");
+                                g.PlowInp = stmt.tfetch("plow");
+                                g.WingInp = stmt.tfetch("wing");
+                                g.TowInp = stmt.tfetch("tow");
+                                g.TempAir = stmt.dfetch("temp_air");
+                                g.TempSurface = stmt.dfetch("temp_road");
+                                if (!stmt.IsNull("cell_strength"))
+                                    g.CellStrength = stmt.ifetch("cell_strength");
+                                g.IDate = stmt.dtfetch("idate");
+                                gpsdata.Add(g);
+                                rc = stmt.dbSkip();
+                            }
+                            Result = gpsdata.ToArray();
+                            gpsdata.Clear();
+                        }
+                    }
+                }
+            }
+            catch (Exception x)
+            {
+                Global.messLog.Flush("GPSDataRangeRequest() Excp: {0}", x.Message);
+            }
+            finally
+            {
+                if (stmt != null)
+                    stmt.Close();
+            }
+
+            return Result;
+        }
+
+
+
+        [WebMethod(Description = "Request list of Yards")]
+        public Yard[] RequestYards(Request request)
+        {
+            Yard[] Result = null;
+            if (LowSecurityCheck(request))
+            {
+                string connStr = CustConnectionString(request);
+                SqlStmt stmt = null;
+                try
+                {
+                    if (GetStmt(connStr, out stmt))
+                    {
+                        List<Yard> yards = new List<Yard>();
+                        bool rc = stmt.DoSQL("SELECT fleet.id as fid, * FROM distribution_center LEFT JOIN fleet ON fleet.distribution_id = distribution_center.id ORDER BY distribution_center.name");
+                        while (rc)
+                        {
+                            Yard y = new Yard();
+                            y.Name = stmt.fetch("name");
+                            y.Address = stmt.fetch("address");
+                            y.Province = stmt.fetch("province");
+                            y.Postal = stmt.fetch("postal");
+                            y.Phone = stmt.fetch("phone");
+                            y.GEOFence = stmt.fetch("geofence_locations");
+                            y.BrineDensity = stmt.dfetch("brine_density");
+                            y.PerSodium = stmt.dfetch("per_sodium");
+                            y.Visible = stmt.tfetch("visible");
+                            y.FleetId = stmt.ifetch("fid");
+                            yards.Add(y);
+                            rc = stmt.dbSkip();
+                        }
+                        Result = yards.ToArray();
+                        yards.Clear();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Global.messLog.Flush("RequestYards() Ex: {0}", ex.Message);
+                }
+                finally
+                {
+                    if (stmt != null)
+                        stmt.Close();
+                }
+            }
+            return Result;
+        }
+
         [WebMethod(Description = "Commission Software")]
         public CommResponse CommSoftware(Request request, string guid, string descr)
         {
@@ -771,7 +927,8 @@ namespace RoadaWebService
                                 if (!stmt.tfetch("commissioned"))
                                 {
                                     SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
-                                    sql.Add("commissioned", true);
+                                    // for now, Drew wants it to never be commissioned for testing
+                                    //sql.Add("commissioned", true);
                                     sql.AddNow("comm_date");
                                     sql.Add("client_guid", guid);
                                     sql.Add("description", descr);
@@ -1477,6 +1634,53 @@ namespace RoadaWebService
             return Result;
         }
 
+
+        [WebMethod(Description = "Retrieve DCD device info for a specific devId")]
+        public int ValidateUser(Request request, out UserInfo info)
+        {
+            int Result = -1;
+            string connStr = CustConnectionString(request);
+            info = null;
+            if (connStr != string.Empty)
+            {
+                SqlStmt stmt = null;
+                try
+                {
+                    Result = -2;
+                    if (GetStmt(connStr, out stmt))
+                    {
+                        Result = -3;
+                        if (stmt.DoSQLFormat("SELECT * FROM employee WHERE user_name = '{0}' and type_1 = 3", stmt.FixQuote(request.UserName)))
+                        {
+                            Result = -4;
+                            if (stmt.fetch("password") == request.Password)
+                            {
+                                info = new UserInfo();
+                                info.FirstName = stmt.fetch("first_name");
+                                info.LastName = stmt.fetch("last_name");
+                                info.Phone = string.Empty;
+                                info.Email = string.Empty;
+                                info.EmployeeNum = stmt.fetch("employee_num");
+                                Result = 1;
+                            }
+                        }
+                    }
+                }
+                catch (Exception x)
+                {
+                    Global.messLog.Flush("ValidateUser() Excp: {0}", x.Message);
+                }
+
+                finally
+                {
+                    if (stmt != null)
+                        stmt.Close();
+                }
+            }
+
+            return Result;
+        }
+
         [WebMethod(Description = "Retrieve DCD device info for a specific devId")]
         public DeviceInfo GetDeviceInfo(Request request, int devId)
         {
@@ -1617,7 +1821,7 @@ namespace RoadaWebService
         }
 
         [WebMethod(Description = "Retrieve vehicle listing")]
-        public Vehicle[] GetVehicleList(Request request)
+        public Vehicle[] GetVehicleList(Request request, int? fleetId)
         {
             Vehicle[] Result = null;
 
@@ -1631,8 +1835,12 @@ namespace RoadaWebService
                 if (GetStmt(connStr, out stmt))
                 {
                     List<Vehicle> vehicles = new List<Vehicle>();
-                    bool rc = stmt.DoSQL("SELECT * FROM vehicles ORDER BY unit_num");
-                    while(rc)
+                    bool rc;
+                    if (fleetId != null)
+                        rc = stmt.DoSQLFormat("SELECT * FROM vehicles WHERE fleet = {0} ORDER BY unit_num", fleetId);
+                    else
+                        rc = stmt.DoSQL("SELECT * FROM vehicles ORDER BY unit_num");
+                    while (rc)
                     {
                         Vehicle v = new Vehicle();
                         v.DevId = stmt.ifetch("hand_code");

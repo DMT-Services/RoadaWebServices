@@ -20,6 +20,27 @@ namespace RoadaWebService
         public string ErrMessage;
     }
 
+    public class Trip
+    {
+        public DateTime StartDate;
+        public DateTime EndDate;
+        public int TripNumber;
+    }
+
+    public class Yard
+    {
+        public string Name;
+        public string Address;
+        public string Province;
+        public string Postal;
+        public string Phone;
+        public string GEOFence;
+        public double BrineDensity;
+        public double PerSodium;
+        public int FleetId;
+        public bool Visible;
+    }
+
     public class NeoTerraSystemsGatewayData
     {
         public DateTime Dt;
@@ -38,6 +59,16 @@ namespace RoadaWebService
         public string Password;
         public string BinPassword;
         public int CustId;
+        public DateTime ReqDate;
+    }
+
+    public class UserInfo
+    {
+        public string FirstName;
+        public string LastName;
+        public string Phone;
+        public string Email;
+        public string EmployeeNum;
     }
 
     public class ImgRec
