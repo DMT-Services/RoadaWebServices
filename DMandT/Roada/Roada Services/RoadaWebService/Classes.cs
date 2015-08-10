@@ -104,6 +104,53 @@ namespace RoadaWebService
         public int UnixTim;
     }
 
+
+    public class ReportData
+    {
+
+
+        public string reportTime;
+        public string phoneID;
+        public string area;
+        public string hwy;
+        public decimal CurrentLat; 
+        public decimal CurrentLong; 
+        public DateTime DateCol;
+        public string Detour;
+        public string ColDesc; 
+        public int Fatal;
+        public int injuries; 
+        public string Physical; 
+        public string Oppunder; 
+        public string Other; 
+        public string ManatScene; 
+        public string repPrep; 
+        public string repPhone; 
+        public DateTime repDate; 
+        public int chkOpp; 
+        public int chkFatal; 
+        public int chkOther;
+        public int chkSign; 
+
+        //Weater Data
+        public List<DateTime> fromTime;
+        public List<int> percipitationType;
+        public List<int> percipitationLvl;
+        public List<int> windStrength;
+        public List<int> windDirection;
+        public List<int> visibility;
+        public List<int> cloudCondition;
+        public List<int> fogLvl;
+        public List<int> drifting;
+        public List<int> roadCondition;
+    
+
+        //Update
+        public List<DateTime> updateTime;
+        public List<string> upDesc;
+
+    }
+
     public class XBAck
     {
         public string Addr;     // address of device
@@ -152,7 +199,7 @@ namespace RoadaWebService
         public System.Messaging.Message MyMessage;
         public MessageQueueTransaction MessageTx;
         public MessageQueue MessageQ;
-    }
+    } 
 
     public class GPSData
     {

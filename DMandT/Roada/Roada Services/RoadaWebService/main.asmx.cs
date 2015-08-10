@@ -1770,6 +1770,177 @@ namespace RoadaWebService
             return dInfo;
         }
 
+        [WebMethod(Description = "Push Collision Report")]
+        public int SendReport(Request req, ReportData rdata)
+        {
+            
+            int Result = 0;
+            // low security check, don't want hackers!
+            if (!LowSecurityCheck(req))
+                return -2;
+
+            string connStr = CustConnectionString(req);
+            SqlStmt stmt = null;
+            try
+            {
+                 Result = -3;
+                 if (GetStmt(connStr, out stmt))
+                 { 
+                    SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
+
+                     //adds and updates main report table 
+                     if (stmt.DoSQL(String.Format("SELECT ci_id FROM collision_incident WHERE ci_id = '{0}-{1}'", rdata.phoneID, rdata.reportTime)))                        
+                     {
+                         sql.Clear();
+                        sql.Add("ci_date", rdata.DateCol);
+                        sql.Add("hwy", rdata.hwy);
+                        sql.Add("detour", rdata.Detour);
+                        sql.Add("description", rdata.ColDesc);
+                        sql.Add("fatal", rdata.Fatal);
+                        sql.Add("injuries", rdata.injuries);
+                        sql.Add("features", rdata.Physical);
+                        sql.Add("other_info", rdata.Other);
+                        sql.Add("mto_rep", rdata.ManatScene);
+                        sql.Add("report_by", rdata.repPrep);
+                        sql.Add("report_phone", rdata.repPhone);
+                        sql.Add("report_datetime", rdata.repDate);
+                        sql.Add("opp_reports", rdata.chkOpp);
+                        sql.Add("fatal_report", rdata.chkFatal);
+                        sql.Add("other_report", rdata.chkOther);
+                        sql.Add("message_sign", rdata.chkSign);
+                        sql.Add("latitude", rdata.CurrentLat);
+                        sql.Add("longitude", rdata.CurrentLong);
+
+                        stmt.DoSQL(sql.BuildUpdate("UPDATE collision_incident", String.Format("WHERE ci_id = '{0}-{1}'", rdata.phoneID, rdata.reportTime)));
+
+                        Result = 1;
+
+                    
+                    }
+                    else
+                    {
+                        sql.Clear();
+                        sql.Add("ci_id", String.Format("{0}-{1}",rdata.phoneID, rdata.reportTime));
+                        sql.Add("hwy", rdata.hwy);
+                        sql.Add("ci_date", rdata.DateCol);
+                        sql.Add("detour", rdata.Detour);
+                        sql.Add("description", rdata.ColDesc);
+                        sql.Add("fatal", rdata.Fatal);
+                        sql.Add("injuries", rdata.injuries);
+                        sql.Add("features", rdata.Physical);
+                        sql.Add("other_info", rdata.Other);
+                        sql.Add("mto_rep", rdata.ManatScene);
+                        sql.Add("report_by", rdata.repPrep);
+                        sql.Add("report_phone", rdata.repPhone);
+                        sql.Add("report_datetime", rdata.repDate);
+                        sql.Add("opp_reports", rdata.chkOpp);
+                        sql.Add("fatal_report", rdata.chkFatal);
+                        sql.Add("other_report", rdata.chkOther);
+                        sql.Add("message_sign", rdata.chkSign);
+                        sql.Add("latitude", rdata.CurrentLat);
+                        sql.Add("longitude", rdata.CurrentLong);
+
+                        stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO collision_incident"));
+                        
+                        Result = 2;
+                    }
+
+                     //adds and updates fields to weather table 
+                     int i = 0;
+                     foreach (DateTime record in rdata.fromTime)
+                     {
+                         if (stmt.DoSQL(String.Format("SELECT ci_id FROM weather_condition WHERE ci_id = '{0}-{1}' AND start_time = '{2}.000'", rdata.phoneID, rdata.reportTime, rdata.fromTime[i].ToString("yyyy-MM-dd HH:mm:ss"))))
+                         {
+                             sql.Clear();
+                             sql.Add("p_type", rdata.percipitationType[i]);
+                             sql.Add("p_level", rdata.percipitationLvl[i]);
+                             sql.Add("w_gust", rdata.windStrength[i]);
+                             sql.Add("w_direction", rdata.windDirection[i]);
+                             sql.Add("visibility", rdata.visibility[i]);
+                             sql.Add("cloud", rdata.cloudCondition[i]);
+                             sql.Add("fog", rdata.fogLvl[i]);
+                             sql.Add("drifting", rdata.drifting[i]);
+                             sql.Add("road", rdata.roadCondition[i]);
+
+                             stmt.DoSQL(sql.BuildUpdate("UPDATE weather_condition", string.Format("WHERE ci_id = '{0}-{1}' AND start_time = '{2}.000'",rdata.phoneID, rdata.reportTime, rdata.fromTime[i].ToString("yyyy-MM-dd HH:mm:ss"))));
+                             i++;
+                             Result = 3;
+                         }
+
+
+                         else
+                         {
+                             if (rdata.fromTime[i].Year > 1000)
+                             {
+                                 sql.Clear();
+                                 sql.Add("ci_id", String.Format("{0}-{1}", rdata.phoneID, rdata.reportTime));
+                                 sql.Add("start_time", rdata.fromTime[i]);
+                                 sql.Add("p_type", rdata.percipitationType[i]);
+                                 sql.Add("p_level", rdata.percipitationLvl[i]);
+                                 sql.Add("w_gust", rdata.windStrength[i]);
+                                 sql.Add("w_direction", rdata.windDirection[i]);
+                                 sql.Add("visibility", rdata.visibility[i]);
+                                 sql.Add("cloud", rdata.cloudCondition[i]);
+                                 sql.Add("fog", rdata.fogLvl[i]);
+                                 sql.Add("drifting", rdata.drifting[i]);
+                                 sql.Add("road", rdata.roadCondition[i]);
+
+                                 stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO weather_condition"));
+                                 i++;
+                                 Result = 4;
+                             }
+                        }
+                      
+                     }
+                     i = 0;
+
+                     //updates add adds update files to update table 
+                     int ndx = 0;
+                     foreach (DateTime record in rdata.updateTime)
+                     {
+                         if (stmt.DoSQL(String.Format("SELECT ci_id FROM collision_update WHERE ci_id = '{0}-{1}' AND update_time = '{2}.000'",rdata.phoneID , rdata.reportTime, rdata.updateTime[ndx].ToString("yyyy-MM-dd HH:mm:ss"))))
+                         {
+                             sql.Clear();
+                             sql.Add("description", rdata.upDesc[ndx]);
+                             stmt.DoSQL(sql.BuildUpdate("UPDATE collision_update", string.Format("WHERE ci_id = '{0}-{1}' AND start_time = '{2}.000'",rdata.phoneID, rdata.reportTime, rdata.updateTime[ndx].ToString("yyyy-MM-dd HH:mm:ss"))));
+                             ndx++;
+                             Result = 5;
+                         }
+
+
+                         else
+                         {
+                             if (rdata.updateTime[ndx].Year > 1000)
+                             {
+                                 sql.Clear();
+                                 sql.Add("ci_id", String.Format("{0}-{1}", rdata.phoneID, rdata.reportTime));
+                                 sql.Add("update_time", rdata.updateTime[ndx]);
+                                 sql.Add("description", rdata.upDesc[ndx]);
+                                 stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO collision_update"));
+                                 ndx++;
+                                 Result = 6;
+                             }
+                         }
+                        
+                     }
+                     ndx = 0;        
+                 } 
+            }
+            catch (Exception x)
+            {
+                Result = -4;
+                Global.messLog.Flush("SendRpt() Excp: {0}", x.Message);
+            }
+            finally
+            {
+                if (stmt != null)
+                    stmt.Close();
+            }
+            return Result;
+        }
+
+
+
         [WebMethod(Description = "Push Camera Image")]
         public int SendImage(Request req, ImgRec imgRec)
         {
