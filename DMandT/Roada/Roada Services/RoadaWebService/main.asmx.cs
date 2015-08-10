@@ -1861,6 +1861,8 @@ namespace RoadaWebService
                              sql.Add("fog", rdata.fogLvl[i]);
                              sql.Add("drifting", rdata.drifting[i]);
                              sql.Add("road", rdata.roadCondition[i]);
+                             sql.Add("latitude", rdata.CurrentLat);
+                             sql.Add("longirude", rdata.CurrentLong);
 
                              stmt.DoSQL(sql.BuildUpdate("UPDATE weather_condition", string.Format("WHERE ci_id = '{0}-{1}' AND start_time = '{2}.000'",rdata.phoneID, rdata.reportTime, rdata.fromTime[i].ToString("yyyy-MM-dd HH:mm:ss"))));
                              i++;
@@ -1884,6 +1886,8 @@ namespace RoadaWebService
                                  sql.Add("fog", rdata.fogLvl[i]);
                                  sql.Add("drifting", rdata.drifting[i]);
                                  sql.Add("road", rdata.roadCondition[i]);
+                                 sql.Add("latitude", rdata.CurrentLat);
+                                 sql.Add("longirude", rdata.CurrentLong);
 
                                  stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO weather_condition"));
                                  i++;
