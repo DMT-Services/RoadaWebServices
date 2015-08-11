@@ -1902,11 +1902,11 @@ namespace RoadaWebService
                      int ndx = 0;
                      foreach (DateTime record in rdata.updateTime)
                      {
-                         if (stmt.DoSQL(String.Format("SELECT ci_id FROM collision_update WHERE ci_id = '{0}-{1}' AND update_time = '{2}.000'",rdata.phoneID , rdata.reportTime, rdata.updateTime[ndx].ToString("yyyy-MM-dd HH:mm:ss"))))
+                         if (stmt.DoSQL(String.Format("SELECT ci_id FROM collision_updates WHERE ci_id = '{0}-{1}' AND update_time = '{2}.000'",rdata.phoneID , rdata.reportTime, rdata.updateTime[ndx].ToString("yyyy-MM-dd HH:mm:ss"))))
                          {
                              sql.Clear();
                              sql.Add("description", rdata.upDesc[ndx]);
-                             stmt.DoSQL(sql.BuildUpdate("UPDATE collision_update", string.Format("WHERE ci_id = '{0}-{1}' AND start_time = '{2}.000'",rdata.phoneID, rdata.reportTime, rdata.updateTime[ndx].ToString("yyyy-MM-dd HH:mm:ss"))));
+                             stmt.DoSQL(sql.BuildUpdate("UPDATE collision_updates", string.Format("WHERE ci_id = '{0}-{1}' AND start_time = '{2}.000'",rdata.phoneID, rdata.reportTime, rdata.updateTime[ndx].ToString("yyyy-MM-dd HH:mm:ss"))));
                              ndx++;
                              Result = 5;
                          }
@@ -1920,7 +1920,7 @@ namespace RoadaWebService
                                  sql.Add("ci_id", String.Format("{0}-{1}", rdata.phoneID, rdata.reportTime));
                                  sql.Add("update_time", rdata.updateTime[ndx]);
                                  sql.Add("description", rdata.upDesc[ndx]);
-                                 stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO collision_update"));
+                                 stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO collision_updates"));
                                  ndx++;
                                  Result = 6;
                              }
