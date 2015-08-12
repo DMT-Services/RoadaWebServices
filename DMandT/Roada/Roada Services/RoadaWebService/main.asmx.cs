@@ -1770,6 +1770,58 @@ namespace RoadaWebService
             return dInfo;
         }
 
+        [WebMethod(Description = "Push Weather Report")]
+        public int SendWeatherReport(Request req, WeatherData wdata)
+        {
+
+            int Result = 0;
+            // low security check, don't want hackers!
+            if (!LowSecurityCheck(req))
+                return -2;
+
+            string connStr = CustConnectionString(req);
+            SqlStmt stmt = null;
+            try
+            {
+                Result = -3;
+                if (GetStmt(connStr, out stmt))
+                {
+                    SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);                   
+                        
+                    if (wdata.fromTime.Year > 1000)
+                    {
+                        sql.Clear();                            
+                        sql.Add("start_time", wdata.fromTime);
+                        sql.Add("p_type", wdata.percipitationType);
+                        sql.Add("p_level", wdata.percipitationLvl);
+                        sql.Add("w_gust", wdata.windStrength);
+                        sql.Add("w_direction", wdata.windDirection);
+                        sql.Add("visibility", wdata.visibility);
+                        sql.Add("cloud", wdata.cloudCondition);
+                        sql.Add("fog", wdata.fogLvl);
+                        sql.Add("drifting", wdata.drifting);
+                        sql.Add("road", wdata.roadCondition);
+                        sql.Add("latitude", wdata.CurrentLat);
+                        sql.Add("longirude", wdata.CurrentLong);
+                        stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO weather_condition"));
+                                 
+                        Result = 1;
+                    }
+                }
+            }
+            catch (Exception x)
+            {
+                Result = -4;
+                Global.messLog.Flush("SendRpt() Excp: {0}", x.Message);
+            }
+            finally
+            {
+                if (stmt != null)
+                    stmt.Close();
+            }
+            return Result;
+        }
+
         [WebMethod(Description = "Push Collision Report")]
         public int SendReport(Request req, ReportData rdata)
         {

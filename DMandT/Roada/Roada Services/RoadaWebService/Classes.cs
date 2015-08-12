@@ -104,7 +104,21 @@ namespace RoadaWebService
         public int UnixTim;
     }
 
-
+    public class WeatherData
+    {
+        public DateTime fromTime;
+        public int percipitationType;
+        public int percipitationLvl;
+        public int windStrength;
+        public int windDirection;
+        public int visibility;
+        public int cloudCondition;
+        public int fogLvl;
+        public int drifting;
+        public int roadCondition;
+        public decimal CurrentLat;
+        public decimal CurrentLong; 
+    }
     public class ReportData
     {
 
