@@ -52,6 +52,13 @@ namespace RoadaWebService
         public double Odometer;
     }
 
+    public class Comissioninfo 
+    {
+        public string IMEI;
+        public string Owner;
+        public string desc;
+    }
+
     public class Request
     {
         public string CustCode;
@@ -82,13 +89,24 @@ namespace RoadaWebService
         public int Cog;
         public byte[] Img;
     }
-
+    public class CustomerSettings
+    {
+        public string PortNumber;
+        public string CameraIP;
+        public string TrackingIP;
+        public int Handcode;
+        public string ErrorResp;
+    }
     public class CommResponse
     {
         public bool CommFlag;
         public string Mesg;
         public int Mode;
         public int Id;
+        public int handcode;
+        public string dbCodes;
+        public string desc;
+        public string pcCode;
         public int UniqueId;
     }
 

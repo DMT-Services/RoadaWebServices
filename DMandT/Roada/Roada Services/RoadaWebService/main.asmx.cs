@@ -897,6 +897,7 @@ namespace RoadaWebService
             return Result;
         }
 
+
         [WebMethod(Description = "Commission Software")]
         public CommResponse CommSoftware(Request request, string guid, string descr)
         {
@@ -904,7 +905,7 @@ namespace RoadaWebService
             response.CommFlag = false;
             response.Mesg = "Unknown error";
             // added security!!
-            if(LowSecurityCheck(request))
+            if (LowSecurityCheck(request))
             {
                 SqlConn mConn = new SqlConn("MainConn");
                 SqlStmt stmt = null;
@@ -927,8 +928,8 @@ namespace RoadaWebService
                                 if (!stmt.tfetch("commissioned"))
                                 {
                                     SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
-                                    // for now, Drew wants it to never be commissioned for testing
-                                    //sql.Add("commissioned", true);
+                                    
+                                    sql.Add("commissioned", true);
                                     sql.AddNow("comm_date");
                                     sql.Add("client_guid", guid);
                                     sql.Add("description", descr);
@@ -952,6 +953,69 @@ namespace RoadaWebService
                             }
                             if (!response.CommFlag)
                                 response.Mesg = string.Format("No validation keys left for customer code {0}", request.CustCode);
+                        }
+                    }
+                }
+                finally
+                {
+                    if (stmt != null)
+                        stmt.Close();
+                    if (mConn != null)
+                        mConn.Close();
+                }
+            }
+            return response;
+        }
+
+        [WebMethod(Description = "Soft activate for phone app")]
+        public CommResponse PhoneSoft(Request request, string guid)
+        {
+            CommResponse response = new CommResponse();
+            response.CommFlag = false;
+            response.Mesg = "Unknown error";
+            // added security!!
+            if (LowSecurityCheck(request))
+            {
+                SqlConn mConn = new SqlConn("MainConn");
+                SqlStmt stmt = null;
+                try
+                {
+                    mConn.Mess = Global.messLog;
+                    if (mConn.dbConnect())
+                    {
+                        stmt = new SqlStmt(mConn);
+                        // main database, look for a new software activation record that
+                       stmt.DoSQL(string.Format("SELECT * FROM soft_activate WHERE client_guid = '{0}'", guid));
+ 
+                        if (stmt.fetch("db_codes") == "")
+                        {
+                            response.Mesg = ("Device has not yet been Assigned Contact DM&T");                       
+                        }
+                        else
+                        {
+                                                   
+                            SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);             
+                            sql.AddNow("comm_date");                                    
+                            int rowId = stmt.ifetch("id");                          
+                            string pcCode = stmt.fetch("pc_code");                       
+                            string dbCodes = stmt.fetch("db_codes");
+                            string desc = stmt.fetch("description");
+                            int HandCode = stmt.ifetch("handcode");
+
+                            stmt.DoSQL(sql.BuildUpdate("UPDATE soft_activate", string.Format("WHERE client_guid = '{0}'", guid)));
+
+                            if (stmt.RowsAffected != 1)
+                                response.Mesg = "Failed updating activation database";
+                            else
+                            {
+                                response.desc = desc;
+                                response.Id = rowId;                                                      
+                                response.pcCode = pcCode;                      
+                                response.dbCodes = dbCodes;
+                                response.handcode = HandCode;
+                                response.Mesg = "Settings updated";
+                                response.CommFlag = true;                                                              
+                            }                    
                         }
                     }
                 }
@@ -1135,6 +1199,8 @@ namespace RoadaWebService
             return Result;
         }
 
+        
+
         [WebMethod(Description = "Get the client table info")]
         public Client[] GetClients(Request request)
         {
@@ -1182,6 +1248,135 @@ namespace RoadaWebService
                 }
             }
             return Result;
+        }
+
+        private void ActivateHandCode (int handcode, string IMEI)
+        {
+
+            SqlConn mConn = new SqlConn("MainConn");
+            SqlStmt stmt = null;
+         
+            try
+            {                                         
+                stmt = new SqlStmt(mConn);
+                SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
+
+                sql.Add("hand_code", handcode);
+                stmt.DoSQLFormat(sql.BuildUpdate("UPDATE soft_activate with (rowlock)", " WHERE client_guid = '{0}'"), IMEI);            
+                
+            }
+            catch (Exception ex)
+            {
+                Global.messLog.Flush("Excp in GetClients: " + ex.Message);
+                     
+            }
+            finally
+            {
+                if (stmt != null)
+                    stmt.Close();
+                if (mConn != null)
+                    mConn.Close();
+            }     
+        }
+
+        private CustomerSettings getCustInfo(string CustomerCode)
+        {
+                CustomerSettings CSet = null; 
+                SqlConn mConn = new SqlConn("MainConn");
+                SqlStmt stmt = null;
+                try
+                {
+                    if (mConn.dbConnect())
+                    {
+                        stmt = new SqlStmt(mConn);
+                        stmt.DoSQL(string.Format("SELECT * FROM customer WHERE cust_code = '{0}'", CustomerCode));
+                        CSet = new CustomerSettings();
+                        CSet.Handcode = stmt.ifetch("next_id");
+                        
+                        CSet.PortNumber = stmt.fetch("lmdirect_port");
+                        CSet.CameraIP = stmt.fetch("camera_ip");
+                    }
+                    else
+                    {
+                        CSet.ErrorResp = "Failed to get Data From Customer";
+                    }  
+                }
+                catch (Exception ex)
+                {
+                    CSet.ErrorResp = "Exception thrown " + ex.ToString();
+                }
+                finally
+                {
+                    if (stmt != null)
+                        stmt.Close();
+                    if (mConn != null)
+                        mConn.Close();
+                }
+
+            return CSet;
+        }
+
+        [WebMethod(Description = "Get the next avaiable HandCode and other settings info")]
+        public CustomerSettings GetCustomerSettings(Request request, int currentHandcode, string IMEI)
+        {
+            CustomerSettings custSet = new CustomerSettings();
+            
+
+            if (!LowSecurityCheck(request))
+            {
+                custSet.ErrorResp = "Failed to authenticate";
+            }
+            else
+            {
+                
+            string connStr = CustConnectionString(request);
+            SqlStmt stmt = null;
+                try
+                {
+                    custSet.ErrorResp = "Failed to Get Customer Settings";
+                    
+                    if (GetStmt(connStr, out stmt))
+                    {                     
+                        if (currentHandcode < 40000)
+                        {
+                            custSet = getCustInfo(request.CustCode); // get starting value and other customer settings                           
+                           
+                            SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
+
+                            while (stmt.DoSQL(string.Format("SELECT hand_code FROM handheld WHERE hand_code = '{0}'", custSet.Handcode)))
+                            {
+                                custSet.Handcode++; // Increment the Value in handcode until it cand find a record
+                            }
+
+                            sql.Add("hand_code", custSet.Handcode);
+                            sql.AddNow("commissioned");
+                            stmt.DoSQL(sql.BuildInsert("INSERT INTO handheld"));
+
+                            ActivateHandCode(custSet.Handcode, IMEI);// adds hand code to the soft_activate table
+                         
+                                                        
+                        }
+                        else
+                        {
+                            custSet = getCustInfo(request.CustCode); // gets latest customer settings
+                            custSet.Handcode = currentHandcode; //sets handcode back to current handcode 
+
+                        }                  
+                       
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Global.messLog.Flush("Excp in GetClients: " + ex.Message);
+              
+                }
+                finally
+                {
+                    if (stmt != null)
+                        stmt.Close();                
+                }
+            }            
+            return custSet;
         }
 
         private string SerializeObject(object obj, Type objType)
@@ -1802,7 +1997,7 @@ namespace RoadaWebService
                         sql.Add("drifting", wdata.drifting);
                         sql.Add("road", wdata.roadCondition);
                         sql.Add("latitude", wdata.CurrentLat);
-                        sql.Add("longirude", wdata.CurrentLong);
+                        sql.Add("longitude", wdata.CurrentLong);
                         stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO weather_condition"));
                                  
                         Result = 1;
@@ -2033,6 +2228,53 @@ namespace RoadaWebService
                     stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO img_photos"));
                     Result = 1;
                 }
+            }
+            catch (Exception x)
+            {
+                Result = -4;
+                Global.messLog.Flush("SendImage() Excp: {0}", x.Message);
+            }
+            finally
+            {
+                if (stmt != null)
+                    stmt.Close();
+            }
+            return Result;
+        }
+
+        [WebMethod(Description = "Send Request to Commision Phone for roada App")]
+        public int SendCommision(Request req, Comissioninfo comInfo)
+        {
+            int Result = 0;
+            // low security check, don't want hackers!
+            if (!LowSecurityCheck(req))
+                return -2;
+
+            SqlConn mConn = new SqlConn("MainConn");
+            SqlStmt stmt = null;
+            try
+            {
+                stmt = new SqlStmt(mConn);
+                Result = -3;
+            
+
+                    if (!stmt.DoSQL(String.Format("SELECT * FROM soft_activate WHERE client_guid = '{0}'", comInfo.IMEI)))
+                    {
+                        SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
+                        sql.Add("pc_code", comInfo.Owner);
+                        sql.Add("client_guid", comInfo.IMEI);
+                        sql.Add("description", comInfo.desc);
+                        stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO soft_activate"));
+
+
+                    }
+             
+                        stmt.DoSQLFormat("SELECT id FROM soft_activate WHERE client_guid = '{0}'", comInfo.IMEI);
+
+                        Result = stmt.ifetch("id"); //returns the newly created ID for the phones Confiuration  
+                    
+                    
+
             }
             catch (Exception x)
             {
