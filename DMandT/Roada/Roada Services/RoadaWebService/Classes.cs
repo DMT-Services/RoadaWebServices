@@ -396,6 +396,36 @@ namespace RoadaWebService
         public int RoadConditionsAN;
     }
 
+    public class Route
+    {
+        public int Id;
+        public string Code;
+        public int Area;
+        public int Yard;
+        public string Name;
+        public string Info;
+        public DateTime Date;
+        public DateTime Last;
+        public int RType;
+        public RoutePoint[] RoutePoints;
+        public WayPoint[] WayPoints;
+    }
+
+    public class RoutePoint
+    {
+        public DateTime Dt;
+        public double Lat;
+        public double Lon;
+        public int Spd;
+        public int Dir;
+        public double Dst;
+    }
+
+    public class WayPoint : RoutePoint
+    {
+        public int WTp;
+        public string Txt;
+    }
 
 
 }

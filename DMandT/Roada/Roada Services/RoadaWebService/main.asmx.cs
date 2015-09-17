@@ -848,7 +848,222 @@ namespace RoadaWebService
             return Result;
         }
 
+        [WebMethod(Description = "Save Route Data")]
+        public int SaveRoute(Request request, Route route)
+        {
+            int Result = -1;
+            if (LowSecurityCheck(request))
+            {
+                Result = -2;
+                string connStr = CustConnectionString(request);
+                SqlStmt stmt = null;
+                try
+                {
+                    if (GetStmt(connStr, out stmt))
+                    {
+                        Result = 0;
+                        SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
 
+                        sql.Add("code", route.Code);
+                        sql.Add("area", route.Area);
+                        sql.Add("yard", route.Yard);
+                        sql.Add("name", route.Name);
+                        sql.Add("info", route.Info);
+                        sql.Add("date", route.Date);
+                        sql.Add("last", route.Last);
+                        sql.Add("type", route.RType);
+
+                        string whereClause =  string.Format("WHERE code = '{0}'", sql.FixUpEx(route.Code));
+                        bool insFlag = ! stmt.DoSQLFormat("SELECT id FROM routes {0}", whereClause);
+                        int routeId = -1;
+                        if (! insFlag)
+                            routeId = stmt.ifetch("id");
+                        // either update or insert into the routes table
+                        string cmdStr = sql.BuildCmd("routes", insFlag, whereClause, true);
+                        stmt.DoSQL(cmdStr);
+                        if (insFlag)
+                        {
+                            // get this record id
+                            stmt.DoSQL("SELECT IDENT_CURRENT('routes') as temp");
+                            routeId = stmt.ifetch("temp");
+                        }
+                        string whereRid = string.Format("WHERE route_id = {0}", routeId);
+                        // delete the route points
+                        stmt.DoSQLFormat("DELETE FROM route_points {0}", whereRid);
+                        // add in the new route points
+                        foreach (RoutePoint rp in route.RoutePoints)
+                        {
+                            sql.Clear();
+                            sql.Add("route_id", routeId);
+                            sql.Add("rdate", rp.Dt);
+                            sql.Add("latitude", rp.Lat);
+                            sql.Add("longitude", rp.Lon);
+                            sql.Add("speed", rp.Spd);
+                            sql.Add("degrees", rp.Dir);
+                            sql.Add("distance", rp.Dst);
+                            stmt.DoSQL(sql.BuildInsert("INSERT INTO route_points"));
+                        }
+                        // delete the way points
+                        stmt.DoSQLFormat("DELETE FROM route_waypoints {0}", whereRid);
+                        // add in the new route points
+                        foreach (WayPoint wp in route.WayPoints)
+                        {
+                            sql.Clear();
+                            sql.Add("route_id", routeId);
+                            sql.Add("rdate", wp.Dt);
+                            sql.Add("latitude", wp.Lat);
+                            sql.Add("longitude", wp.Lon);
+                            sql.Add("speed", wp.Spd);
+                            sql.Add("degrees", wp.Dir);
+                            sql.Add("distance", wp.Dst);
+                            sql.Add("wtype", wp.WTp);
+                            sql.Add("hint", wp.Txt);
+                            stmt.DoSQL(sql.BuildInsert("INSERT INTO route_waypoints"));
+                        }
+                        Result = 1;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Global.messLog.Flush("SaveRoute() Ex: {0}", ex.Message);
+                }
+                finally
+                {
+                    if (stmt != null)
+                        stmt.Close();
+                }
+            }
+            return Result;
+        }
+
+        [WebMethod(Description = "Get Route Data")]
+        public Route GetRoute(Request request, string code, int? rid)
+        {
+            Route Result = null;
+            if (LowSecurityCheck(request))
+            {
+                string connStr = CustConnectionString(request);
+                SqlStmt stmt = null;
+                try
+                {
+                    if (GetStmt(connStr, out stmt))
+                    {
+                        bool rc;
+                        if (code != string.Empty)
+                            rc = stmt.DoSQLFormat("SELECT * FROM routes with (nolock) WHERE code = '{0}'", stmt.FixQuote(code));
+                        else
+                            rc = stmt.DoSQLFormat("SELECT * FROM routes with (nolock) WHERE id = {0}", rid);
+                        if (rc)
+                        {
+                            // start by filling the route result
+                            Result = new Route();
+                            Result.Code = stmt.fetch("code");
+                            Result.Area = stmt.ifetch("area");
+                            Result.Yard = stmt.ifetch("yard");
+                            Result.Name = stmt.fetch("name");
+                            Result.Info = stmt.fetch("info");
+                            Result.Date = stmt.dtfetch("date");
+                            Result.Last = stmt.dtfetch("last");
+                            Result.RType = stmt.ifetch("type");
+                            int routeId = stmt.ifetch("id");
+                            // next get the route points
+                            rc = stmt.DoSQLFormat("SELECT * FROM route_points with (nolock) WHERE route_id = {0}", routeId);
+                            List<RoutePoint> rps = new List<RoutePoint>();
+                            while (rc)
+                            {
+                                RoutePoint rp = new RoutePoint();
+                                rp.Dt = stmt.dtfetch("rdate");
+                                rp.Lat = stmt.dfetch("latitude");
+                                rp.Lon = stmt.dfetch("longitude");
+                                rp.Spd = stmt.ifetch("speed");
+                                rp.Dir = stmt.ifetch("degrees");
+                                rp.Dst = stmt.dfetch("distance");
+                                rps.Add(rp);
+                                rc = stmt.dbSkip();
+                            }
+                            // get the array of route points
+                            Result.RoutePoints = rps.ToArray();
+                            // next get the way points
+                            rc = stmt.DoSQLFormat("SELECT * FROM route_waypoints with (nolock) WHERE route_id = {0}", routeId);
+                            List<WayPoint> wps = new List<WayPoint>();
+                            while (rc)
+                            {
+                                WayPoint wp = new WayPoint();
+                                wp.Dt = stmt.dtfetch("rdate");
+                                wp.Lat = stmt.dfetch("latitude");
+                                wp.Lon = stmt.dfetch("longitude");
+                                wp.Spd = stmt.ifetch("speed");
+                                wp.Dir = stmt.ifetch("degrees");
+                                wp.Dst = stmt.dfetch("distance");
+                                wp.WTp = stmt.ifetch("wtype");
+                                wp.Txt = stmt.fetch("hint");
+                                wps.Add(wp);
+                                rc = stmt.dbSkip();
+                            }
+                            // get the array of way points
+                            Result.WayPoints = wps.ToArray();
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Global.messLog.Flush("GetRoute() Ex: {0}", ex.Message);
+                }
+                finally
+                {
+                    if (stmt != null)
+                        stmt.Close();
+                }
+            }
+            return Result;
+        }
+
+        [WebMethod(Description = "Get a List of Routes")]
+        public Route[] GetRouteList(Request request)
+        {
+            Route[] Result = null;
+            if (LowSecurityCheck(request))
+            {
+                string connStr = CustConnectionString(request);
+                SqlStmt stmt = null;
+                try
+                {
+                    if (GetStmt(connStr, out stmt))
+                    {
+                        List<Route> routes = new List<Route>();
+                        bool rc = stmt.DoSQLFormat("SELECT * FROM routes with (nolock) ORDER BY code");
+                        while(rc)
+                        {
+                            // start by filling the route result
+                            Route r = new Route();
+                            r.Id = stmt.ifetch("id");
+                            r.Code = stmt.fetch("code");
+                            r.Area = stmt.ifetch("area");
+                            r.Yard = stmt.ifetch("yard");
+                            r.Name = stmt.fetch("name");
+                            r.Info = stmt.fetch("info");
+                            r.Date = stmt.dtfetch("date");
+                            r.Last = stmt.dtfetch("last");
+                            r.RType = stmt.ifetch("type");
+                            routes.Add(r);
+                            rc = stmt.dbSkip();
+                        }
+                        // get the array of routes
+                        Result = routes.ToArray();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Global.messLog.Flush("GetRouteList() Ex: {0}", ex.Message);
+                }
+                finally
+                {
+                    if (stmt != null)
+                        stmt.Close();
+                }
+            }
+            return Result;
+        }
 
         [WebMethod(Description = "Request list of Yards")]
         public Yard[] RequestYards(Request request)
