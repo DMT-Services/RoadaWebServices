@@ -159,10 +159,12 @@ namespace RoadaWebService
         public string repPrep; 
         public string repPhone; 
         public DateTime repDate; 
+        public DateTime clearDate;
         public int chkOpp; 
         public int chkFatal; 
         public int chkOther;
-        public int chkSign; 
+        public int chkSign;
+        public int chkDmg;
 
         //Weater Data
         public List<DateTime> fromTime;

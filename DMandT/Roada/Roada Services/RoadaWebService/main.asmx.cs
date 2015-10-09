@@ -2045,7 +2045,7 @@ namespace RoadaWebService
         }
 
 
-        [WebMethod(Description = "Retrieve DCD device info for a specific devId")]
+        [WebMethod(Description = "Validate user login info")]
         public int ValidateUser(Request request, out UserInfo info)
         {
             int Result = -1;
@@ -2060,7 +2060,7 @@ namespace RoadaWebService
                     if (GetStmt(connStr, out stmt))
                     {
                         Result = -3;
-                        if (stmt.DoSQLFormat("SELECT * FROM employee WHERE user_name = '{0}' and type_1 = 3", stmt.FixQuote(request.UserName)))
+                        if (stmt.DoSQLFormat("SELECT * FROM go_users WHERE user_name = '{0}'", stmt.FixQuote(request.UserName)))
                         {
                             Result = -4;
                             if (stmt.fetch("password") == request.Password)
@@ -2068,8 +2068,8 @@ namespace RoadaWebService
                                 info = new UserInfo();
                                 info.FirstName = stmt.fetch("first_name");
                                 info.LastName = stmt.fetch("last_name");
-                                info.Phone = string.Empty;
-                                info.Email = string.Empty;
+                                info.Phone = stmt.fetch("phone_number");
+                                info.Email = stmt.fetch("email");
                                 info.EmployeeNum = stmt.fetch("employee_num");
                                 Result = 1;
                             }
@@ -2272,6 +2272,8 @@ namespace RoadaWebService
                         sql.Add("message_sign", rdata.chkSign);
                         sql.Add("latitude", rdata.CurrentLat);
                         sql.Add("longitude", rdata.CurrentLong);
+                        sql.Add("date_cleared", rdata.clearDate);
+                        sql.Add("damage", rdata.chkDmg);
 
                         stmt.DoSQL(sql.BuildUpdate("UPDATE collision_incident", String.Format("WHERE ci_id = '{0}-{1}'", rdata.phoneID, rdata.reportTime)));
 
@@ -2301,6 +2303,8 @@ namespace RoadaWebService
                         sql.Add("message_sign", rdata.chkSign);
                         sql.Add("latitude", rdata.CurrentLat);
                         sql.Add("longitude", rdata.CurrentLong);
+                        sql.Add("date_cleared", rdata.clearDate);
+                        sql.Add("damage", rdata.chkDmg);
 
                         stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO collision_incident"));
                         
