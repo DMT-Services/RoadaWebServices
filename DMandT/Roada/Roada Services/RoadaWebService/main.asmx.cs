@@ -757,7 +757,7 @@ namespace RoadaWebService
 
                         if (startDate == null)
                             startDate = DateTime.UtcNow;
-                        bool rc = stmt.DoSQLFormat("SELECT TOP {0} * FROM trip WHERE start_trip < {{ts '{1}'}} and hand_code = {2} and processed = 1 ORDER BY start_trip DESC", rowCount, startDate.ToString(LONG_DATE), handCode);
+                        bool rc = stmt.DoSQLFormat("SELECT TOP {0} * FROM trip WHERE start_trip < {{ts '{1}'}} and hand_code = {2} ORDER BY start_trip DESC", rowCount, startDate.ToString(LONG_DATE), handCode);
                         while (rc)
                         {
                             Trip t = new Trip();
