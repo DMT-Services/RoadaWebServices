@@ -2071,6 +2071,12 @@ namespace RoadaWebService
                                 info.Phone = stmt.fetch("phone_number");
                                 info.Email = stmt.fetch("email");
                                 info.EmployeeNum = stmt.fetch("employee_num");
+                                info.truckStatus = stmt.ifetch("status_perm");
+                                info.icReports = stmt.ifetch("ic_perm");
+                                info.routing = stmt.ifetch("routing_perm");
+                                info.weatherRep = stmt.ifetch("weather_perm");
+                                info.fullDiag = stmt.ifetch("diag_perm");
+
                                 Result = 1;
                             }
                         }

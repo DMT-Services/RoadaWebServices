@@ -76,6 +76,11 @@ namespace RoadaWebService
         public string Phone;
         public string Email;
         public string EmployeeNum;
+        public int truckStatus;
+        public int routing;
+        public int weatherRep;
+        public int icReports;
+        public int fullDiag;
     }
 
     public class ImgRec
