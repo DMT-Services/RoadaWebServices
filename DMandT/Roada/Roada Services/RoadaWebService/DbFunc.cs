@@ -246,13 +246,17 @@ namespace DMTServices
             {
                 try
                 {
-                    if (configString.Length == 0)
+                    if (configString == string.Empty)
                     {
-                        if (ConnectionData.Length == 0)
+                        if (ConnectionData == string.Empty)
                             ConnectionData = GetConnectionString(ConfigStr);
                     }
                     else
                         ConnectionData = GetConnectionString(configString);
+
+                    if (ConnectionData == string.Empty)
+                        if (ConfigStr.Contains("Data Source="))
+                            ConnectionData = ConfigStr;
 #if OLEDB
                     // add in the provider stuff as it's pretty much the only
                     // thing that is different and MUST HAVE to connect...
@@ -849,12 +853,16 @@ namespace DMTServices
 
                 if (s == null)
                 {
-                    for (int i = 0; i < ConfigurationManager.ConnectionStrings.Count; i++)
-                        if (ConfigurationManager.ConnectionStrings[i].Name.Contains(ConnectName))
-                        {
-                            s = ConfigurationManager.ConnectionStrings[i];
-                            break;
-                        }
+                    try
+                    {
+                        for (int i = 0; i < ConfigurationManager.ConnectionStrings.Count; i++)
+                            if (ConfigurationManager.ConnectionStrings[i].Name.Contains(ConnectName))
+                            {
+                                s = ConfigurationManager.ConnectionStrings[i];
+                                break;
+                            }
+                    }
+                    catch { }
                 }
             }
 
