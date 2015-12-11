@@ -843,26 +843,26 @@ namespace DMTServices
             ConnectionStringSettings s = ConfigurationManager.ConnectionStrings[ConnectName];
             if (s == null)
             {
-                System.Configuration.Configuration appconf = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
-                for (int i = 0; i < appconf.ConnectionStrings.ConnectionStrings.Count; i++)
-                    if (appconf.ConnectionStrings.ConnectionStrings[i].Name.Contains(ConnectName))
-                    {
-                        s = appconf.ConnectionStrings.ConnectionStrings[i];
-                        break;
-                    }
+                try
+                {
+                    System.Configuration.Configuration appconf = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+                    for (int i = 0; i < appconf.ConnectionStrings.ConnectionStrings.Count; i++)
+                        if (appconf.ConnectionStrings.ConnectionStrings[i].Name.Contains(ConnectName))
+                        {
+                            s = appconf.ConnectionStrings.ConnectionStrings[i];
+                            break;
+                        }
+                }
+                catch { }
 
                 if (s == null)
                 {
-                    try
-                    {
-                        for (int i = 0; i < ConfigurationManager.ConnectionStrings.Count; i++)
-                            if (ConfigurationManager.ConnectionStrings[i].Name.Contains(ConnectName))
-                            {
-                                s = ConfigurationManager.ConnectionStrings[i];
-                                break;
-                            }
-                    }
-                    catch { }
+                    for (int i = 0; i < ConfigurationManager.ConnectionStrings.Count; i++)
+                        if (ConfigurationManager.ConnectionStrings[i].Name.Contains(ConnectName))
+                        {
+                            s = ConfigurationManager.ConnectionStrings[i];
+                            break;
+                        }
                 }
             }
 
