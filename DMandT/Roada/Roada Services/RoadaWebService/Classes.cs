@@ -68,7 +68,27 @@ namespace RoadaWebService
         public int CustId;
         public DateTime ReqDate;
     }
-
+    public class evntRecord
+    {
+        public int EventType;
+        public DateTime eventTime;
+        public string Ops;
+        public int ech;
+        public double lon;
+        public double lat;
+        public string eventMessage;
+        public string driver;
+        public string truck;
+        public int handcode;
+        public string route;
+    }
+    public class LogginData   
+    {
+        public int online;
+        public string user;
+        public string password;
+        public string truck;       
+    }
     public class UserInfo
     {
         public string FirstName;
@@ -76,11 +96,13 @@ namespace RoadaWebService
         public string Phone;
         public string Email;
         public string EmployeeNum;
+        public int role;
         public int truckStatus;
         public int routing;
         public int weatherRep;
         public int icReports;
         public int fullDiag;
+        public int camPerm;
     }
 
     public class ImgRec

@@ -40,7 +40,7 @@ namespace RoadaWebService
         {
 
         }
-
+        
         private string[] ReadQueueList(bool forceRefresh)
         {
             List<string> custCodes = new List<string>();
@@ -2071,11 +2071,21 @@ namespace RoadaWebService
                                 info.Phone = stmt.fetch("phone_number");
                                 info.Email = stmt.fetch("email");
                                 info.EmployeeNum = stmt.fetch("employee_num");
-                                info.truckStatus = stmt.ifetch("status_perm");
-                                info.icReports = stmt.ifetch("ic_perm");
-                                info.routing = stmt.ifetch("routing_perm");
-                                info.weatherRep = stmt.ifetch("weather_perm");
-                                info.fullDiag = stmt.ifetch("diag_perm");
+                                info.role = stmt.ifetch("role");
+                                
+                                stmt.Clear();
+
+                                if (stmt.DoSQLFormat("SELECT * FROM go_user_roles WHERE id = {0}", info.role))                                 
+                                {
+                                  
+                                    info.truckStatus = stmt.ifetch("status_perm");
+                                    info.icReports = stmt.ifetch("ic_perm");
+                                    info.routing = stmt.ifetch("routing_perm");
+                                    info.weatherRep = stmt.ifetch("weather_perm");
+                                    info.fullDiag = stmt.ifetch("diag_perm");
+                                    info.camPerm = stmt.ifetch("cam_perm");
+                                }
+
 
                                 Result = 1;
                             }
@@ -2513,6 +2523,205 @@ namespace RoadaWebService
             }
             return Result;
         }
+
+
+        [WebMethod(Description = "Consumes Event records send from Roada Go")]
+        public int SendEventRecord(Request req, evntRecord evnt)
+        {
+            int Result = 0;
+            // low security check, don't want hackers!
+            if (!LowSecurityCheck(req))
+                return -2;
+
+            string connStr = CustConnectionString(req);
+            SqlStmt stmt = null;
+            try
+            {
+                
+                Result = -3;
+                if (GetStmt(connStr, out stmt))
+                {
+                    if (evnt.EventType == 1) //Driver route Confirmation
+                    {
+
+                        SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
+
+                        sql.Add("event_type", evnt.EventType);
+                        sql.Add("event_time", evnt.eventTime);
+                        sql.Add("operations", evnt.Ops);
+                        sql.Add("echelon", evnt.ech);
+                        sql.Add("latitude", evnt.lat);
+                        sql.Add("longitude", evnt.lon);
+                        sql.Add("event_mess", evnt.eventMessage);
+                        sql.Add("driver", evnt.driver);
+                        sql.Add("truck", evnt.truck);
+                        sql.Add("hand_code", evnt.handcode);
+                        sql.Add("route",evnt.route);
+                        stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO go_events"));
+
+                        Result = 1;
+
+                    }
+                    if (evnt.EventType == 2) //Driver Login
+                    {
+
+                        SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
+
+                        sql.Add("event_type", evnt.EventType);
+                        sql.Add("event_time", evnt.eventTime);                 
+                        sql.Add("event_mess", evnt.eventMessage);
+                        sql.Add("driver", evnt.driver);
+                        sql.Add("truck", evnt.truck);
+                        sql.Add("hand_code", evnt.handcode);
+                        stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO go_events"));
+                        
+                        sql.Clear();
+
+                        if (!stmt.DoSQLFormat("SELECT * FROM go_status WHERE hand_code = '{0}'", evnt.handcode))
+                        {
+
+                            sql.Add("logged_in", 1);
+                            sql.Add("hand_code", evnt.handcode);
+                            sql.Add("truck_id", evnt.truck);
+                            sql.Add("user_id", evnt.driver);
+                            sql.Add("last_log", evnt.eventTime);                                  
+                            stmt.DoSQL(sql.BuildInsert("INSERT INTO go_status"));                    
+
+                        }
+                        else
+                        {
+                            sql.Add("logged_in", 1);
+                            sql.Add("hand_code", evnt.handcode);
+                            sql.Add("truck_id", evnt.truck);
+                            sql.Add("user_id", evnt.driver);
+                            sql.Add("last_log", evnt.eventTime);
+                            stmt.DoSQLFormat(sql.BuildUpdate("UPDATE go_status with (rowlock)", "WHERE hand_code = '{0}'"), evnt.handcode);
+                        }
+
+
+                        Result = 2;
+
+                    }
+                    if (evnt.EventType == 3) //Device Checkin
+                    {
+
+                        SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
+
+                        sql.Add("event_type", evnt.EventType);
+                        sql.Add("event_time", evnt.eventTime);
+                        sql.Add("event_mess", evnt.eventMessage);
+                        sql.Add("driver", evnt.driver);
+                        sql.Add("truck", evnt.truck);
+                        sql.Add("latitude", evnt.lat);
+                        sql.Add("longitude", evnt.lon);
+                        sql.Add("hand_code", evnt.handcode);
+                        stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO go_events"));
+
+                        Result = 3;
+
+                    }
+                    if (evnt.EventType == 4) //Driver Logout
+                    {
+
+                        SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
+
+                        sql.Add("event_type", evnt.EventType);
+                        sql.Add("event_time", evnt.eventTime);
+                        sql.Add("event_mess", evnt.eventMessage);
+                        sql.Add("driver", evnt.driver);
+                        sql.Add("truck", evnt.truck);
+                        sql.Add("hand_code", evnt.handcode);
+                        stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO go_events"));
+
+                        sql.Clear();
+
+                        if (!stmt.DoSQLFormat("SELECT * FROM go_status WHERE hand_code = '{0}'", evnt.handcode))
+                        {
+
+                            sql.Add("logged_in", 0);
+                            sql.Add("hand_code", evnt.handcode);
+                            sql.Add("truck_id", evnt.truck);
+                            sql.Add("user_id", evnt.driver);
+                            sql.Add("last_log", evnt.eventTime);
+                            stmt.DoSQL(sql.BuildInsert("INSERT INTO go_status"));
+
+                        }
+                        else
+                        {
+                            sql.Add("logged_in", 0);
+                            sql.Add("hand_code", evnt.handcode);
+                            sql.Add("truck_id", evnt.truck);
+                            sql.Add("user_id", evnt.driver);
+                            sql.Add("last_log", evnt.eventTime);
+                            stmt.DoSQLFormat(sql.BuildUpdate("UPDATE go_status with (rowlock)", "WHERE hand_code = '{0}'"), evnt.handcode);
+                        }
+
+
+                        Result = 4;
+
+                    }
+
+                }
+               
+            }
+            catch (Exception x)
+            {
+                Result = -4;
+                Global.messLog.Flush("SendImage() Excp: {0}", x.Message);
+            }
+            finally
+            {
+                if (stmt != null)
+                    stmt.Close();
+            }
+            return Result;
+        }
+
+
+        [WebMethod(Description = "returns the Last time device was logged in")]
+        public LogginData GetLoginStatus(Request req, int handcode)
+        {
+            LogginData data = new LogginData();
+            data.online = 0;
+
+            // low security check, don't want hackers!
+            if (!LowSecurityCheck(req))
+                return data;
+
+            string connStr = CustConnectionString(req);
+            SqlStmt stmt = null;
+            try
+            {                
+                if (GetStmt(connStr, out stmt))
+                {
+                                       
+                    SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
+                      
+                   stmt.DoSQLFormat("SELECT * FROM go_status WHERE hand_code = '{0}'",handcode);
+
+                   data.online = stmt.ifetch("logged_in");
+                   data.truck = stmt.fetch("truck_id");
+                   data.user = stmt.fetch("user_id");
+                   
+                   stmt.DoSQLFormat("SELECT password FROM go_users WHERE user_name = '{0}'", data.user);
+                   data.password = stmt.fetch("password");
+               
+                }
+
+            }
+            catch (Exception x)
+            {
+                
+                Global.messLog.Flush("SendImage() Excp: {0}", x.Message);
+            }
+            finally
+            {
+                if (stmt != null)
+                    stmt.Close();
+            }
+            return data;
+        }
+
 
         [WebMethod(Description = "Retrieve vehicle listing")]
         public Vehicle[] GetVehicleList(Request request, int? fleetId)
