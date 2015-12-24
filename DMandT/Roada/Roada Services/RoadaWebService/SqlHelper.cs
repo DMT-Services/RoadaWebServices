@@ -22,6 +22,8 @@ namespace DMTServices
         private List<string> FieldList = new List<string>();        // these 2 are optionally used to control max data length
         private List<int> LengthList = new List<int>();             // so you don't get 'overflow' errors when adding data
 
+        private Dictionary<string, int> DecimalDict = new Dictionary<string, int>();    // used by Reset() method to truncate arithmetic erros in decimal columns
+
         private dbType DataSource = dbType.SqlServer;               // used when doing some Database type specific stuff (ie. SqlServer - GETDATE() vs Oracle - SYSDATE)
 
         public MessLog mess = null;                                 // not really used but does log a couple of Exceptions should they occur...
@@ -68,6 +70,8 @@ namespace DMTServices
                     FieldList.Clear();
                     LengthList.Clear();
 
+                    DecimalDict.Clear();
+
                     DataTable dt = conn.GetSchema(tableName);
 #if CRAP
                     foreach (DataRow dr in dt.Rows)
@@ -103,6 +107,15 @@ namespace DMTServices
                                     FieldList.Add(dr.sfetch("COLUMN_NAME").ToLower());
                                     LengthList.Add(l);
                                 }
+                            }
+                            else
+                            {
+                                // only if decimal numeric type
+                                if (dr.fetch("DATA_TYPE") == "decimal")
+                                    DecimalDict.Add(dr.sfetch("COLUMN_NAME").ToLower(), dr.ifetch("NUMERIC_PRECISION") - dr.ifetch("NUMERIC_SCALE"));
+                                else
+                                    if (dr.fetch("DATA_TYPE") == "int")     // we'll check int types as well
+                                        DecimalDict.Add(dr.sfetch("COLUMN_NAME").ToLower(), -1);
                             }
 #endif
                         }
@@ -363,6 +376,57 @@ namespace DMTServices
                     catch (Exception e)
                     {
                         Log("Exception! - CheckVals " + e.Message);
+                    }
+                }
+                else
+                {
+                    // handle decimal values
+                    int maxLen = 0;
+                    if (DecimalDict.TryGetValue(colName.ToLower(), out maxLen))
+                    {
+                        v = v.Trim(); // we don't want any trailing/leading white space
+                        if (maxLen == -1)       // "int" datatype?
+                        {
+                            try
+                            {
+                                Convert.ToInt32(v);
+                            }
+                            catch
+                            {
+                                rc = "0";       // force it to be zero on overflow
+                            }
+                        }
+                        else
+                        {
+                            int expNdx = v.IndexOf('E');    // look for floating point
+                            if (expNdx >= 0)    // floating point?
+                            {
+                                string expStr = v.Substring(expNdx + 1);
+                                if (expStr.Length > 0)
+                                {
+                                    if (expStr[0] == '+')
+                                    {
+                                        int expValue = 0;
+                                        try
+                                        {
+                                            expValue = Convert.ToInt32(expStr.Substring(1));
+                                        }
+                                        catch { }
+                                        if (expValue > maxLen)
+                                            rc = new String('9', maxLen);
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                string wholeNum = v;
+                                int wholeLen = v.IndexOf('.');
+                                if (wholeLen == 0)
+                                    wholeLen = wholeNum.Length;
+                                if (wholeLen > maxLen)
+                                    rc = new String('9', maxLen);
+                            }
+                        }
                     }
                 }
             }
