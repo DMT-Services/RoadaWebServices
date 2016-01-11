@@ -2583,6 +2583,7 @@ namespace RoadaWebService
                             sql.Add("logged_in", 1);
                             sql.Add("hand_code", evnt.handcode);
                             sql.Add("truck_id", evnt.truck);
+                            sql.Add("version", evnt.version);
                             sql.Add("user_id", evnt.driver);
                             sql.Add("last_log", evnt.eventTime);                                  
                             stmt.DoSQL(sql.BuildInsert("INSERT INTO go_status"));                    
@@ -2593,6 +2594,7 @@ namespace RoadaWebService
                             sql.Add("logged_in", 1);
                             sql.Add("hand_code", evnt.handcode);
                             sql.Add("truck_id", evnt.truck);
+                            sql.Add("version", evnt.version);
                             sql.Add("user_id", evnt.driver);
                             sql.Add("last_log", evnt.eventTime);
                             stmt.DoSQLFormat(sql.BuildUpdate("UPDATE go_status with (rowlock)", "WHERE hand_code = '{0}'"), evnt.handcode);

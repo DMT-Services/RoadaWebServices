@@ -74,6 +74,7 @@ namespace RoadaWebService
         public DateTime eventTime;
         public string Ops;
         public int ech;
+        public double version;
         public double lon;
         public double lat;
         public string eventMessage;
