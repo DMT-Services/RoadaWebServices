@@ -35,6 +35,8 @@ namespace RoadaWebService
         const string LONG_DATE = "yyyy-MM-dd HH:mm:ss";
         const int DEFAULT_RUN_TIME = 40;
         private const int MaxDownloadBatchSize = 1000;
+        // spatial data lookup
+        private SpatialHelper spatialHelper = new SpatialHelper("SpatialConn", Global.messLog);
 
         private void InitializeComponent()
         {
@@ -1055,6 +1057,58 @@ namespace RoadaWebService
                 catch (Exception ex)
                 {
                     Global.messLog.Flush("GetRouteList() Ex: {0}", ex.Message);
+                }
+                finally
+                {
+                    if (stmt != null)
+                        stmt.Close();
+                }
+            }
+            return Result;
+        }
+
+        [WebMethod(Description = "Get details of the temperature and street location at a specific time")]
+        public WeatherLocation GetWeatherLocation(Request request, int devId, DateTime locationDate)
+        {
+            WeatherLocation Result = null;
+            if (LowSecurityCheck(request))
+            {
+                string connStr = CustConnectionString(request);
+                SqlStmt stmt = null;
+                try
+                {
+                    if (GetStmt(connStr, out stmt))
+                    {
+                        // subtract 4 minutes
+                        DateTime locDateMin4 = locationDate.Subtract(new TimeSpan(0, 4, 0));
+                        string sqlStr = string.Format("SELECT top 50 * FROM messagein with (nolock) WHERE rdate >= {0} and hand_code = {1} ORDER BY rdate", SqlHelper.timeStamp(locDateMin4, SqlHelper.dbType.SqlServer), devId);
+                        bool rc = stmt.DoSQL(sqlStr);
+                        if (rc)
+                        {
+                            Result = new WeatherLocation();
+                            while (rc)
+                            {
+                                // make sure we always get a result
+                                Result.calcLat = stmt.dfetch("latitude");
+                                Result.calcLong = stmt.dfetch("longitude");
+                                Result.tempAir = stmt.dfetch("temp_air");
+                                Result.tempRoad = stmt.dfetch("temp_road");
+                                // if this records date > requested we're done!
+                                if (stmt.dtfetch("rdate") > locationDate)
+                                    break;
+                                rc = stmt.dbSkip();
+                            }
+                            SpatData spatData = new SpatData(locationDate, stmt.ifetch("id"), Result.calcLat, Result.calcLong);
+                            if (spatialHelper.GetRoadNet(spatData))
+                            {
+                                Result.address = spatialHelper.FullAddress;
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Global.messLog.Flush("GetWeatherLocation() Ex: {0}", ex.Message);
                 }
                 finally
                 {
@@ -2218,6 +2272,9 @@ namespace RoadaWebService
                     {
                         sql.Clear();                            
                         sql.Add("start_time", wdata.fromTime);
+                        sql.Add("comm_id", wdata.commId);
+                        sql.Add("unit_num", wdata.unitNum);
+                        sql.Add("hand_code", wdata.handCode);
                         sql.Add("p_type", wdata.percipitationType);
                         sql.Add("p_level", wdata.percipitationLvl);
                         sql.Add("w_gust", wdata.windStrength);
@@ -2229,6 +2286,13 @@ namespace RoadaWebService
                         sql.Add("road", wdata.roadCondition);
                         sql.Add("latitude", wdata.CurrentLat);
                         sql.Add("longitude", wdata.CurrentLong);
+                        sql.Add("calc_lat", wdata.calcLat);
+                        sql.Add("calc_long", wdata.calcLong);
+                        sql.Add("temp_air", wdata.tempAir);
+                        sql.Add("temp_road", wdata.tempRoad);
+                        sql.Add("valid_loc", wdata.validLoc);
+                        sql.Add("address", wdata.address);
+
                         stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO weather_condition"));
                                  
                         Result = 1;
@@ -2436,6 +2500,7 @@ namespace RoadaWebService
                 return -2;
 
             string connStr = CustConnectionString(req);
+
             SqlStmt stmt = null;
             try
             {
@@ -2491,30 +2556,24 @@ namespace RoadaWebService
             {
                 stmt = new SqlStmt(mConn);
                 Result = -3;
-            
 
-                    if (!stmt.DoSQL(String.Format("SELECT * FROM soft_activate WHERE client_guid = '{0}'", comInfo.IMEI)))
-                    {
-                        SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
-                        sql.Add("pc_code", comInfo.Owner);
-                        sql.Add("client_guid", comInfo.IMEI);
-                        sql.Add("description", comInfo.desc);
-                        stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO soft_activate"));
+                if (!stmt.DoSQL(String.Format("SELECT * FROM soft_activate WHERE client_guid = '{0}'", comInfo.IMEI)))
+                {
+                    SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
+                    sql.Add("pc_code", comInfo.Owner);
+                    sql.Add("client_guid", comInfo.IMEI);
+                    sql.Add("description", comInfo.desc);
+                    stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO soft_activate"));
+                }
 
+                stmt.DoSQLFormat("SELECT id FROM soft_activate WHERE client_guid = '{0}'", comInfo.IMEI);
 
-                    }
-             
-                        stmt.DoSQLFormat("SELECT id FROM soft_activate WHERE client_guid = '{0}'", comInfo.IMEI);
-
-                        Result = stmt.ifetch("id"); //returns the newly created ID for the phones Confiuration  
-                    
-                    
-
+                Result = stmt.ifetch("id"); //returns the newly created ID for the phones Confiuration  
             }
             catch (Exception x)
             {
                 Result = -4;
-                Global.messLog.Flush("SendImage() Excp: {0}", x.Message);
+                Global.messLog.Flush("SendCommission() Excp: {0}", x.Message);
             }
             finally
             {
@@ -2533,7 +2592,10 @@ namespace RoadaWebService
             if (!LowSecurityCheck(req))
                 return -2;
 
+            Global.messLog.Flush("Req: " + req.CustCode);
             string connStr = CustConnectionString(req);
+            Global.messLog.Flush("ConnStr: " + connStr);
+            Global.messLog.Flush("Evnt {0}", evnt == null);
             SqlStmt stmt = null;
             try
             {
@@ -2669,7 +2731,7 @@ namespace RoadaWebService
             catch (Exception x)
             {
                 Result = -4;
-                Global.messLog.Flush("SendImage() Excp: {0}", x.Message);
+                Global.messLog.Flush("SendEventRecord() Excp: {0}", x.Message);
             }
             finally
             {

@@ -153,6 +153,9 @@ namespace RoadaWebService
     public class WeatherData
     {
         public DateTime fromTime;
+        public int commId;
+        public int handCode;
+        public string unitNum;
         public int percipitationType;
         public int percipitationLvl;
         public int windStrength;
@@ -163,12 +166,26 @@ namespace RoadaWebService
         public int drifting;
         public int roadCondition;
         public decimal CurrentLat;
-        public decimal CurrentLong; 
+        public decimal CurrentLong;
+        public double calcLat;
+        public double calcLong;
+        public string address;
+        public double tempAir;
+        public double tempRoad;
+        public bool validLoc;
     }
+
+    public class WeatherLocation
+    {
+        public double calcLat;
+        public double calcLong;
+        public string address;
+        public double tempAir;
+        public double tempRoad;
+    }
+
     public class ReportData
     {
-
-
         public string reportTime;
         public string phoneID;
         public string area;
