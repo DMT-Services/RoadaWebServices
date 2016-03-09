@@ -156,6 +156,7 @@ namespace RoadaWebService
         public int commId;
         public int handCode;
         public string unitNum;
+        public string driver;
         public int percipitationType;
         public int percipitationLvl;
         public int windStrength;
@@ -165,6 +166,7 @@ namespace RoadaWebService
         public int fogLvl;
         public int drifting;
         public int roadCondition;
+        public int road2ndCondition;
         public decimal CurrentLat;
         public decimal CurrentLong;
         public double calcLat;
@@ -474,5 +476,18 @@ namespace RoadaWebService
         public string Txt;
     }
 
+    public class SpatData
+    {
+        public long SpatialId;
+        public double Latitude;
+        public double Longitude;
+        public long[] ObjIds = new long[3];
+        public double[] Dist = new double[3];
 
+        public SpatData(double lat, double lon)
+        {
+            Latitude = lat;
+            Longitude = lon;
+        }
+    }
 }

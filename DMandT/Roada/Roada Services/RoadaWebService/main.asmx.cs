@@ -36,7 +36,6 @@ namespace RoadaWebService
         const int DEFAULT_RUN_TIME = 40;
         private const int MaxDownloadBatchSize = 1000;
         // spatial data lookup
-        private SpatialHelper spatialHelper = new SpatialHelper("SpatialConn", Global.messLog);
 
         private void InitializeComponent()
         {
@@ -1067,6 +1066,87 @@ namespace RoadaWebService
             return Result;
         }
 
+        private bool FindSpatialMatch(SqlStmt stmt, SpatData spat)
+        {
+            int i = 0;
+            try
+            {
+                bool rc = stmt.DoSQLFormat("SELECT * FROM MyDistance({0},{1},0.002) order by distance", spat.Longitude, spat.Latitude);
+                while (rc)
+                {
+                    spat.ObjIds[i] = stmt.lfetch("object_id");
+                    spat.Dist[i] = stmt.dfetch("distance");
+                    if (++i >= 3)
+                        break;
+                    rc = stmt.dbSkip();
+                }
+            }
+            catch (Exception ex)
+            {
+                Global.messLog.Flush("FindSpatialMatch() Excp: ", ex.Message);
+            }
+            finally
+            {
+                stmt.Close();
+            }
+
+            return i > 0;
+        }
+
+        private bool GetRoadNet(SpatData spat, out string address)
+        {
+            SqlHelper sql = new SqlHelper();
+
+            bool found = false;
+            address = string.Empty;
+            SqlStmt stmt = new SqlStmt("SpatialConn");
+            try
+            {
+                found = FindSpatialMatch(stmt, spat);
+
+                if (found)
+                {
+                    found = false;
+                    // sometimes there is no address info for a give object, so try all 3
+                    for (int ndx = 0; ndx < spat.ObjIds.Length; ndx++)
+                    {
+                        // look for address info
+                        bool rc = stmt.DoSQLFormat("SELECT HOUSE_NUMBER_STRUCTURE,FIRST_HOUSE_NUMBER,LAST_HOUSE_NUMBER,FULL_STREET_NAME,STANDARD_MUNICIPALITY FROM orn_address_info WITH (nolock) WHERE ROAD_NET_ELEMENT_ID={0} ORDER BY event_id", spat.ObjIds[ndx]);
+                        if (rc)
+                        {
+                            // can't very well skip through every record?!?
+                            int max = 6;
+                            while (rc)
+                            {
+                                string streetName = stmt.fetch("full_street_name");
+                                if (streetName.Length > 2)
+                                {
+                                    address = string.Format("{0}, {1}", streetName, stmt.fetch("standard_municipality"));
+                                    found = true;      // we found a street!
+                                    break;
+                                }
+                                rc = stmt.dbSkip();
+
+                                if (--max <= 0)
+                                    rc = false;
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Global.messLog.Flush("GetRoadNetDataEx() Excp: ", ex.Message);
+            }
+            finally
+            {
+                stmt.Close();
+            }
+            return found;
+        }
+
+
         [WebMethod(Description = "Get details of the temperature and street location at a specific time")]
         public WeatherLocation GetWeatherLocation(Request request, int devId, DateTime locationDate)
         {
@@ -1098,10 +1178,12 @@ namespace RoadaWebService
                                     break;
                                 rc = stmt.dbSkip();
                             }
-                            SpatData spatData = new SpatData(locationDate, stmt.ifetch("id"), Result.calcLat, Result.calcLong);
-                            if (spatialHelper.GetRoadNet(spatData))
+                            SpatData spatData = new SpatData(Result.calcLat, Result.calcLong);
+
+                            string address;
+                            if (GetRoadNet(spatData, out address))
                             {
-                                Result.address = spatialHelper.FullAddress;
+                                Result.address = address;
                             }
                         }
                     }
@@ -2266,8 +2348,9 @@ namespace RoadaWebService
                 Result = -3;
                 if (GetStmt(connStr, out stmt))
                 {
-                    SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);                   
-                        
+                    SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
+
+                    Result = -5;
                     if (wdata.fromTime.Year > 1000)
                     {
                         sql.Clear();                            
@@ -2275,6 +2358,7 @@ namespace RoadaWebService
                         sql.Add("comm_id", wdata.commId);
                         sql.Add("unit_num", wdata.unitNum);
                         sql.Add("hand_code", wdata.handCode);
+                        sql.Add("driver", wdata.driver);
                         sql.Add("p_type", wdata.percipitationType);
                         sql.Add("p_level", wdata.percipitationLvl);
                         sql.Add("w_gust", wdata.windStrength);
@@ -2284,6 +2368,7 @@ namespace RoadaWebService
                         sql.Add("fog", wdata.fogLvl);
                         sql.Add("drifting", wdata.drifting);
                         sql.Add("road", wdata.roadCondition);
+                        sql.Add("road2", wdata.road2ndCondition);
                         sql.Add("latitude", wdata.CurrentLat);
                         sql.Add("longitude", wdata.CurrentLong);
                         sql.Add("calc_lat", wdata.calcLat);
@@ -2292,6 +2377,7 @@ namespace RoadaWebService
                         sql.Add("temp_road", wdata.tempRoad);
                         sql.Add("valid_loc", wdata.validLoc);
                         sql.Add("address", wdata.address);
+                        sql.AddNow("idate");
 
                         stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO weather_condition"));
                                  
