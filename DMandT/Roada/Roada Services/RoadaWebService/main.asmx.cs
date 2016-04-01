@@ -2643,6 +2643,7 @@ namespace RoadaWebService
                 stmt = new SqlStmt(mConn);
                 Result = -3;
 
+                Global.messLog.Flush("SendCommission() Guid {0}", comInfo.IMEI);
                 if (!stmt.DoSQL(String.Format("SELECT * FROM soft_activate WHERE client_guid = '{0}'", comInfo.IMEI)))
                 {
                     SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
