@@ -892,6 +892,11 @@ namespace RoadaWebService
                         // delete the route points
                         stmt.DoSQLFormat("DELETE FROM route_points {0}", whereRid);
                         // add in the new route points
+
+                        route.RoutePoints.OrderBy(item => item.Dst).ToArray();
+                        route.WayPoints.OrderBy(item => item.Dst).ToArray();
+                        int rtpnt = 0;
+                        int wppnt = 0;
                         foreach (RoutePoint rp in route.RoutePoints)
                         {
                             sql.Clear();
@@ -902,6 +907,7 @@ namespace RoadaWebService
                             sql.Add("speed", rp.Spd);
                             sql.Add("degrees", rp.Dir);
                             sql.Add("distance", rp.Dst);
+                            sql.Add("point_order", rtpnt++);
                             stmt.DoSQL(sql.BuildInsert("INSERT INTO route_points"));
                         }
                         // delete the way points
@@ -917,6 +923,7 @@ namespace RoadaWebService
                             sql.Add("speed", wp.Spd);
                             sql.Add("degrees", wp.Dir);
                             sql.Add("distance", wp.Dst);
+                            sql.Add("point_order", wppnt++);
                             sql.Add("wtype", wp.WTp);
                             sql.Add("hint", wp.Txt);
                             stmt.DoSQL(sql.BuildInsert("INSERT INTO route_waypoints"));
@@ -979,6 +986,7 @@ namespace RoadaWebService
                                 rp.Spd = stmt.ifetch("speed");
                                 rp.Dir = stmt.ifetch("degrees");
                                 rp.Dst = stmt.dfetch("distance");
+                                rp.Order = stmt.ifetch("point_order");
                                 rps.Add(rp);
                                 rc = stmt.dbSkip();
                             }
@@ -997,6 +1005,7 @@ namespace RoadaWebService
                                 wp.Dir = stmt.ifetch("degrees");
                                 wp.Dst = stmt.dfetch("distance");
                                 wp.WTp = stmt.ifetch("wtype");
+                                wp.Order = stmt.ifetch("point_order");
                                 wp.Txt = stmt.fetch("hint");
                                 wps.Add(wp);
                                 rc = stmt.dbSkip();
@@ -2670,6 +2679,84 @@ namespace RoadaWebService
             return Result;
         }
 
+        [WebMethod(Description = "Send Phone New Route and Operations")]
+        public DispatchStatus UpdateDispatch(Request req, DispatchStatus info)
+        {
+            // low security check, don't want hackers!
+            if (!LowSecurityCheck(req))
+                return null;
+
+            string connStr = CustConnectionString(req);
+            SqlStmt stmt = null;
+            SqlStmt wstmt = null;
+            try
+            {
+                if (GetStmt(connStr, out stmt) && GetStmt(connStr, out wstmt))
+                {
+                    SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
+                    bool rc = stmt.DoSQLFormat("SELECT * FROM go_events WHERE truck = '{0}' and comm_type = 1 and processed = 0 order by start_time desc", info.unitNum);                    
+                    info.routeId = stmt.ifetch("route_id");
+                    info.operations = stmt.fetch("operation");
+                    
+                    while (rc) 
+                    {
+                        wstmt.DoSQLFormat("UPDATE go_events with (rowlock) SET processed = 1 WHERE id = '{0}'", stmt.ifetch("id")); 
+                        rc = stmt.dbSkip(); 
+                    }
+                }
+            }
+            catch (Exception x)
+            {
+                Global.messLog.Flush("UpdateDispatch() Excp: {0}", x.Message);
+                info = null;
+            }
+            finally
+            {
+                if (stmt != null)
+                    stmt.Close();
+                if (wstmt != null)
+                    wstmt.Close();
+            }
+            return info;
+        }
+
+        public int GetDispatch(Request req, string truck, int routeId)
+        {
+            // low security check, don't want hackers!
+            if (!LowSecurityCheck(req))
+                return -1;
+            int status = 0;
+            string connStr = CustConnectionString(req);
+            SqlStmt stmt = null;
+            try
+            {
+                if (GetStmt(connStr, out stmt))
+                {
+                    SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
+                    stmt.DoSQLFormat("SELECT * FROM go_events WHERE truck = '{0}' and comm_type = 1 and processed = 0 order by event_time desc", truck);
+
+                    if (stmt.ifetch("route_id") > 0)
+                    {
+                        if (stmt.ifetch("route_id") != routeId)
+                        {
+                            status = 1;
+                        }
+                    }
+                 
+                }
+            }
+            catch (Exception x)
+            {
+
+                Global.messLog.Flush("SendImage() Excp: {0}", x.Message);
+            }
+            finally
+            {
+                if (stmt != null)
+                    stmt.Close();
+            }
+            return status;
+        }
 
         [WebMethod(Description = "Consumes Event records send from Roada Go")]
         public int SendEventRecord(Request req, evntRecord evnt)
@@ -2706,9 +2793,17 @@ namespace RoadaWebService
                         sql.Add("truck", evnt.truck);
                         sql.Add("hand_code", evnt.handcode);
                         sql.Add("route",evnt.route);
+                        sql.Add("route_id",evnt.routeId);
+                        sql.Add("waypoint", evnt.waypoint);
+                        sql.Add("processed", 0);
+                        sql.Add("comm_type", 0);
+
                         stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO go_events"));
 
-                        Result = 1;
+                    
+                            Result = 1;
+                        
+                        
 
                     }
                     if (evnt.EventType == 2) //Driver Login
@@ -2811,7 +2906,34 @@ namespace RoadaWebService
                         Result = 4;
 
                     }
+                    if (evnt.EventType == 5) //Waypoint event
+                    {
 
+                        SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
+
+                        sql.Add("event_type", evnt.EventType);
+                        sql.Add("event_time", evnt.eventTime);
+                        sql.Add("event_mess", evnt.eventMessage);
+                        sql.Add("driver", evnt.driver);
+                        sql.Add("truck", evnt.truck);
+                        sql.Add("latitude", evnt.lat);
+                        sql.Add("longitude", evnt.lon);
+                        sql.Add("hand_code", evnt.handcode);
+                        sql.Add("route_id",evnt.routeId);
+                        sql.Add("m_distance", evnt.mdistance);                       
+                        sql.Add("waypoint", evnt.waypoint);
+                        sql.Add("comm_type", 0);
+                        sql.Add("wtype", evnt.wType);
+                        stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO go_events"));
+
+                        Result = 5;
+
+                    }
+                    //checks to see if dispatch has changed
+                    if (GetDispatch(req, evnt.truck, evnt.routeId) == 1)
+                    {
+                        Result = 99;
+                    }
                 }
                
             }
@@ -2825,6 +2947,7 @@ namespace RoadaWebService
                 if (stmt != null)
                     stmt.Close();
             }
+             
             return Result;
         }
 

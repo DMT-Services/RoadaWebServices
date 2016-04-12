@@ -77,11 +77,27 @@ namespace RoadaWebService
         public double version;
         public double lon;
         public double lat;
+        public double mdistance;
+        public DateTime routeTime;
         public string eventMessage;
         public string driver;
         public string truck;
         public int handcode;
         public string route;
+        public int routeId;
+        public double mRouteDistance;
+        public int wType;
+        public int waypoint;
+        public int processed;
+        public int comm;
+    }
+    public class DispatchStatus
+    {
+        public string unitNum;
+        public int routeId;
+        public string operations;
+        public int ech;        
+        public DateTime timeDispached;
     }
     public class LogginData   
     {
@@ -468,12 +484,14 @@ namespace RoadaWebService
         public int Spd;
         public int Dir;
         public double Dst;
+        public int Order;
     }
 
     public class WayPoint : RoutePoint
     {
         public int WTp;
         public string Txt;
+        
     }
 
     public class SpatData
