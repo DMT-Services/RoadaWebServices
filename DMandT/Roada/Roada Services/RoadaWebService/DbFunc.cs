@@ -50,6 +50,15 @@ using myDataReader = System.Data.Odbc.OdbcDataReader;
 using myParameter = System.Data.Odbc.OdbcParameter;
 using myTransaction = System.Data.Odbc.OdbcTransaction;
 
+#elif FIREBIRD
+using FirebirdSql.Data.Client;
+
+using myDbConnection = FirebirdSql.Data.FirebirdClient.FbConnection;
+using myDbCommand = FirebirdSql.Data.FirebirdClient.FbCommand;
+using myDataReader = FirebirdSql.Data.FirebirdClient.FbDataReader;
+using myParameter = FirebirdSql.Data.FirebirdClient.FbParameter;
+using myTransaction = FirebirdSql.Data.FirebirdClient.FbTransaction;
+
 #elif MYSQL
 using Devart.Data;
 using Devart.Data.MySql;
