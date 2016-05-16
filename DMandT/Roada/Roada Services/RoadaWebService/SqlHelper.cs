@@ -888,6 +888,15 @@ namespace DMTServices
             return res;
         }
 
+        public static string NextSequence(string seqName)
+        {
+            return string.Format("SELECT NEXT VALUE FOR {0}", seqName);
+        }
+
+        public static string CurrentSequence(string seqName)
+        {
+            return string.Format("SELECT current_value FROM sys.sequences WHERE name = '{0}' AS {0}", seqName);
+        }
 
         /// <summary>
         /// Static version of above function
