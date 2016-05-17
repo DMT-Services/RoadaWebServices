@@ -305,6 +305,39 @@ namespace DMTServices
             return appSet;
         }
 
+        /*
+            THIS IS FOR 'HIDING' THE PASSWORD PART OF THE CONNECTION STRING
+            ===============================================================
+            If you have the three settings below defined in your app.config:
+         
+            <applicationSettings>
+                <yourNamespace.Properties.Settings>
+                    <setting name="myExtraSettings" serializeAs="String">
+                        <value>User ID=;Password=</value>
+                    </setting>
+                    <setting name="Cypher" serializeAs="String">
+                        <value>userName</value>
+                    </setting>
+                    <setting name="CypherData" serializeAs="String">
+                        <value>KhZFiN96LpWgXY+7/oq6lZRYt9CZxSYRSrsU+fjBMTc=</value>
+                    </setting>
+                </yourNamespace.Properties.Settings>
+            </applicationSettings>
+
+            Remove the logon user/pass part of the connection string and dbConnect() will call;
+
+                ConnectionData = buildConnStr(ConnectionData);
+
+            which adds back in the logon values to the connection string.
+
+            the 'myExtraSettings' is used to define the keys for login (some need 'user ID', some need 'UID' and some 'user', etc)
+            and then the Cypher will go into User ID=xxxx and CypherData will go into  Password=xxxx  after being Decrypted.  The Encrypt
+            and Decrypt functions are at the end of this file.  There is a program; CfgEditor.exe in VSS under 'DMandT\config file Edit' 
+            that will allow entering the password and encrypting it before storing in your .config file.  Just get that .exe and drag and 
+            drop your config file onto it (provided you have the above settings, CypherData <value> can be blank) and you can enter 
+            the password there... 
+        */
+
         public const string USER_PASS_APP_KEY = "myExtraSettings";
         public const string USER_APP_KEY = "Cypher";
         public const string PASS_APP_KEY = "CypherData";
