@@ -2694,15 +2694,16 @@ namespace RoadaWebService
                 if (GetStmt(connStr, out stmt) && GetStmt(connStr, out wstmt))
                 {
                     SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
-                    bool rc = stmt.DoSQLFormat("SELECT * FROM go_events WHERE truck = '{0}' and comm_type = 1 and processed = 0 order by start_time desc", info.unitNum);                    
+                    bool rc = stmt.DoSQLFormat("SELECT * FROM go_events WHERE truck = '{0}' and comm_type = 1 and isnull(processed,0) = 0 order by event_time desc", info.unitNum);                    
                     info.routeId = stmt.ifetch("route_id");
-                    info.operations = stmt.fetch("operation");
+                    info.operations = stmt.fetch("operations");
+                    info.driver = stmt.fetch("driver");
                     
                     while (rc) 
                     {
-                        wstmt.DoSQLFormat("UPDATE go_events with (rowlock) SET processed = 1 WHERE id = '{0}'", stmt.ifetch("id")); 
+                        wstmt.DoSQLFormat("UPDATE go_events with (rowlock) SET processed = 1 WHERE id = {0}", stmt.ifetch("id")); 
                         rc = stmt.dbSkip(); 
-                    }
+                    }          
                 }
             }
             catch (Exception x)
@@ -2733,14 +2734,11 @@ namespace RoadaWebService
                 if (GetStmt(connStr, out stmt))
                 {
                     SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
-                    stmt.DoSQLFormat("SELECT * FROM go_events WHERE truck = '{0}' and comm_type = 1 and processed = 0 order by event_time desc", truck);
+                    stmt.DoSQLFormat("SELECT * FROM go_events WHERE truck = '{0}' and comm_type = 1 and isnull(processed,0) = 0 order by event_time desc", truck);
 
-                    if (stmt.ifetch("route_id") > 0)
+                    if (stmt.ifetch("event_type") == 1 && stmt.ifetch("route_id") > 0)
                     {
-                        if (stmt.ifetch("route_id") != routeId)
-                        {
-                            status = 1;
-                        }
+                            status = 1;                       
                     }
                  
                 }
@@ -2861,6 +2859,7 @@ namespace RoadaWebService
                         sql.Add("latitude", evnt.lat);
                         sql.Add("longitude", evnt.lon);
                         sql.Add("hand_code", evnt.handcode);
+                        sql.Add("m_distance", evnt.mRouteDistance);
                         stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO go_events"));
 
                         Result = 3;
@@ -2923,6 +2922,7 @@ namespace RoadaWebService
                         sql.Add("m_distance", evnt.mdistance);                       
                         sql.Add("waypoint", evnt.waypoint);
                         sql.Add("comm_type", 0);
+                        sql.Add("processed", 0);
                         sql.Add("wtype", evnt.wType);
                         stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO go_events"));
 

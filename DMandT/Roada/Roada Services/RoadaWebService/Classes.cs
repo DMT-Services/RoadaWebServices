@@ -93,6 +93,7 @@ namespace RoadaWebService
     }
     public class DispatchStatus
     {
+        public string driver;
         public string unitNum;
         public int routeId;
         public string operations;
@@ -490,6 +491,7 @@ namespace RoadaWebService
     public class WayPoint : RoutePoint
     {
         public int WTp;
+        public bool done;
         public string Txt;
         
     }
