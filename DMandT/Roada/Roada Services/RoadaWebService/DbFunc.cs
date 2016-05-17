@@ -12,6 +12,8 @@ using System.Configuration;
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Security.Cryptography;
+using System.IO;
 
 // these "using xxx=yyy" are like typedef's 
 #if OLEDB
@@ -138,8 +140,10 @@ namespace DMTServices
         /// This is the actual connection string
         /// </summary>
         public string ConnectionData = string.Empty;   // this is the actual connection info
-        public int defTimeOut = 120; 
+        public int defTimeOut = 120;
+#if !NO_MESSLOG
         public MessLog Mess = null;
+#endif
         /// <summary>
         /// If this is >= 0 then, if an sql error occurs the select string will be truncated
         /// to this length when being written to the log (or will not log the select at all if == 0).
@@ -186,8 +190,12 @@ namespace DMTServices
                 }
                 catch (Exception e)
                 {
+#if !NO_MESSLOG
                     if (Mess != null)
                         Mess.Flush("StartTransaction: " + e.Message);
+#else
+                    string s = e.Message;       // just to prevent the error; The variable 'e' is declared but never used
+#endif
                 }
         }
 
@@ -202,8 +210,12 @@ namespace DMTServices
                 }
                 catch (Exception e)
                 {
+#if !NO_MESSLOG
                     if (Mess != null)
                         Mess.Flush("EndTransaction: " + e.Message);
+#else
+                    string s = e.Message;       // just to prevent the error; The variable 'e' is declared but never used
+#endif
                 }
                 trans = null;
             }
@@ -243,6 +255,91 @@ namespace DMTServices
                 }
         }
 
+        public static Dictionary<string, string> LoadSettings()
+        {
+            return LoadSettings(string.Empty);
+        }
+
+        public static Dictionary<string, string> LoadSettings(string cfgFileName)
+        {
+            Dictionary<string, string> appSet = new Dictionary<string, string>();
+#if !NO_CONNECTION_MANAGER
+            Configuration config;
+            if (cfgFileName != string.Empty)
+            {
+                ExeConfigurationFileMap fileMap = new ExeConfigurationFileMap();
+                fileMap.ExeConfigFilename = cfgFileName;
+                //fileMap.ExeConfigFilename = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().GetModules()[0].FullyQualifiedName) + @"\" + cfgFileName + ".config";
+                config = ConfigurationManager.OpenMappedExeConfiguration(fileMap, ConfigurationUserLevel.None);
+            }
+            else
+                config = ConfigurationManager.OpenExeConfiguration(System.Reflection.Assembly.GetExecutingAssembly().Location);
+
+            // get all app Settings
+            /*
+            <applicationSettings>
+                <xxxxxx.Properties.Settings>
+                    <setting name="aSetting" serializeAs="String">
+                        <value>itsValue</value>
+                    </setting>
+                </xxxxxx.Properties.Settings>
+            </applicationSettings>
+            */
+            ConfigurationSectionGroup csg = config.GetSectionGroup("applicationSettings");
+            if (csg != null)
+                foreach (ConfigurationSection section in csg.Sections)
+                {
+                    if ((section as ClientSettingsSection) == null)
+                        continue;
+
+                    // have to find the section xxxxxxxx.Properties.Settings
+                    // and look under there for the actual settings
+                    if (section.SectionInformation.Name.EndsWith(".Settings", true, CultureInfo.CurrentCulture))
+                    {
+                        foreach (SettingElement sect in ((ClientSettingsSection)section).Settings)
+                            appSet.Add(sect.Name, sect.Value.ValueXml.InnerXml);
+                        break;
+                    }
+                }
+#endif
+            return appSet;
+        }
+
+        public const string USER_PASS_APP_KEY = "myExtraSettings";
+        public const string USER_APP_KEY = "Cypher";
+        public const string PASS_APP_KEY = "CypherData";
+
+        public static string buildConnStr(string cString)
+        {
+            string rc = cString.Trim();
+            Dictionary<string, string> appSet = LoadSettings();
+            if (appSet.Count > 0)
+            {
+                if (appSet.ContainsKey(USER_PASS_APP_KEY))
+                {
+                    string[] up = appSet[USER_PASS_APP_KEY].Split(';');
+                    if (up.Length > 1)
+                    {
+                        if (appSet.ContainsKey(USER_APP_KEY) && appSet.ContainsKey(PASS_APP_KEY))
+                        {
+                            string login = string.Empty;
+                            string[] keys = up[0].Split('=');
+                            if (keys.Length > 0)
+                            {
+                                login = keys[0] + "=" + appSet[USER_APP_KEY];
+                                keys = up[1].Split('=');
+                                login = login + ";" + keys[0] + "=" + myEncoder.Decrypt(appSet[PASS_APP_KEY]);
+                            }
+                            if (!(rc.EndsWith(";")))
+                                rc += ";";
+                            rc += login;
+                        }
+                    }
+                }
+            }
+            return rc;
+        }
+
         /// <summary>
         /// create the connection back to the database, passing
         /// the configString which is the key in the .config file
@@ -264,8 +361,11 @@ namespace DMTServices
                         ConnectionData = GetConnectionString(configString);
 
                     if (ConnectionData == string.Empty)
-                        if (ConfigStr.Contains("Data Source="))
+                        if (ConfigStr.ToLower().Contains("data source=") || ConfigStr.ToLower().Contains("database="))
                             ConnectionData = ConfigStr;
+
+                    ConnectionData = buildConnStr(ConnectionData);
+
 #if OLEDB
                     // add in the provider stuff as it's pretty much the only
                     // thing that is different and MUST HAVE to connect...
@@ -279,8 +379,10 @@ namespace DMTServices
                 catch (Exception e)
                 {
                     LastError = e.Message;
+#if !NO_MESSLOG
                     if (Mess != null)
                         Mess.Flush("dbConnect: " + e.Message);
+#endif
                 }
             }
             else
@@ -292,8 +394,10 @@ namespace DMTServices
                 catch (Exception e)
                 {
                     LastError = e.Message;
+#if !NO_MESSLOG
                     if (Mess != null)
                         Mess.Flush("dbConnect: " + e.Message);
+#endif
                 }
 
             bool rc = false;
@@ -497,7 +601,7 @@ namespace DMTServices
         {
             return GetTableNames(view, owner, false);
         }
-        
+
         public bool tableExists(string tableName)
         {
             return GetTableNames(false, string.Empty, false).Contains(tableName, StringComparer.OrdinalIgnoreCase);
@@ -559,7 +663,7 @@ namespace DMTServices
                     if (ok)
 #endif
 #endif
-                    Result.Add(s + dr.sfetch(fieldName));
+                        Result.Add(s + dr.sfetch(fieldName));
 
                 }
                 schemaTable = null;
@@ -626,7 +730,7 @@ namespace DMTServices
                         break;
                     }
 
-                
+
                 if (ok)
                     if (nFields.Count == 0)
                         rc = 1;
@@ -654,7 +758,7 @@ namespace DMTServices
                 string ndxName = "-=-=-";
                 int ok = 0;
                 List<string> nFields = new List<string>();
-                DataTable dat = GetSchema(tableName, true); 
+                DataTable dat = GetSchema(tableName, true);
                 foreach (DataRow dr in dat.Rows)
                 {
                     string indxName = dr["index_name"].ToString().ToLower();
@@ -692,7 +796,7 @@ namespace DMTServices
 
         private string GetUser()
         {
-            return getConnKey(new string[] { "user id", "uid" });
+            return getConnKey(new string[] { "user id", "uid", "user" });
         }
 
         /// <summary>
@@ -779,9 +883,12 @@ namespace DMTServices
             }
             catch (Exception e)
             {
+#if !NO_MESSLOG
                 if (Mess != null)
                     Mess.Flush("FieldList: " + e.Message);
-
+#else
+                string s = e.Message;       // just to prevent the error; The variable 'e' is declared but never used
+#endif
                 schemaTable = new DataTable();
             }
             return schemaTable;
@@ -830,7 +937,6 @@ namespace DMTServices
             }
             return rc;
         }
-
 #endif
 
         private string GetConnectionString()
@@ -840,15 +946,15 @@ namespace DMTServices
 
         private string GetConnectionString(string ConnectName)
         {
-#if ! NO_CONNECTION_MANAGER
+#if !NO_CONNECTION_MANAGER
             // You have to include 'System.configuration' in your Project to get the following to compile
             //  (right click References and select Add Reference... in Solution Explorer  --> )
-            if (ConnectName.Length == 0)
-                ConnectName = "DbConnectionString";             // default to this if passed as ""
+            if (ConnectName == string.Empty)
+                ConnectName = "connectionString";             // default to this if passed as ""
 
             // To avoid storing the connection string in your code, 
             // you can retrieve it from a configuration file, using the 
-            //System.Configuration.ConfigurationSettings.AppSettings.
+            // System.Configuration.ConfigurationSettings.AppSettings.
             ConnectionStringSettings s = ConfigurationManager.ConnectionStrings[ConnectName];
             if (s == null)
             {
@@ -866,12 +972,16 @@ namespace DMTServices
 
                 if (s == null)
                 {
-                    for (int i = 0; i < ConfigurationManager.ConnectionStrings.Count; i++)
-                        if (ConfigurationManager.ConnectionStrings[i].Name.Contains(ConnectName))
-                        {
-                            s = ConfigurationManager.ConnectionStrings[i];
-                            break;
-                        }
+                    try
+                    {
+                        for (int i = 0; i < ConfigurationManager.ConnectionStrings.Count; i++)
+                            if (ConfigurationManager.ConnectionStrings[i].Name.Contains(ConnectName))
+                            {
+                                s = ConfigurationManager.ConnectionStrings[i];
+                                break;
+                            }
+                    }
+                    catch { }
                 }
             }
 
@@ -952,8 +1062,9 @@ namespace DMTServices
 
         private List<string> frdrFields = new List<string>();
 
+#if !NO_MESSLOG
         static private MessLog _sMess = null;
-
+#endif
         /// <summary>
         /// Create the handle, passing in the connection class...
         /// </summary>
@@ -1037,10 +1148,14 @@ namespace DMTServices
 
         public bool DoSQLne(string selectStr)
         {
+#if !NO_MESSLOG
             MessLog m = this.fParent.Mess;
             this.fParent.Mess = null;
-            bool rc= DoSQL(selectStr, selectStr.StartsWith("SELECT", StringComparison.CurrentCultureIgnoreCase) || selectStr.StartsWith("EXEC", StringComparison.CurrentCultureIgnoreCase));
+#endif
+            bool rc = DoSQL(selectStr, selectStr.StartsWith("SELECT", StringComparison.CurrentCultureIgnoreCase) || selectStr.StartsWith("EXEC", StringComparison.CurrentCultureIgnoreCase));
+#if !NO_MESSLOG
             this.fParent.Mess = m;
+#endif
             return rc;
         }
 
@@ -1126,7 +1241,7 @@ namespace DMTServices
                         foreach (DictionaryEntry parms in SQLParams)
                             cmd.Parameters.Add(new myParameter((string)parms.Key, parms.Value));
 #endif
-                        
+
                         SQLParams.Clear();
                     }
                     cmd.CommandTimeout = fParent.defTimeOut;
@@ -1159,6 +1274,7 @@ namespace DMTServices
             }
             catch (Exception e)
             {
+#if !NO_MESSLOG
                 if (fParent.Mess != null)
                 {
                     string pfx = "            ";
@@ -1169,10 +1285,11 @@ namespace DMTServices
 
                     fParent.Mess.Flush(pfx + e.Message);
                 }
+#endif
                 LastError = e.Message;
                 rdrClose();
             }
-            
+
             if (rdr != null)
                 rdrEOF = !rdr.HasRows;
 
@@ -1211,8 +1328,10 @@ namespace DMTServices
                 }
                 catch (Exception e)
                 {
+#if !NO_MESSLOG
                     if (fParent.Mess != null)
                         fParent.Mess.Flush("dbSkip() Exception - " + e.Message);
+#endif
                     LastError = e.Message;
                 }
             }
@@ -1241,6 +1360,7 @@ namespace DMTServices
             rdrEOF = true;
         }
 
+#if !NO_MESSLOG
         /// <summary>
         /// set this once in your program and ALL SqlStmts created will
         /// default to using the MessLog you set it to...
@@ -1250,6 +1370,7 @@ namespace DMTServices
             set { _sMess = value; }
             get { return _sMess; }
         }
+#endif
 
         public bool hasData()
         {
@@ -1515,10 +1636,11 @@ namespace DMTServices
         {
             fParent = new SqlConn(configString);
             fParent.AddStmt(this);
-            
+
+#if !NO_MESSLOG
             if (_sMess != null)
                 fParent.Mess = _sMess;
-
+#endif
             createdSqlConn = true;  // force the parent (the connection) to be closed when we close...
         }
 
@@ -1558,20 +1680,22 @@ namespace DMTServices
         public string ConnectionData
         {
             get { return fParent.ConnectionData; }
-            set { fParent.ConfigStr = ""; fParent.ConnectionData = value; }
+            set { fParent.ConfigStr = ""; fParent.ConnectionData = value; }     // if you set the ConnectionData then blank out teh ConfigStr
         }
 
         public string ConfigStr
         {
             get { return fParent.ConfigStr; }
-            set { fParent.ConnectionData = ""; fParent.ConfigStr = value; }
+            set { fParent.ConnectionData = ""; fParent.ConfigStr = value; }     // vice versa
         }
 
+#if !NO_MESSLOG
         public MessLog Mess
         {
             get { return fParent.Mess; }
             set { fParent.Mess = value; }
         }
+#endif
 
         public int cmdTimeOut
         {
@@ -1734,7 +1858,6 @@ namespace DMTServices
             return rc;
         }
 
-
         public static long lfetch(this DataRow dr, string field)
         {
             return myConvert.ToInt64(dr.ofetch(field));
@@ -1812,7 +1935,8 @@ namespace DMTServices
         public object ofetch(int dc)
         {
             if (ColumnExists(dc))
-                return dr[dc];
+                if (!(dr[dc] is System.DBNull))
+                    return dr[dc];
             return null;
         }
 
@@ -2224,7 +2348,7 @@ namespace DMTServices
                         string val = (o is char) ? ((char)o).ToString() : (string)o;
                         Int64 i = 0;
                         int j = 0;
-                        foreach (char c in val) 
+                        foreach (char c in val)
                         {
                             i *= 256;
                             i += c;
@@ -2450,6 +2574,70 @@ namespace DMTServices
                 }
             }
             return rc.ToArray();
+        }
+    }
+
+    public static class myEncoder
+    {
+        private static string _password = "dm&tIsTheBest";
+        private static string _salt = "thisIsMySalt";
+        public static string Encrypt(string s)
+        {
+            string rc = s;
+            try
+            {
+                DeriveBytes rgb = new Rfc2898DeriveBytes(_password, Encoding.Unicode.GetBytes(_salt));
+                RijndaelManaged RMCrypto = new RijndaelManaged();
+                byte[] Key = rgb.GetBytes(RMCrypto.KeySize >> 3);
+                byte[] IV = rgb.GetBytes(RMCrypto.BlockSize >> 3);
+                ICryptoTransform trans = RMCrypto.CreateEncryptor(Key, IV);
+                using (MemoryStream ms = new MemoryStream())
+                {
+                    using (CryptoStream cs = new CryptoStream(ms, trans, CryptoStreamMode.Write))
+                    {
+                        using (StreamWriter writer = new StreamWriter(cs, Encoding.Unicode))
+                        {
+                            writer.Write(s);
+                        }
+                    }
+                    rc = Convert.ToBase64String(ms.ToArray());
+                }
+            }
+            catch //(Exception ex)
+            {
+                //_Mess.Flush(ex.Message);
+            }
+
+            return rc;
+        }
+
+        public static string Decrypt(string s)
+        {
+            string rc = s;
+            try
+            {
+                DeriveBytes rgb = new Rfc2898DeriveBytes(_password, Encoding.Unicode.GetBytes(_salt));
+                RijndaelManaged RMCrypto = new RijndaelManaged();
+                byte[] Key = rgb.GetBytes(RMCrypto.KeySize >> 3);
+                byte[] IV = rgb.GetBytes(RMCrypto.BlockSize >> 3);
+                ICryptoTransform trans = RMCrypto.CreateDecryptor(Key, IV);
+                using (MemoryStream ms = new MemoryStream(Convert.FromBase64String(s)))
+                {
+                    using (CryptoStream cs = new CryptoStream(ms, trans, CryptoStreamMode.Read))
+                    {
+                        using (StreamReader reader = new StreamReader(cs, Encoding.Unicode))
+                        {
+                            rc = reader.ReadToEnd();
+                        }
+                    }
+                }
+            }
+            catch //(Exception ex)
+            {
+                //_Mess.Flush(ex.Message);
+            }
+
+            return rc;
         }
     }
 }
