@@ -11,6 +11,7 @@ using System.Collections;
 using System.Reflection;
 using DMTServices;
 using System.Diagnostics;
+using System.Xml;
 
 namespace RoadaWebService
 {
@@ -1764,10 +1765,22 @@ namespace RoadaWebService
             return Result;
         }
 
+        // helper class to ignore namespaces when de-serializing
+        public class NamespaceIgnorantXmlTextReader : XmlTextReader
+        {
+            public NamespaceIgnorantXmlTextReader(System.IO.TextReader reader) : base(reader) { }
+
+            public override string NamespaceURI
+            {
+                get { return ""; }
+            }
+        }
+
         private object DeserializeObject(string xmlString, Type objType)
         {
             object obj = null;
-            StringReader reader = new StringReader(xmlString);
+            StringReader stringReader = new StringReader(xmlString);
+            NamespaceIgnorantXmlTextReader reader = new NamespaceIgnorantXmlTextReader(stringReader);
             try
             {
                 XmlSerializer xmlSerializer = new XmlSerializer(objType);
@@ -1784,6 +1797,7 @@ namespace RoadaWebService
             }
             return obj;
         }
+
 
         private string SerializeSQLString(string sqlStr)
         {
