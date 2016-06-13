@@ -205,6 +205,10 @@ namespace RoadaWebService
 
     public class ReportData
     {
+        public byte[] Signiture;
+        public string locDetails;
+        public string ConEquip;
+        public string ConTitle;
         public string reportTime;
         public string phoneID;
         public string area;

@@ -2366,7 +2366,6 @@ namespace RoadaWebService
 
             string connStr = CustConnectionString(req);
             SqlStmt stmt = null;
-            try
             {
                 Result = -3;
                 if (GetStmt(connStr, out stmt))
@@ -2442,9 +2441,13 @@ namespace RoadaWebService
                      //adds and updates main report table 
                      if (stmt.DoSQL(String.Format("SELECT ci_id FROM collision_incident WHERE ci_id = '{0}-{1}'", rdata.phoneID, rdata.reportTime)))                        
                      {
-                         sql.Clear();
+                         sql.Clear();          
                         sql.Add("ci_date", rdata.DateCol);
+                        sql.Add("sig_data", rdata.Signiture);
                         sql.Add("hwy", rdata.hwy);
+                        sql.Add("loc_details",rdata.locDetails);
+                        sql.Add("con_equip",rdata.ConEquip);
+                        sql.Add("con_title",rdata.ConTitle);
                         sql.Add("detour", rdata.Detour);
                         sql.Add("description", rdata.ColDesc);
                         sql.Add("fatal", rdata.Fatal);
@@ -2473,8 +2476,13 @@ namespace RoadaWebService
                     else
                     {
                         sql.Clear();
+                       
                         sql.Add("ci_id", String.Format("{0}-{1}",rdata.phoneID, rdata.reportTime));
+                        sql.Add("sig_data", rdata.Signiture);
                         sql.Add("hwy", rdata.hwy);
+                        sql.Add("loc_details", rdata.locDetails);
+                        sql.Add("con_equip", rdata.ConEquip);
+                        sql.Add("con_title", rdata.ConTitle);
                         sql.Add("ci_date", rdata.DateCol);
                         sql.Add("detour", rdata.Detour);
                         sql.Add("description", rdata.ColDesc);
