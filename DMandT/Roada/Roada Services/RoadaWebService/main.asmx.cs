@@ -2366,6 +2366,7 @@ namespace RoadaWebService
 
             string connStr = CustConnectionString(req);
             SqlStmt stmt = null;
+            try
             {
                 Result = -3;
                 if (GetStmt(connStr, out stmt))
@@ -2438,34 +2439,35 @@ namespace RoadaWebService
                  { 
                     SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
 
+                    sql.Add("sig_data", rdata.Signiture);
+                    sql.Add("hwy", rdata.hwy);
+                    sql.Add("loc_details", rdata.locDetails);
+                    sql.Add("con_equip", rdata.ConEquip);
+                    sql.Add("con_title", rdata.ConTitle);
+                    sql.Add("detour", rdata.Detour);
+                    sql.Add("description", rdata.ColDesc);
+                    sql.Add("fatal", rdata.Fatal);
+                    sql.Add("injuries", rdata.injuries);
+                    sql.Add("features", rdata.Physical);
+                    sql.Add("other_info", rdata.Other);
+                    sql.Add("mto_rep", rdata.ManatScene);
+                    sql.Add("report_by", rdata.repPrep);
+                    sql.Add("report_phone", rdata.repPhone);
+                    sql.Add("report_datetime", rdata.repDate);
+                    sql.Add("opp_reports", rdata.chkOpp);
+                    sql.Add("fatal_report", rdata.chkFatal);
+                    sql.Add("other_report", rdata.chkOther);
+                    sql.Add("message_sign", rdata.chkSign);
+                    sql.Add("latitude", rdata.CurrentLat);
+                    sql.Add("longitude", rdata.CurrentLong);
+                    sql.Add("date_cleared", rdata.clearDate);
+                    sql.Add("damage", rdata.chkDmg);
+
                      //adds and updates main report table 
                      if (stmt.DoSQL(String.Format("SELECT ci_id FROM collision_incident WHERE ci_id = '{0}-{1}'", rdata.phoneID, rdata.reportTime)))                        
-                     {
-                         sql.Clear();          
+                     {                                
                         sql.Add("ci_date", rdata.DateCol);
-                        sql.Add("sig_data", rdata.Signiture);
-                        sql.Add("hwy", rdata.hwy);
-                        sql.Add("loc_details",rdata.locDetails);
-                        sql.Add("con_equip",rdata.ConEquip);
-                        sql.Add("con_title",rdata.ConTitle);
-                        sql.Add("detour", rdata.Detour);
-                        sql.Add("description", rdata.ColDesc);
-                        sql.Add("fatal", rdata.Fatal);
-                        sql.Add("injuries", rdata.injuries);
-                        sql.Add("features", rdata.Physical);
-                        sql.Add("other_info", rdata.Other);
-                        sql.Add("mto_rep", rdata.ManatScene);
-                        sql.Add("report_by", rdata.repPrep);
-                        sql.Add("report_phone", rdata.repPhone);
-                        sql.Add("report_datetime", rdata.repDate);
-                        sql.Add("opp_reports", rdata.chkOpp);
-                        sql.Add("fatal_report", rdata.chkFatal);
-                        sql.Add("other_report", rdata.chkOther);
-                        sql.Add("message_sign", rdata.chkSign);
-                        sql.Add("latitude", rdata.CurrentLat);
-                        sql.Add("longitude", rdata.CurrentLong);
-                        sql.Add("date_cleared", rdata.clearDate);
-                        sql.Add("damage", rdata.chkDmg);
+                      
 
                         stmt.DoSQL(sql.BuildUpdate("UPDATE collision_incident", String.Format("WHERE ci_id = '{0}-{1}'", rdata.phoneID, rdata.reportTime)));
 
@@ -2474,34 +2476,8 @@ namespace RoadaWebService
                     
                     }
                     else
-                    {
-                        sql.Clear();
-                       
-                        sql.Add("ci_id", String.Format("{0}-{1}",rdata.phoneID, rdata.reportTime));
-                        sql.Add("sig_data", rdata.Signiture);
-                        sql.Add("hwy", rdata.hwy);
-                        sql.Add("loc_details", rdata.locDetails);
-                        sql.Add("con_equip", rdata.ConEquip);
-                        sql.Add("con_title", rdata.ConTitle);
-                        sql.Add("ci_date", rdata.DateCol);
-                        sql.Add("detour", rdata.Detour);
-                        sql.Add("description", rdata.ColDesc);
-                        sql.Add("fatal", rdata.Fatal);
-                        sql.Add("injuries", rdata.injuries);
-                        sql.Add("features", rdata.Physical);
-                        sql.Add("other_info", rdata.Other);
-                        sql.Add("mto_rep", rdata.ManatScene);
-                        sql.Add("report_by", rdata.repPrep);
-                        sql.Add("report_phone", rdata.repPhone);
-                        sql.Add("report_datetime", rdata.repDate);
-                        sql.Add("opp_reports", rdata.chkOpp);
-                        sql.Add("fatal_report", rdata.chkFatal);
-                        sql.Add("other_report", rdata.chkOther);
-                        sql.Add("message_sign", rdata.chkSign);
-                        sql.Add("latitude", rdata.CurrentLat);
-                        sql.Add("longitude", rdata.CurrentLong);
-                        sql.Add("date_cleared", rdata.clearDate);
-                        sql.Add("damage", rdata.chkDmg);
+                    {                                              
+                        sql.Add("ci_id", String.Format("{0}-{1}",rdata.phoneID, rdata.reportTime));                       
 
                         stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO collision_incident"));
                         
@@ -2525,7 +2501,7 @@ namespace RoadaWebService
                              sql.Add("drifting", rdata.drifting[i]);
                              sql.Add("road", rdata.roadCondition[i]);
                              sql.Add("latitude", rdata.CurrentLat);
-                             sql.Add("longirude", rdata.CurrentLong);
+                             sql.Add("longitude", rdata.CurrentLong);
 
                              stmt.DoSQL(sql.BuildUpdate("UPDATE weather_condition", string.Format("WHERE ci_id = '{0}-{1}' AND start_time = '{2}.000'",rdata.phoneID, rdata.reportTime, rdata.fromTime[i].ToString("yyyy-MM-dd HH:mm:ss"))));
                              i++;
@@ -2550,7 +2526,7 @@ namespace RoadaWebService
                                  sql.Add("drifting", rdata.drifting[i]);
                                  sql.Add("road", rdata.roadCondition[i]);
                                  sql.Add("latitude", rdata.CurrentLat);
-                                 sql.Add("longirude", rdata.CurrentLong);
+                                 sql.Add("longitude", rdata.CurrentLong);
 
                                  stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO weather_condition"));
                                  i++;
@@ -2781,15 +2757,14 @@ namespace RoadaWebService
         [WebMethod(Description = "Consumes Event records send from Roada Go")]
         public int SendEventRecord(Request req, evntRecord evnt)
         {
-            int Result = 0;
+            int Result = 8;
             // low security check, don't want hackers!
             if (!LowSecurityCheck(req))
                 return -2;
 
-            Global.messLog.Flush("Req: " + req.CustCode);
+
             string connStr = CustConnectionString(req);
-            Global.messLog.Flush("ConnStr: " + connStr);
-            Global.messLog.Flush("Evnt {0}", evnt == null);
+
             SqlStmt stmt = null;
             try
             {
