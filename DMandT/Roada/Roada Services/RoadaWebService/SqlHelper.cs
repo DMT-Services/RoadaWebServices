@@ -890,7 +890,7 @@ namespace DMTServices
 
         public static string NextSequence(string seqName)
         {
-            return string.Format("SELECT NEXT VALUE FOR {0}", seqName);
+            return string.Format("SELECT NEXT VALUE FOR {0} AS {0}", seqName);
         }
 
         public static string CurrentSequence(string seqName)
