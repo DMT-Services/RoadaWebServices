@@ -2760,16 +2760,16 @@ namespace RoadaWebService
             int Result = 8;
             // low security check, don't want hackers!
             if (!LowSecurityCheck(req))
-                return -2;
+                return 8;
 
-
+            Global.messLog.Flush("Event Message Failed HandCode: {0}", evnt.handcode.ToString());
             string connStr = CustConnectionString(req);
 
             SqlStmt stmt = null;
             try
             {
                 
-                Result = -3;
+                Result = 8;
                 if (GetStmt(connStr, out stmt))
                 {
                     if (evnt.EventType == 1) //Driver route Confirmation
@@ -2936,7 +2936,7 @@ namespace RoadaWebService
             }
             catch (Exception x)
             {
-                Result = -4;
+                Result = 4;
                 Global.messLog.Flush("SendEventRecord() Excp: {0}", x.Message);
             }
             finally
