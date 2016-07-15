@@ -12,7 +12,7 @@ namespace DMTServices
 {
     public class SqlHelper
     {
-        public enum dbType { SqlServer, Oracle, Access, DBF };
+        public enum dbType { SqlServer, Oracle, Access, DBF, Firebird };
 
         private List<string> ColumnList = new List<string>();       // column names
         private List<object> ValueList = new List<object>();        // values to insert/update
@@ -615,6 +615,9 @@ namespace DMTServices
                     break;
                 case dbType.DBF:
                     dateFunction = "DATETIME()";
+                    break;
+                case dbType.Firebird:
+                    dateFunction = "current_timestamp";
                     break;
                 default:
                     dateFunction = "NOW()";
