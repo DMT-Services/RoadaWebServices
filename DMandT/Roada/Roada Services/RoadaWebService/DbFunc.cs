@@ -53,7 +53,7 @@ using myParameter = System.Data.Odbc.OdbcParameter;
 using myTransaction = System.Data.Odbc.OdbcTransaction;
 
 #elif FIREBIRD
-using FirebirdSql.Data.Client;
+using FirebirdSql.Data.FirebirdClient;
 
 using myDbConnection = FirebirdSql.Data.FirebirdClient.FbConnection;
 using myDbCommand = FirebirdSql.Data.FirebirdClient.FbCommand;
@@ -398,7 +398,6 @@ namespace DMTServices
                             ConnectionData = ConfigStr;
 
                     ConnectionData = buildConnStr(ConnectionData);
-
 #if OLEDB
                     // add in the provider stuff as it's pretty much the only
                     // thing that is different and MUST HAVE to connect...
