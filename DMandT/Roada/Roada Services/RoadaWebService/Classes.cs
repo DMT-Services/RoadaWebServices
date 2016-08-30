@@ -68,6 +68,16 @@ namespace RoadaWebService
         public int CustId;
         public DateTime ReqDate;
     }
+    public class HosEvent 
+    {
+        public int code;
+        public DateTime eventTime;
+        public string user_name;
+        public int handcode;
+        public bool duty;
+        public bool driving;
+
+    }
     public class evntRecord
     {
         public int EventType;
@@ -169,6 +179,7 @@ namespace RoadaWebService
 
     public class WeatherData
     {
+        public string reportId;
         public DateTime fromTime;
         public int commId;
         public int handCode;
@@ -205,34 +216,42 @@ namespace RoadaWebService
 
     public class ReportData
     {
-        public byte[] Signiture;
-        public string locDetails;
-        public string ConEquip;
-        public string ConTitle;
-        public string reportTime;
-        public string phoneID;
-        public string area;
-        public string hwy;
-        public decimal CurrentLat; 
-        public decimal CurrentLong; 
-        public DateTime DateCol;
+        public string reportTime; //used for the unique Time code for linking photos etc..
+
+        //user info
+        public string repPrep; //USers name
+        public string repPhone;  // Users phone
+        public string phoneID; //Id of phone
+        public byte[] Signiture; //stores the Signiture Array
+
+        //location info
+        public decimal CurrentLat;
+        public decimal CurrentLong;
+        public string hwy; //Stores hwy number 404 401 etc...
+        public string locDetails; //stores the 
+        public string locDirection; // east west etc..
+        public string locIntersection;
+
+        public DateTime DateCol; //date and time of Colision
+        public DateTime repDate; //date and time of arrival
+        public DateTime clearDate; // Date and time of scene cleared
+
+        //Descriptions and details
         public string Detour;
         public string ColDesc; 
         public int Fatal;
         public int injuries; 
         public string Physical; 
-        public string Oppunder; 
         public string Other; 
-        public string ManatScene; 
-        public string repPrep; 
-        public string repPhone; 
-        public DateTime repDate; 
-        public DateTime clearDate;
+
+        //Chks for other documents
         public int chkOpp; 
         public int chkFatal; 
         public int chkOther;
         public int chkSign;
         public int chkDmg;
+
+        
 
         //Weater Data
         public List<DateTime> fromTime;
@@ -245,11 +264,25 @@ namespace RoadaWebService
         public List<int> fogLvl;
         public List<int> drifting;
         public List<int> roadCondition;
-    
+        
 
         //Update
         public List<DateTime> updateTime;
         public List<string> upDesc;
+
+        //People On scene
+        public List<string> title;
+        public List<string> name;       
+        public List<string> equip;
+
+        //internal use for the App only
+        public int HwyNdx;
+        public int HwyDetNdx;
+        public int HwyDirNdx;
+        public int chkWeather;
+        public int chkSig;
+
+        
 
     }
 

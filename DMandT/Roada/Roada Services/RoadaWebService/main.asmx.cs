@@ -2219,35 +2219,46 @@ namespace RoadaWebService
                     if (GetStmt(connStr, out stmt))
                     {
                         Result = -3;
-                        if (stmt.DoSQLFormat("SELECT * FROM go_users WHERE user_name = '{0}'", stmt.FixQuote(request.UserName)))
+                        if (stmt.DoSQLFormat("SELECT * FROM users WHERE username = '{0}'", stmt.FixQuote(request.UserName)))
                         {
                             Result = -4;
-                            if (stmt.fetch("password") == request.Password)
+                            if (!stmt.tfetch("mobile_user"))
                             {
-                                info = new UserInfo();
-                                info.FirstName = stmt.fetch("first_name");
-                                info.LastName = stmt.fetch("last_name");
-                                info.Phone = stmt.fetch("phone_number");
-                                info.Email = stmt.fetch("email");
-                                info.EmployeeNum = stmt.fetch("employee_num");
-                                info.role = stmt.ifetch("role");
-                                
-                                stmt.Clear();
-
-                                if (stmt.DoSQLFormat("SELECT * FROM go_user_roles WHERE id = {0}", info.role))                                 
-                                {
-                                  
-                                    info.truckStatus = stmt.ifetch("status_perm");
-                                    info.icReports = stmt.ifetch("ic_perm");
-                                    info.routing = stmt.ifetch("routing_perm");
-                                    info.weatherRep = stmt.ifetch("weather_perm");
-                                    info.fullDiag = stmt.ifetch("diag_perm");
-                                    info.camPerm = stmt.ifetch("cam_perm");
-                                }
-
-
-                                Result = 1;
+                                Result = -5;
                             }
+                            else
+                            {
+                                Result = -6;
+                                if (stmt.fetch("password") == request.Password)
+                                {
+                                    info = new UserInfo();
+                                    info.FirstName = stmt.fetch("first_name");
+                                    info.LastName = stmt.fetch("last_name");
+                                    info.Phone = stmt.fetch("phone_number");
+                                    info.Email = stmt.fetch("email");
+                                    //info.EmployeeNum = stmt.fetch("employee_num");
+                                    info.role = stmt.ifetch("mobile_role");
+
+
+                                    stmt.Clear();
+
+                                    if (stmt.DoSQLFormat("SELECT * FROM go_user_roles WHERE id = {0}", info.role))
+                                    {
+
+                                        info.truckStatus = stmt.ifetch("status_perm");
+                                        info.icReports = stmt.ifetch("ic_perm");
+                                        info.routing = stmt.ifetch("routing_perm");
+                                        info.weatherRep = stmt.ifetch("weather_perm");
+                                        info.fullDiag = stmt.ifetch("diag_perm");
+                                        info.camPerm = stmt.ifetch("cam_perm");
+                                        Result = 1;
+                                    }
+
+
+
+                                }
+                            }
+                           
                         }
                     }
                 }
@@ -2376,7 +2387,8 @@ namespace RoadaWebService
                     Result = -5;
                     if (wdata.fromTime.Year > 1000)
                     {
-                        sql.Clear();                            
+                        sql.Clear();
+                        sql.Add("ci_id",wdata.reportId);    
                         sql.Add("start_time", wdata.fromTime);
                         sql.Add("comm_id", wdata.commId);
                         sql.Add("unit_num", wdata.unitNum);
@@ -2438,19 +2450,19 @@ namespace RoadaWebService
                  if (GetStmt(connStr, out stmt))
                  { 
                     SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
+                    DateTime now = DateTime.Now.ToLocalTime();
 
                     sql.Add("sig_data", rdata.Signiture);
+                    sql.Add("ci_date", rdata.DateCol);
                     sql.Add("hwy", rdata.hwy);
+                    sql.Add("loc_direction", rdata.locDirection);
                     sql.Add("loc_details", rdata.locDetails);
-                    sql.Add("con_equip", rdata.ConEquip);
-                    sql.Add("con_title", rdata.ConTitle);
                     sql.Add("detour", rdata.Detour);
                     sql.Add("description", rdata.ColDesc);
                     sql.Add("fatal", rdata.Fatal);
                     sql.Add("injuries", rdata.injuries);
                     sql.Add("features", rdata.Physical);
                     sql.Add("other_info", rdata.Other);
-                    sql.Add("mto_rep", rdata.ManatScene);
                     sql.Add("report_by", rdata.repPrep);
                     sql.Add("report_phone", rdata.repPhone);
                     sql.Add("report_datetime", rdata.repDate);
@@ -2462,13 +2474,13 @@ namespace RoadaWebService
                     sql.Add("longitude", rdata.CurrentLong);
                     sql.Add("date_cleared", rdata.clearDate);
                     sql.Add("damage", rdata.chkDmg);
+                    sql.Add("loc_inter", rdata.locIntersection);
+                    sql.Add("submit_time",now);
 
                      //adds and updates main report table 
                      if (stmt.DoSQL(String.Format("SELECT ci_id FROM collision_incident WHERE ci_id = '{0}-{1}'", rdata.phoneID, rdata.reportTime)))                        
                      {                                
-                        sql.Add("ci_date", rdata.DateCol);
-                      
-
+                                            
                         stmt.DoSQL(sql.BuildUpdate("UPDATE collision_incident", String.Format("WHERE ci_id = '{0}-{1}'", rdata.phoneID, rdata.reportTime)));
 
                         Result = 1;
@@ -2484,58 +2496,7 @@ namespace RoadaWebService
                         Result = 2;
                     }
 
-                     //adds and updates fields to weather table 
-                     int i = 0;
-                     foreach (DateTime record in rdata.fromTime)
-                     {
-                         if (stmt.DoSQL(String.Format("SELECT ci_id FROM weather_condition WHERE ci_id = '{0}-{1}' AND start_time = '{2}.000'", rdata.phoneID, rdata.reportTime, rdata.fromTime[i].ToString("yyyy-MM-dd HH:mm:ss"))))
-                         {
-                             sql.Clear();
-                             sql.Add("p_type", rdata.percipitationType[i]);
-                             sql.Add("p_level", rdata.percipitationLvl[i]);
-                             sql.Add("w_gust", rdata.windStrength[i]);
-                             sql.Add("w_direction", rdata.windDirection[i]);
-                             sql.Add("visibility", rdata.visibility[i]);
-                             sql.Add("cloud", rdata.cloudCondition[i]);
-                             sql.Add("fog", rdata.fogLvl[i]);
-                             sql.Add("drifting", rdata.drifting[i]);
-                             sql.Add("road", rdata.roadCondition[i]);
-                             sql.Add("latitude", rdata.CurrentLat);
-                             sql.Add("longitude", rdata.CurrentLong);
-
-                             stmt.DoSQL(sql.BuildUpdate("UPDATE weather_condition", string.Format("WHERE ci_id = '{0}-{1}' AND start_time = '{2}.000'",rdata.phoneID, rdata.reportTime, rdata.fromTime[i].ToString("yyyy-MM-dd HH:mm:ss"))));
-                             i++;
-                             Result = 3;
-                         }
-
-
-                         else
-                         {
-                             if (rdata.fromTime[i].Year > 1000)
-                             {
-                                 sql.Clear();
-                                 sql.Add("ci_id", String.Format("{0}-{1}", rdata.phoneID, rdata.reportTime));
-                                 sql.Add("start_time", rdata.fromTime[i]);
-                                 sql.Add("p_type", rdata.percipitationType[i]);
-                                 sql.Add("p_level", rdata.percipitationLvl[i]);
-                                 sql.Add("w_gust", rdata.windStrength[i]);
-                                 sql.Add("w_direction", rdata.windDirection[i]);
-                                 sql.Add("visibility", rdata.visibility[i]);
-                                 sql.Add("cloud", rdata.cloudCondition[i]);
-                                 sql.Add("fog", rdata.fogLvl[i]);
-                                 sql.Add("drifting", rdata.drifting[i]);
-                                 sql.Add("road", rdata.roadCondition[i]);
-                                 sql.Add("latitude", rdata.CurrentLat);
-                                 sql.Add("longitude", rdata.CurrentLong);
-
-                                 stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO weather_condition"));
-                                 i++;
-                                 Result = 4;
-                             }
-                        }
-                      
-                     }
-                     i = 0;
+                    
 
                      //updates add adds update files to update table 
                      int ndx = 0;
@@ -2566,7 +2527,29 @@ namespace RoadaWebService
                          }
                         
                      }
-                     ndx = 0;        
+                     ndx = 0;
+
+                     int pplNdx = 0;
+                     foreach (string name in rdata.name)
+                     {
+                         if (stmt.DoSQL(String.Format("SELECT * FROM report_ppl WHERE ci_id = '{0}-{1}' AND name = '{2}' AND title = '{3}' AND equip = '{4}' ", rdata.phoneID, rdata.reportTime, rdata.name[pplNdx], rdata.title[pplNdx], rdata.equip[pplNdx])))                         
+                         {
+                             pplNdx++;
+                         }
+                         else
+                         {
+                             sql.Clear();
+                             sql.Add("ci_id", String.Format("{0}-{1}", rdata.phoneID, rdata.reportTime));
+                             sql.Add("name", rdata.name[pplNdx]);
+                             sql.Add("title", rdata.title[pplNdx]);
+                             sql.Add("equip", rdata.equip[pplNdx]);
+                             stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO report_ppl"));
+                             pplNdx++;
+                             Result = 6;
+                         }
+                     
+                     }
+                     pplNdx = 0; 
                  } 
             }
             catch (Exception x)
@@ -2752,6 +2735,97 @@ namespace RoadaWebService
                     stmt.Close();
             }
             return status;
+        }
+        [WebMethod(Description = "Retrieve Hos Events")]
+        public HosEvent[] GetHosList(Request request, string user_name, DateTime currentDate)
+        {
+            HosEvent[] Result = null;
+
+            if (!LowSecurityCheck(request))
+                return Result;
+
+            string connStr = CustConnectionString(request);
+            SqlStmt stmt = null;
+            try
+            {
+                if (GetStmt(connStr, out stmt))
+                {
+                    List<HosEvent> hosevnts = new List<HosEvent>();
+                    bool rc;
+                    if (user_name != null && currentDate != null)
+                    currentDate = currentDate.AddDays(-14);
+                    rc = stmt.DoSQLFormat("SELECT * FROM go_hos WHERE user_name = '{0}' AND time_event >= {1} ORDER BY time_event DESC", user_name, SqlHelper.timeStamp(currentDate, SqlHelper.dbType.SqlServer));
+                   
+                    while (rc)
+                    {
+                        HosEvent Hev = new HosEvent();
+                        Hev.eventTime = stmt.dtfetch("time_event");
+                        Hev.code = stmt.ifetch("event_code");
+                        Hev.user_name = stmt.fetch("user_name");
+                        Hev.duty = stmt.bfetch("duty");
+                        Hev.driving = stmt.bfetch("driving");
+                        hosevnts.Add(Hev);
+                        rc = stmt.dbSkip();
+                    }
+                    Result = hosevnts.ToArray();
+                    hosevnts.Clear();
+                }
+            }
+            catch (Exception x)
+            {
+                Global.messLog.Flush("Get Hos Events() Excp: {0}", x.Message);
+            }
+            finally
+            {
+                if (stmt != null)
+                    stmt.Close();
+            }
+            return Result;
+        }
+        [WebMethod(Description = "Hos Events For go app")]
+        public int SendHosEvent(Request req, HosEvent evnt)
+        {
+            int Result = -1;
+            // low security check, don't want hackers!
+            if (!LowSecurityCheck(req))
+                return Result;
+
+           
+            string connStr = CustConnectionString(req);
+
+            SqlStmt stmt = null;
+            try
+            {
+                Result = -2;
+                if (GetStmt(connStr, out stmt))
+                {
+                    SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
+                    DateTime now = DateTime.Now.ToLocalTime();
+                    
+                    sql.Add("r_date", now);
+                    sql.Add("user_name", evnt.user_name);
+                    sql.Add("time_event", evnt.eventTime);
+                    sql.Add("event_code", evnt.code);
+                    sql.Add("handcode", evnt.handcode);
+                    sql.Add("duty",evnt.duty);
+                    sql.Add("driving", evnt.driving);
+                    stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO go_hos"));
+
+                    Result = 1;
+                }
+            }
+            catch (Exception x)
+            {
+                Result = -3;
+                Global.messLog.Flush("HOS Event Message Failed HandCode: {0}", evnt.handcode.ToString());
+            }
+            finally
+            {
+                if (stmt != null)
+                    stmt.Close();
+            }
+
+            return Result;
         }
 
         [WebMethod(Description = "Consumes Event records send from Roada Go")]
@@ -2974,7 +3048,7 @@ namespace RoadaWebService
                    data.truck = stmt.fetch("truck_id");
                    data.user = stmt.fetch("user_id");
                    
-                   stmt.DoSQLFormat("SELECT password FROM go_users WHERE user_name = '{0}'", data.user);
+                   stmt.DoSQLFormat("SELECT password FROM users WHERE username = '{0}'", data.user);
                    data.password = stmt.fetch("password");
                
                 }
