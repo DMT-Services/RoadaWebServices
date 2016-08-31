@@ -1698,7 +1698,7 @@ namespace RoadaWebService
                     
                     if (GetStmt(connStr, out stmt))
                     {                     
-                        if (currentHandcode < 40000)
+                        if (currentHandcode < 1)
                         {
                             custSet = getCustInfo(request.CustCode); // get starting value and other customer settings                           
                            
@@ -2817,7 +2817,7 @@ namespace RoadaWebService
             catch (Exception x)
             {
                 Result = -3;
-                Global.messLog.Flush("HOS Event Message Failed HandCode: {0}", evnt.handcode.ToString());
+                Global.messLog.Flush("HOS Event Message Failed HOS HandCode: {0}", evnt.handcode.ToString());
             }
             finally
             {
@@ -2835,8 +2835,7 @@ namespace RoadaWebService
             // low security check, don't want hackers!
             if (!LowSecurityCheck(req))
                 return 8;
-
-            Global.messLog.Flush("Event Message Failed HandCode: {0}", evnt.handcode.ToString());
+          
             string connStr = CustConnectionString(req);
 
             SqlStmt stmt = null;
@@ -2871,9 +2870,7 @@ namespace RoadaWebService
 
                     
                             Result = 1;
-                        
-                        
-
+                                               
                     }
                     if (evnt.EventType == 2) //Driver Login
                     {
@@ -2890,9 +2887,8 @@ namespace RoadaWebService
                         
                         sql.Clear();
 
-                        if (!stmt.DoSQLFormat("SELECT * FROM go_status WHERE hand_code = '{0}'", evnt.handcode))
+                        if (!stmt.DoSQLFormat("SELECT * FROM go_status WHERE hand_code = {0}", evnt.handcode))
                         {
-
                             sql.Add("logged_in", 1);
                             sql.Add("hand_code", evnt.handcode);
                             sql.Add("truck_id", evnt.truck);
@@ -2903,18 +2899,19 @@ namespace RoadaWebService
 
                         }
                         else
-                        {
+                        {                         
                             sql.Add("logged_in", 1);
                             sql.Add("hand_code", evnt.handcode);
                             sql.Add("truck_id", evnt.truck);
                             sql.Add("version", evnt.version);
                             sql.Add("user_id", evnt.driver);
                             sql.Add("last_log", evnt.eventTime);
-                            stmt.DoSQLFormat(sql.BuildUpdate("UPDATE go_status with (rowlock)", "WHERE hand_code = '{0}'"), evnt.handcode);
+                            stmt.DoSQLFormat(sql.BuildUpdate("UPDATE go_status with (rowlock)", "WHERE hand_code = {0}"), evnt.handcode);
                         }
 
 
-                        Result = 2;
+                       
+                       Result = 2;
 
                     }
                     if (evnt.EventType == 3) //Device Checkin
@@ -2951,7 +2948,7 @@ namespace RoadaWebService
 
                         sql.Clear();
 
-                        if (!stmt.DoSQLFormat("SELECT * FROM go_status WHERE hand_code = '{0}'", evnt.handcode))
+                        if (!stmt.DoSQLFormat("SELECT * FROM go_status WHERE hand_code = {0}", evnt.handcode))
                         {
 
                             sql.Add("logged_in", 0);
@@ -2969,7 +2966,7 @@ namespace RoadaWebService
                             sql.Add("truck_id", evnt.truck);
                             sql.Add("user_id", evnt.driver);
                             sql.Add("last_log", evnt.eventTime);
-                            stmt.DoSQLFormat(sql.BuildUpdate("UPDATE go_status with (rowlock)", "WHERE hand_code = '{0}'"), evnt.handcode);
+                            stmt.DoSQLFormat(sql.BuildUpdate("UPDATE go_status with (rowlock)", "WHERE hand_code = {0}"), evnt.handcode);
                         }
 
 
