@@ -123,6 +123,7 @@ namespace RoadaWebService
         public string LastName;
         public string Phone;
         public string Email;
+        public string title;
         public string EmployeeNum;
         public int role;
         public int truckStatus;
@@ -220,7 +221,9 @@ namespace RoadaWebService
 
         //user info
         public string repPrep; //USers name
+        public string repTitle; //USers title
         public string repPhone;  // Users phone
+        public string equipment; // truck number
         public string phoneID; //Id of phone
         public byte[] Signiture; //stores the Signiture Array
 
