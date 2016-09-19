@@ -2236,6 +2236,7 @@ namespace RoadaWebService
                                     info.LastName = stmt.fetch("last_name");
                                     info.Phone = stmt.fetch("phone_number");
                                     info.Email = stmt.fetch("email");
+                                    info.title = stmt.fetch("title");
                                     //info.EmployeeNum = stmt.fetch("employee_num");
                                     info.role = stmt.ifetch("mobile_role");
 
@@ -2476,6 +2477,8 @@ namespace RoadaWebService
                     sql.Add("damage", rdata.chkDmg);
                     sql.Add("loc_inter", rdata.locIntersection);
                     sql.Add("submit_time",now);
+                    sql.Add("title",rdata.repTitle);
+                    sql.Add("equipment",rdata.equipment);
 
                      //adds and updates main report table 
                      if (stmt.DoSQL(String.Format("SELECT ci_id FROM collision_incident WHERE ci_id = '{0}-{1}'", rdata.phoneID, rdata.reportTime)))                        
@@ -2828,6 +2831,55 @@ namespace RoadaWebService
             return Result;
         }
 
+        [WebMethod(Description = "Comissions Intaller app")]
+        public int ComissionInstaller(Request req, string imei, out bool commissioned, out string Customers)
+        {
+            Customers = "";
+            commissioned = false;
+            int Result = -1;
+            // low security check, don't want hackers!
+            if (!LowSecurityCheck(req))
+                return Result;
+           
+            SqlConn mConn = new SqlConn("MainConn");
+            SqlStmt stmt = null;
+            try
+            {
+                Result = -2;
+                if (mConn.dbConnect())
+                {
+                    stmt = new SqlStmt(mConn);
+                    if (!stmt.DoSQL(String.Format("SELECT * FROM soft_activate WHERE client_guid = '{0}'", imei)))
+                    {
+                        SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);                  
+                        sql.Add("client_guid", imei);                    
+                        stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO soft_activate"));
+                    }
+
+                    stmt.DoSQLFormat("SELECT * FROM soft_activate WHERE client_guid = '{0}'", imei);
+                    Result = stmt.ifetch("id"); //returns the newly created ID for the phones Confiuration    
+
+                    commissioned = stmt.bfetch("installer");                    
+                    if (commissioned)
+                    {
+                        Customers = stmt.fetch("db_codes");
+                    }
+
+                }
+            }
+            catch (Exception x)
+            {
+                Result = -3;       
+            }
+            finally
+            {
+                if (stmt != null)
+                    stmt.Close();
+            }
+
+            return Result;
+        }
+
         [WebMethod(Description = "Consumes Event records send from Roada Go")]
         public int SendEventRecord(Request req, evntRecord evnt)
         {
@@ -2883,6 +2935,7 @@ namespace RoadaWebService
                         sql.Add("driver", evnt.driver);
                         sql.Add("truck", evnt.truck);
                         sql.Add("hand_code", evnt.handcode);
+                        sql.Add("route", evnt.route);                        
                         stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO go_events"));
                         
                         sql.Clear();
@@ -2894,7 +2947,8 @@ namespace RoadaWebService
                             sql.Add("truck_id", evnt.truck);
                             sql.Add("version", evnt.version);
                             sql.Add("user_id", evnt.driver);
-                            sql.Add("last_log", evnt.eventTime);                                  
+                            sql.Add("last_log", evnt.eventTime);
+                            sql.Add("route", evnt.route);      
                             stmt.DoSQL(sql.BuildInsert("INSERT INTO go_status"));                    
 
                         }
@@ -2906,6 +2960,7 @@ namespace RoadaWebService
                             sql.Add("version", evnt.version);
                             sql.Add("user_id", evnt.driver);
                             sql.Add("last_log", evnt.eventTime);
+                            sql.Add("route", evnt.route);  
                             stmt.DoSQLFormat(sql.BuildUpdate("UPDATE go_status with (rowlock)", "WHERE hand_code = {0}"), evnt.handcode);
                         }
 
