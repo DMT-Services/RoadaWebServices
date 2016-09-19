@@ -2831,6 +2831,54 @@ namespace RoadaWebService
             return Result;
         }
 
+        [WebMethod(Description = "Puts installed pictures away")]
+        public int sendInstallerPics(Request req, InstalledPictures[] picturedata)
+        {
+            int Result = -1;
+            // low security check, don't want hackers!
+            if (!LowSecurityCheck(req))
+                return Result;
+
+            string connStr = CustConnectionString(req);
+
+            SqlStmt stmt = null;
+            try
+            {
+                Result = -2;
+                if (GetStmt(connStr, out stmt))
+                {
+                    foreach (var data in picturedata)
+                    {
+                        SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
+                        DateTime now = DateTime.Now.ToLocalTime();
+
+                        sql.Add("rdate", now);
+                        sql.Add("idate", data.pictureSent);
+                        sql.Add("installkey", data.InstallKey);
+                        sql.Add("img_url", data.imgUrl);
+                        stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO Img_Events"));
+
+                        sql.Clear();
+                    }
+                    
+
+                    Result = 1;
+                }
+            }
+            catch (Exception x)
+            {
+                Result = -3;
+                Global.messLog.Flush("Picture data Failed to send");
+            }
+            finally
+            {
+                if (stmt != null)
+                    stmt.Close();
+            }
+
+            return Result;
+        }
+
         [WebMethod(Description = "Comissions Intaller app")]
         public int ComissionInstaller(Request req, string imei, out bool commissioned, out string Customers)
         {
