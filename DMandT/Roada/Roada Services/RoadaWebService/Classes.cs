@@ -215,6 +215,14 @@ namespace RoadaWebService
         public double tempRoad;
     }
 
+    public class installer
+    {
+        public int deviceId;
+        public int vechileId;
+        public string comments;
+        public byte[] image;
+    }
+
     public class ReportData
     {
         public string reportTime; //used for the unique Time code for linking photos etc..
@@ -337,7 +345,39 @@ namespace RoadaWebService
         public System.Messaging.Message MyMessage;
         public MessageQueueTransaction MessageTx;
         public MessageQueue MessageQ;
-    } 
+    }
+    public class diagData
+    {
+        public string serverTime;
+        public string writeTime;
+        public string loginTime;
+        public string gpsTime;
+        public string speed;
+        public string heading;
+        public string latitude;
+        public string longitude;
+        public string dcdVersion;
+        public string modemFirmware;
+        public string cellStrength;
+        public string airTemp;
+        public string roadTemp;
+        public bool frontPlow;
+        public bool wingPlow;
+        public bool tow;
+        public string spreaderDate;
+        public string spreadingDry;
+        public string spreadingWet;
+        public string rateDry;
+        public string rateWet;
+        public string ecmDate;
+        public string rpm;
+        public string coolant;
+        public string oilPressure;
+        public string deviceID;
+        public string vehicleID;
+        public string comments;
+
+    }
 
     public class GPSData
     {
