@@ -2221,7 +2221,7 @@ namespace RoadaWebService
                         Result = -3;
                         if (stmt.DoSQLFormat("SELECT * FROM users WHERE username = '{0}'", stmt.FixQuote(request.UserName)))
                         {
-                            Result = -4;
+                           
                             if (!stmt.tfetch("mobile_user"))
                             {
                                 Result = -5;
@@ -2242,7 +2242,7 @@ namespace RoadaWebService
 
 
                                     stmt.Clear();
-
+                                    Result = -4;
                                     if (stmt.DoSQLFormat("SELECT * FROM go_user_roles WHERE id = {0}", info.role))
                                     {
 
@@ -2862,6 +2862,88 @@ namespace RoadaWebService
                     }
                     
 
+                    Result = 1;
+                }
+            }
+            catch (Exception x)
+            {
+                Result = -3;
+                Global.messLog.Flush("Picture data Failed to send");
+            }
+            finally
+            {
+                if (stmt != null)
+                    stmt.Close();
+            }
+
+            return Result;
+        }
+
+        [WebMethod(Description = "Puts installed Data Away")]
+        public int SendInstallData(Request req, DeviceInfo data)
+        {
+            int Result = -1;
+            // low security check, don't want hackers!
+            if (!LowSecurityCheck(req))
+                return Result;
+
+            string connStr = CustConnectionString(req);
+
+            SqlStmt stmt = null;
+            try
+            {
+                Result = -2;
+                if (GetStmt(connStr, out stmt))
+                {
+
+                    SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
+                    DateTime now = DateTime.Now.ToLocalTime();
+
+                    sql.Add("comments", data.Comments);
+                    sql.Add("intallKey", data.installkey);
+                    sql.Add("devID", data.DevId);
+                    sql.Add("serverDate", data.ServerDate);
+                    sql.Add("writeDate", data.WriteDate);
+                    sql.Add("loginDate", data.LoginDate);
+                    sql.Add("gpsDate", data.GPSDate);
+                    sql.Add("spreadDate", data.SpreadDate);
+                    sql.Add("ecmDate", data.ECMDate);
+                    sql.Add("lat", data.Latitude);
+                    sql.Add("long", data.Longitude);
+                    sql.Add("degrees", data.Degrees);
+                    sql.Add("speed", data.Speed);
+                    sql.Add("firmVers", data.FirmVers);
+                    sql.Add("modemVers", data.ModemVers);
+                    sql.Add("cellStrength", data.CellStrength);
+                    sql.Add("plow", data.Plow);
+                    sql.Add("wing", data.Wing);
+                    sql.Add("tow", data.Tow);
+                    sql.Add("roadTemp", data.RoadTemp);
+                    sql.Add("airTemp", data.AirTemp);
+                    sql.Add("spreadDry", data.SpreadDry);
+                    sql.Add("spreadWet", data.SpreadWet);
+                    sql.Add("dryRate", data.DryRate);
+                    sql.Add("wetRate", data.WetRate);
+                    sql.Add("rpm", data.RPM);
+                    sql.Add("coolTemp", data.CoolTemp);
+                    sql.Add("oilPress", data.OilPress);
+
+                    if (stmt.DoSQL(String.Format("SELECT * FROM InstallData WHERE intallKey = '{0}'", data.installkey)))
+                    {
+
+                        stmt.DoSQL(sql.BuildUpdate("UPDATE InstallData", String.Format("WHERE intallKey = '{0}'", data.installkey)));
+
+                        Result = 1;
+
+                    }
+                    else
+                    {
+
+                        stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO InstallData"));
+
+                        Result = 2;
+                    }
+              
                     Result = 1;
                 }
             }

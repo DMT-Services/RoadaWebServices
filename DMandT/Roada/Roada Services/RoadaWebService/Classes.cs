@@ -346,37 +346,11 @@ namespace RoadaWebService
         public MessageQueueTransaction MessageTx;
         public MessageQueue MessageQ;
     }
-    public class diagData
+    public class InstalledPictures 
     {
-        public string serverTime;
-        public string writeTime;
-        public string loginTime;
-        public string gpsTime;
-        public string speed;
-        public string heading;
-        public string latitude;
-        public string longitude;
-        public string dcdVersion;
-        public string modemFirmware;
-        public string cellStrength;
-        public string airTemp;
-        public string roadTemp;
-        public bool frontPlow;
-        public bool wingPlow;
-        public bool tow;
-        public string spreaderDate;
-        public string spreadingDry;
-        public string spreadingWet;
-        public string rateDry;
-        public string rateWet;
-        public string ecmDate;
-        public string rpm;
-        public string coolant;
-        public string oilPressure;
-        public string deviceID;
-        public string vehicleID;
-        public string comments;
-
+        public string imgUrl;
+        public string InstallKey;
+        public DateTime pictureSent;
     }
 
     public class GPSData
@@ -481,6 +455,8 @@ namespace RoadaWebService
 
     public class DeviceInfo
     {
+        public string Comments;
+        public string installkey;
         public int DevId;
         public DateTime ServerDate;
         public DateTime WriteDate;
