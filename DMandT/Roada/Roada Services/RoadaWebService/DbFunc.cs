@@ -420,7 +420,7 @@ namespace DMTServices
             else
                 try
                 {
-                    if (connDb.State != ConnectionState.Open)
+                    if (connDb.State == ConnectionState.Closed)
                         connDb.Open();
                 }
                 catch (Exception e)
