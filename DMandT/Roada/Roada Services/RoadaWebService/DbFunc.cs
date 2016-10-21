@@ -361,11 +361,15 @@ namespace DMTServices
                             {
                                 login = keys[0] + "=" + appSet[USER_APP_KEY];
                                 keys = up[1].Split('=');
-                                login = login + ";" + keys[0] + "=" + myEncoder.Decrypt(appSet[PASS_APP_KEY]);
+                                if (keys.Length > 0)
+                                {
+                                    login = login + ";" + keys[0] + "=" + myEncoder.Decrypt(appSet[PASS_APP_KEY]);
+
+                                    if (!rc.EndsWith(";"))
+                                        rc += ";";
+                                    rc += login;
+                                }
                             }
-                            if (!(rc.EndsWith(";")))
-                                rc += ";";
-                            rc += login;
                         }
                     }
                 }
@@ -2613,12 +2617,18 @@ namespace DMTServices
     {
         private static string _password = "dm&tIsTheBest";
         private static string _salt = "thisIsMySalt";
+
         public static string Encrypt(string s)
+        {
+            return Encrypt(s, _password);
+        }
+
+        public static string Encrypt(string s, string password)
         {
             string rc = s;
             try
             {
-                DeriveBytes rgb = new Rfc2898DeriveBytes(_password, Encoding.Unicode.GetBytes(_salt));
+                DeriveBytes rgb = new Rfc2898DeriveBytes(password, Encoding.Unicode.GetBytes(_salt));
                 RijndaelManaged RMCrypto = new RijndaelManaged();
                 byte[] Key = rgb.GetBytes(RMCrypto.KeySize >> 3);
                 byte[] IV = rgb.GetBytes(RMCrypto.BlockSize >> 3);
@@ -2645,10 +2655,15 @@ namespace DMTServices
 
         public static string Decrypt(string s)
         {
+            return Decrypt(s, _password);
+        }
+
+        public static string Decrypt(string s, string password)
+        {
             string rc = s;
             try
             {
-                DeriveBytes rgb = new Rfc2898DeriveBytes(_password, Encoding.Unicode.GetBytes(_salt));
+                DeriveBytes rgb = new Rfc2898DeriveBytes(password, Encoding.Unicode.GetBytes(_salt));
                 RijndaelManaged RMCrypto = new RijndaelManaged();
                 byte[] Key = rgb.GetBytes(RMCrypto.KeySize >> 3);
                 byte[] IV = rgb.GetBytes(RMCrypto.BlockSize >> 3);
