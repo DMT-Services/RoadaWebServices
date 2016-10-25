@@ -2313,6 +2313,7 @@ namespace RoadaWebService
                             dInfo.Plow = stmt.tfetch("plow");
                             dInfo.Wing = stmt.tfetch("wing");
                             dInfo.Tow = stmt.tfetch("tow");
+                            dInfo.IOstatus = stmt.ifetch("io_status");
                             double roadTemp = stmt.dfetch("temp_road");
                             double airTemp = stmt.dfetch("temp_air");
                             if (roadTemp != 0 || airTemp != 0)     // if both zero, then not likely connected
@@ -2321,7 +2322,7 @@ namespace RoadaWebService
                                 dInfo.AirTemp = airTemp;
                             }
                         }
-                       
+         
                         if (stmt.DoSQLFormat("SELECT Max(id) as maxid FROM spreader_activity WHERE hand_code = {0} and rdate >= {{ts '{1}'}}", devId, DateTime.UtcNow.AddMinutes(-30).ToString(LONG_DATE)))
                         {
                             if (!stmt.IsNull("maxid"))
@@ -2852,11 +2853,18 @@ namespace RoadaWebService
                         SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
                         DateTime now = DateTime.Now.ToLocalTime();
 
+                        sql.Add("install", 1);
+                        sql.Add("hand_code",data.handcode);
+                        sql.Add("unit_num",data.unitNum);
+                        sql.Add("obj_key",data.objKey);
                         sql.Add("rdate", now);
                         sql.Add("idate", data.pictureSent);
                         sql.Add("installkey", data.InstallKey);
                         sql.Add("img_url", data.imgUrl);
-                        stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO Img_Events"));
+                       
+
+                        if (!stmt.DoSQLFormat("SELECT id FROM Img_Events WHERE obj_key = '{0}'", data.objKey))
+                            stmt.DoSQL(sql.BuildInsert("INSERT INTO Img_Events"));
 
                         sql.Clear();
                     }
@@ -2899,6 +2907,7 @@ namespace RoadaWebService
                     SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
                     DateTime now = DateTime.Now.ToLocalTime();
 
+                    
                     sql.Add("comments", data.Comments);
                     sql.Add("intallKey", data.installkey);
                     sql.Add("devID", data.DevId);
@@ -2928,10 +2937,10 @@ namespace RoadaWebService
                     sql.Add("coolTemp", data.CoolTemp);
                     sql.Add("oilPress", data.OilPress);
 
-                    if (stmt.DoSQL(String.Format("SELECT * FROM InstallData WHERE intallKey = '{0}'", data.installkey)))
+                    if (stmt.DoSQL(String.Format("SELECT * FROM InstallData WHERE devID = '{0}'", data.DevId)))
                     {
 
-                        stmt.DoSQL(sql.BuildUpdate("UPDATE InstallData", String.Format("WHERE intallKey = '{0}'", data.installkey)));
+                        stmt.DoSQL(sql.BuildUpdate("UPDATE InstallData", String.Format("WHERE devID = '{0}'", data.DevId)));
 
                         Result = 1;
 

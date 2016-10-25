@@ -348,6 +348,9 @@ namespace RoadaWebService
     }
     public class InstalledPictures 
     {
+        public string objKey;
+        public string unitNum;
+        public int handcode;
         public string imgUrl;
         public string InstallKey;
         public DateTime pictureSent;
@@ -455,6 +458,7 @@ namespace RoadaWebService
 
     public class DeviceInfo
     {
+        public int IOstatus;
         public string Comments;
         public string installkey;
         public int DevId;
