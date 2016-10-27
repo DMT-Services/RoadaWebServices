@@ -3032,7 +3032,7 @@ namespace RoadaWebService
             SqlStmt stmt = null;
             try
             {
-                
+                Global.messLog.Flush("SendEventRecord() HC: {2} Driver: {0} Event: {1}", evnt.driver, evnt.EventType, evnt.handcode);
                 Result = 8;
                 if (GetStmt(connStr, out stmt))
                 {
@@ -3241,14 +3241,14 @@ namespace RoadaWebService
                    
                    stmt.DoSQLFormat("SELECT password FROM users WHERE username = '{0}'", data.user);
                    data.password = stmt.fetch("password");
-               
+                   Global.messLog.Flush("GetLoginStatus() HC: {0} Cust: {1} Truck: {2} LoggedIn: {3}", handcode, req.CustCode, data.truck, data.online);
                 }
 
             }
             catch (Exception x)
             {
                 
-                Global.messLog.Flush("SendImage() Excp: {0}", x.Message);
+                Global.messLog.Flush("GetLoginStatus() Excp: {0}", x.Message);
             }
             finally
             {
