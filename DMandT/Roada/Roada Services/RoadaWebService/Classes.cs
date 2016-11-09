@@ -234,6 +234,7 @@ namespace RoadaWebService
         public string equipment; // truck number
         public string phoneID; //Id of phone
         public byte[] Signiture; //stores the Signiture Array
+        public bool Sent;
 
         //location info
         public decimal CurrentLat;
