@@ -2533,27 +2533,17 @@ namespace RoadaWebService
                      }
                      ndx = 0;
 
-                     int pplNdx = 0;
-                     foreach (string name in rdata.name)
+                     stmt.DoSQLFormat("DELETE FROM report_ppl WHERE ci_id = '{0}-{1}'", rdata.phoneID, rdata.reportTime);
+                     for (int pplNdx = 0; pplNdx < rdata.name.Count; pplNdx++ )
                      {
-                         if (stmt.DoSQL(String.Format("SELECT * FROM report_ppl WHERE ci_id = '{0}-{1}' AND name = '{2}' AND title = '{3}' AND equip = '{4}' ", rdata.phoneID, rdata.reportTime, rdata.name[pplNdx], rdata.title[pplNdx], rdata.equip[pplNdx])))                         
-                         {
-                             pplNdx++;
-                         }
-                         else
-                         {
                              sql.Clear();
                              sql.Add("ci_id", String.Format("{0}-{1}", rdata.phoneID, rdata.reportTime));
                              sql.Add("name", rdata.name[pplNdx]);
                              sql.Add("title", rdata.title[pplNdx]);
                              sql.Add("equip", rdata.equip[pplNdx]);
                              stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO report_ppl"));
-                             pplNdx++;
                              Result = 6;
-                         }
-                     
                      }
-                     pplNdx = 0; 
                  } 
             }
             catch (Exception x)
