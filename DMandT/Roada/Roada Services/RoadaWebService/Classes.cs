@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Web;
-using System.Messaging;
+//using System.Messaging;
 using System.Collections;
 using System.Reflection;
 using System.Xml;
@@ -342,7 +342,29 @@ namespace RoadaWebService
         
 
     }
+    public class PhoneData
+    {
+        public int id { get; set; } //Primary key
+        public int handCode { get; set; }
+        public string dbcodes { get; set; } //Db_code for Roada Go
+        public string DeviceHardware { get; set; } //type of device          
+        public string Imei { get; set; } //Unique ID from Device
+        public string diagCustomers { get; set; } // List of customers comma seperated
+        public bool roadaGo { get; set; } // Commision flag for Roada go
+        public bool roadaDiag { get; set; } //comission flag for Roada Diag
+        public double goVersion { get; set; }
+        public double diagVersion { get; set; }
+        public double managerVersion { get; set; }
 
+    }
+    public class VersionData
+    {
+        public int id { get; set; }
+        public double version { get; set; }
+        public string description { get; set; }
+
+
+    }
     public class XBAck
     {
         public string Addr;     // address of device
@@ -453,7 +475,27 @@ namespace RoadaWebService
         public int TripLiquid;
         public int ServicedDist;
     }
+    public class CommData
 
+    {
+
+        public int id { get; set; } //Primary key
+
+        public int handCode { get; set; }
+
+        public string dbcodes { get; set; } //Db_code for Roada Go
+
+        public string DeviceHardware { get; set; } //type of device          
+
+        public string Imei { get; set; } //Unique ID from Device
+
+        public string diagCustomers { get; set; } // List of customers comma seperated
+
+        public bool roadaGo { get; set; } // Commision flag for Roada go
+
+        public bool roadaDiag { get; set; } //comission flag for Roada Diag
+
+    }
     public class ReplicationData
     {
         public int RecordId;
