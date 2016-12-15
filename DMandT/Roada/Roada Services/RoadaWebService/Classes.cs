@@ -87,7 +87,9 @@ namespace RoadaWebService
     }
     public class RoadaGoConfig 
     {
+        public double version;
         public AppServerInfo ServerData;
+        public string description;
         public int PhotoInterval;
     }
     public class RoadaDiagConfig
