@@ -57,8 +57,51 @@ namespace RoadaWebService
         public string IMEI;
         public string Owner;
         public string desc;
-    }
+        public string hardware;
 
+    }
+    
+    public class ManagerData 
+    {
+        public double ManagerVersion;
+        public RoadaManagerConfig managerConfig;
+        public bool roadaGo;
+        public double goVer;     
+        public RoadaGoConfig goConfig;
+        public bool roadaDiagConfig;
+        public double roadaDiagVer;
+        public RoadaDiagConfig diagConfig;
+        public bool RoadaUSB;
+        public double RoadaUSBVersion;
+        public RoadaUSBConfig usbConfig;
+
+    }
+    public class RoadaManagerConfig
+    {
+        public string version;
+
+    }
+    public class RoadaUSBConfig
+    {
+        public string version;
+    }
+    public class RoadaGoConfig 
+    {
+        public AppServerInfo ServerData;
+        public int PhotoInterval;
+    }
+    public class RoadaDiagConfig
+    {
+        public List<AppServerInfo> CustomerInfo;
+    }
+    public class AppServerInfo 
+    {
+        public string customerCode;
+        public string WebServiceUrl;
+        public string PhotoBucket;
+        public string PickupBucket;
+        public string ReportBucket;
+    }
     public class Request
     {
         public string CustCode;
