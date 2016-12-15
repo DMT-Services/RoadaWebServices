@@ -401,19 +401,6 @@ namespace RoadaWebService
         public int Tim;     // current running time left, minutes
         public string Ver;  // software version
     }
-
-    public class MQueue
-    {
-        public string CustCode;
-        public string ConnectionString;
-        public string UserName;
-        public string Password;
-        public string QName;
-        public string Name;
-        public System.Messaging.Message MyMessage;
-        public MessageQueueTransaction MessageTx;
-        public MessageQueue MessageQ;
-    }
     public class InstalledPictures 
     {
         public string objKey;
