@@ -55,6 +55,7 @@ namespace RoadaWebService
     public class Comissioninfo 
     {
         public string IMEI;
+        public bool ForceUpdate;
         public string Owner;
         public string desc;
         public string hardware;
@@ -64,11 +65,13 @@ namespace RoadaWebService
     public class ManagerData 
     {
         public double ManagerVersion;
+        public int PhoneID;
+        public int HandCode;
         public RoadaManagerConfig managerConfig;
         public bool roadaGo;
         public double goVer;     
         public RoadaGoConfig goConfig;
-        public bool roadaDiagConfig;
+        public bool roadaDiag;
         public double roadaDiagVer;
         public RoadaDiagConfig diagConfig;
         public bool RoadaUSB;
@@ -78,12 +81,12 @@ namespace RoadaWebService
     }
     public class RoadaManagerConfig
     {
-        public string version;
-
+        public double version;
+        public int interval;
     }
     public class RoadaUSBConfig
     {
-        public string version;
+        public double version;
     }
     public class RoadaGoConfig 
     {
@@ -91,9 +94,12 @@ namespace RoadaWebService
         public AppServerInfo ServerData;
         public string description;
         public int PhotoInterval;
+        public bool cameraSound;
     }
     public class RoadaDiagConfig
     {
+        public double version;
+        public string description;
         public List<AppServerInfo> CustomerInfo;
     }
     public class AppServerInfo 
