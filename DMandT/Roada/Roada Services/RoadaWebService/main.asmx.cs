@@ -1257,7 +1257,206 @@ namespace RoadaWebService
             }
             return Result;
         }
+        [WebMethod(Description = "Send Request to Roada database to check if the device needs new config scripts")]
+        public int ManagerCheckin(Request req, Comissioninfo comInfo, out ManagerData outData)
+        {
+            outData = new ManagerData();
+            int Result = 0;
+            // low security check, don't want hackers!
+            if (!LowSecurityCheck(req))
+                return -1;
 
+            SqlConn mConn = new SqlConn("MainConn");
+            SqlStmt stmt = null;
+            try
+            {
+                stmt = new SqlStmt(mConn);
+                Result = -3;
+
+                Global.messLog.Flush("ManagerCheckin() Guid {0}", comInfo.IMEI);
+                if (!stmt.DoSQL(String.Format("SELECT * FROM soft_activate WHERE client_guid = '{0}'", comInfo.IMEI)))
+                {
+                    SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
+                    sql.Add("pc_code", comInfo.Owner);
+                    sql.Add("client_guid", comInfo.IMEI);
+                    sql.Add("description", comInfo.desc);
+                    sql.Add("device_hardware", comInfo.hardware);
+                    stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO soft_activate"));
+                }
+                else //this is just to make sure we get teh device hardware for existing devices at least until all the devices have checked in once
+                {
+                    SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
+                    sql.Add("device_hardware", comInfo.hardware);
+                    stmt.DoSQL(sql.BuildUpdate("UPDATE soft_activate", string.Format("WHERE client_guid = '{0}'", comInfo.IMEI)));
+                }
+
+                stmt.DoSQLFormat("SELECT * FROM soft_activate WHERE client_guid = '{0}'", comInfo.IMEI);
+
+                outData.PhoneID = stmt.ifetch("id");
+                outData.HandCode = stmt.ifetch("hand_code");
+                outData.roadaDiag = stmt.bfetch("installer");
+                outData.roadaDiagVer = stmt.dfetch("diag_version");
+                outData.roadaGo = stmt.bfetch("roada_go");
+                outData.goVer = stmt.dfetch("go_version");
+                Result = stmt.ifetch("id"); //returns the newly created ID for the phones Confiuration  
+
+                if (stmt.bfetch("update_now") || comInfo.ForceUpdate)
+                {
+                    if (stmt.bfetch("roada_go"))
+                    {
+
+                        GetCustomerData(outData, stmt.fetch("db_codes"));                   
+                        GetRoadaGoConfig(outData, stmt.dfetch("go_version"));
+                    }
+                    if (stmt.bfetch("installer")) // Field name can ge changed to roada_diag at later date 
+                    {
+
+                        GetCustomerDataList(outData, stmt.fetch("db_codes"));
+                        GetDiagConfig(outData, stmt.dfetch("go_version"));
+                    } 
+                }
+               
+            }
+            catch (Exception x)
+            {
+                Result = -4;
+                Global.messLog.Flush("SendCommission() Excp: {0}", x.Message);
+            }
+            finally
+            {
+                if (stmt != null)
+                    stmt.Close();
+            }
+            return Result;
+        }
+
+        public void GetRoadaGoConfig(ManagerData mdata, double version) 
+        {
+            SqlConn mConn = new SqlConn("MainConn");
+            SqlStmt stmt = null;
+            try
+            {
+                stmt = new SqlStmt(mConn);
+
+                if (stmt.DoSQL(String.Format("SELECT * FROM go_config WHERE version = {0}", version)))
+                {
+                    mdata.goConfig.version = stmt.dfetch("version");
+                    mdata.goConfig.PhotoInterval = stmt.ifetch("photo_interval");
+                    mdata.goConfig.description = stmt.fetch("description");
+                    mdata.goConfig.cameraSound = stmt.bfetch("camera_sound");
+              
+                }
+                else
+                {
+                    Global.messLog.Flush("GetRoadaGoConfig() Failed to get Go_Version--{0}", version);
+                }
+            }
+            catch (Exception ex)
+            {
+                Global.messLog.Flush("GetCustomerData() {0}", ex.Message);
+            }
+            finally
+            {
+                if (stmt != null)
+                    stmt.Close();
+            }
+        }
+        public void GetDiagConfig(ManagerData mdata, double version)
+        {
+            SqlConn mConn = new SqlConn("MainConn");
+            SqlStmt stmt = null;
+            try
+            {
+                stmt = new SqlStmt(mConn);
+
+                if (stmt.DoSQL(String.Format("SELECT * FROM diag_config WHERE version = {0}", version)))
+                {
+                    mdata.diagConfig.version = stmt.dfetch("version");
+                    mdata.diagConfig.description = stmt.fetch("description");
+
+                }
+                else
+                {
+                    Global.messLog.Flush("GetDiagConfig() Failed to get Go_Version--{0}", version);
+                }
+            }
+            catch (Exception ex)
+            {
+                Global.messLog.Flush("GetDiagConfig() {0}", ex.Message);
+            }
+            finally
+            {
+                if (stmt != null)
+                    stmt.Close();
+            }
+        }
+        private void GetCustomerData(ManagerData mdata, string custCode) 
+        {
+            SqlConn mConn = new SqlConn("MainConn");
+            SqlStmt stmt = null;
+            try
+            {
+                stmt = new SqlStmt(mConn);
+
+                if (stmt.DoSQL(String.Format("SELECT * FROM customer WHERE cust_code = '{0}'", custCode)))
+                {
+                    mdata.goConfig.ServerData.customerCode = custCode;
+                    mdata.goConfig.ServerData.WebServiceUrl = stmt.fetch("go_weburl");
+                    mdata.goConfig.ServerData.PhotoBucket = stmt.fetch("go_photo_bucket");
+                    mdata.goConfig.ServerData.PickupBucket = stmt.fetch("go_pickup_bucket");
+                    mdata.goConfig.ServerData.ReportBucket = stmt.fetch("go_report_bucket");
+                }
+                else
+                {
+                    Global.messLog.Flush("GetCustomerData() Failed to get Customer--{0}", custCode);
+                }
+            }
+            catch (Exception ex)
+            {
+                Global.messLog.Flush("GetCustomerData() {0}", ex.Message);
+            }
+            finally 
+            {
+                if (stmt != null)
+                    stmt.Close();
+            }
+        }
+
+        private void GetCustomerDataList(ManagerData mdata, string customers)
+        {
+            SqlConn mConn = new SqlConn("MainConn");
+            SqlStmt stmt = null;
+            try
+            {
+                stmt = new SqlStmt(mConn);
+
+                string[] values = customers.Split(',');
+
+                foreach (string customer in values)
+                {
+                    stmt.DoSQL(String.Format("SELECT * FROM customer WHERE cust_code = '{0}'", customer));
+                    AppServerInfo asi = new AppServerInfo();
+                    asi.customerCode = customer;
+                    asi.WebServiceUrl = stmt.fetch("go_weburl");
+                    asi.PhotoBucket = stmt.fetch("go_photo_bucket");
+                    asi.PickupBucket = stmt.fetch("go_pickup_bucket");
+                    asi.ReportBucket = stmt.fetch("go_report_bucket");
+                    mdata.diagConfig.CustomerInfo.Add(asi);                
+                    
+                }
+
+                
+            }
+            catch (Exception ex)
+            {
+                Global.messLog.Flush("GetCustomerDataList() Failed {0}", ex.Message);
+            }
+            finally
+            {
+                if (stmt != null)
+                    stmt.Close();
+            }
+        }
 
         [WebMethod(Description = "Commission Software")]
         public CommResponse CommSoftware(Request request, string guid, string descr)
@@ -2621,11 +2820,13 @@ namespace RoadaWebService
                 return -2;
 
             SqlConn mConn = new SqlConn("MainConn");
+            mConn.Mess = Global.messLog;
             SqlStmt stmt = null;
             try
             {
                 stmt = new SqlStmt(mConn);
                 Result = -3;
+                Global.messLog.Flush("Send comssison At select");
 
                 Global.messLog.Flush("SendCommission() Guid {0}", comInfo.IMEI);
                 if (!stmt.DoSQL(String.Format("SELECT * FROM soft_activate WHERE client_guid = '{0}'", comInfo.IMEI)))
@@ -2634,7 +2835,9 @@ namespace RoadaWebService
                     sql.Add("pc_code", comInfo.Owner);
                     sql.Add("client_guid", comInfo.IMEI);
                     sql.Add("description", comInfo.desc);
+                    sql.Add("device_hardware", comInfo.hardware);
                     stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO soft_activate"));
+
                 }
 
                 stmt.DoSQLFormat("SELECT id FROM soft_activate WHERE client_guid = '{0}'", comInfo.IMEI);
@@ -3098,23 +3301,48 @@ namespace RoadaWebService
                        Result = 2;
 
                     }
-                    if (evnt.EventType == 3) //Device Checkin
+                    if (evnt.EventType == 9) //Device Checkin
                     {
+                            int handcode;
+                            SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer); 
+                                
+                            sql.Add("rdate", evnt.eventTime);                       
+                            sql.Add("unit_num", evnt.truck);
+                            sql.Add("latitude", evnt.lat);
+                            sql.Add("longitude", evnt.lon);
+                            sql.Add("last_lat", evnt.lat);
+                            sql.Add("last_long", evnt.lon);
+                            sql.Add("status_v", evnt.handcode);
 
-                        SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
+                            if (stmt.DoSQL(String.Format("SELECT hand_code FROM vehicles WHERE unit_num = '{0}'", evnt.truck)))
+                            {
+                                handcode = stmt.ifetch("hand_code"); //store it to update
+                                sql.Add("hand_code", handcode);
+                                stmt.DoSQL(sql.BuildUpdate("UPDATE handheld with (rowlock)", string.Format(" WHERE hand_code = {0}", handcode)));
+                            }
+                            else
+                            {                     
+                                sql.Add("hand_code", stmt.ifetch("hand_code"));
+                                stmt.DoSQL(sql.BuildInsert("INSERT INTO handheld"));   
+                            }
 
-                        sql.Add("event_type", evnt.EventType);
-                        sql.Add("event_time", evnt.eventTime);
-                        sql.Add("event_mess", evnt.eventMessage);
-                        sql.Add("driver", evnt.driver);
-                        sql.Add("truck", evnt.truck);
-                        sql.Add("latitude", evnt.lat);
-                        sql.Add("longitude", evnt.lon);
-                        sql.Add("hand_code", evnt.handcode);
-                        sql.Add("m_distance", evnt.mRouteDistance);
-                        stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO go_events"));
 
-                        Result = 3;
+                            sql.Clear();
+                            stmt.DoSQL(String.Format("SELECT hand_code FROM vehicles WHERE unit_num = '{0}'", evnt.truck));
+                            sql.Add("idate", DateTime.Now);
+                            sql.Add("rdate", evnt.eventTime);
+                            sql.Add("unit_num", evnt.truck);
+                            sql.Add("latitude", evnt.lat);
+                            sql.Add("longitude", evnt.lon);
+                            sql.Add("speed", evnt.speed);
+                            sql.Add("degrees",evnt.heading);
+                            sql.Add("status_v",evnt.handcode); //Cell phones hand code use incase vehicle not set and records were sent
+                            sql.Add("hand_code", stmt.ifetch("hand_code"));
+                                                        
+                            stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO MessageIn"));
+      
+                       
+                        Result = 9;
 
                     }
                     if (evnt.EventType == 4) //Driver Logout
@@ -3573,5 +3801,17 @@ namespace RoadaWebService
 
             return Result;
         }
+    }
+    public class MQueue
+    {
+        public string CustCode;
+        public string ConnectionString;
+        public string UserName;
+        public string Password;
+        public string QName;
+        public string Name;
+        public System.Messaging.Message MyMessage;
+        public MessageQueueTransaction MessageTx;
+        public MessageQueue MessageQ;
     }
 }
