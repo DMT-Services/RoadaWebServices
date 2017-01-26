@@ -138,6 +138,8 @@ namespace RoadaWebService
         public double version;
         public double lon;
         public double lat;
+        public int heading;
+        public int speed;
         public double mdistance;
         public DateTime routeTime;
         public string eventMessage;
