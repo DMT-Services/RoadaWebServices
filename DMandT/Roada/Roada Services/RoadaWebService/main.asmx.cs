@@ -1281,6 +1281,8 @@ namespace RoadaWebService
                     sql.Add("client_guid", comInfo.IMEI);
                     sql.Add("description", comInfo.desc);
                     sql.Add("device_hardware", comInfo.hardware);
+                    sql.Add("installer", 0);
+                    sql.Add("roada_go", 0);
                     stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO soft_activate"));
                 }
                 else //this is just to make sure we get teh device hardware for existing devices at least until all the devices have checked in once
@@ -3011,7 +3013,7 @@ namespace RoadaWebService
                     Result = 1;
                 }
             }
-            catch (Exception x)
+            catch
             {
                 Result = -3;
                 Global.messLog.Flush("HOS Event Message Failed HOS HandCode: {0}", evnt.handcode.ToString());
@@ -3066,7 +3068,7 @@ namespace RoadaWebService
                     Result = 1;
                 }
             }
-            catch (Exception x)
+            catch
             {
                 Result = -3;
                 Global.messLog.Flush("Picture data Failed to send");
@@ -3149,7 +3151,7 @@ namespace RoadaWebService
                     Result = 1;
                 }
             }
-            catch (Exception x)
+            catch
             {
                 Result = -3;
                 Global.messLog.Flush("Picture data Failed to send");
@@ -3199,7 +3201,7 @@ namespace RoadaWebService
 
                 }
             }
-            catch (Exception x)
+            catch
             {
                 Result = -3;       
             }
