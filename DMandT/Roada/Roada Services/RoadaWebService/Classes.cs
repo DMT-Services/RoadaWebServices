@@ -129,8 +129,19 @@ namespace RoadaWebService
         public bool driving;
 
     }
+    public class evntOut
+    {
+        public int plan;
+        public string routeName;
+
+        public int speedEvents;
+        public int outOfBounds;
+        public int outOfOpp;
+    }
+
     public class evntRecord
     {
+        public int dcdHC;
         public int EventType;
         public DateTime eventTime;
         public string Ops;
@@ -153,6 +164,10 @@ namespace RoadaWebService
         public int waypoint;
         public int processed;
         public int comm;
+        public int CStr;
+        public string net_type;
+        public int plan;
+        public string routeName;
     }
     public class DispatchStatus
     {
@@ -172,6 +187,7 @@ namespace RoadaWebService
     }
     public class UserInfo
     {
+        public int userId;
         public string FirstName;
         public string LastName;
         public string Phone;
