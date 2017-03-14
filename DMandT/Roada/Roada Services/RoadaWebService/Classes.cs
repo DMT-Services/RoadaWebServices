@@ -273,6 +273,7 @@ namespace RoadaWebService
         public double tempAir;
         public double tempRoad;
         public bool validLoc;
+        public string comment;
     }
 
     public class WeatherLocation
