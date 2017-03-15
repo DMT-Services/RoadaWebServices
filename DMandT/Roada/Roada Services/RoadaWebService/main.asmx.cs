@@ -3401,6 +3401,12 @@ namespace RoadaWebService
 
                                sql.Clear();
 
+
+                               if (evnt.handcode > 0)
+                               {
+                                   stmt.DoSQLFormat("UPDATE vehicles with (rowlock) SET phone_handcode = null, user_name = null WHERE phone_handcode = {0}", evnt.handcode);                               
+                               }
+
                                if (!stmt.DoSQLFormat("SELECT * FROM go_status WHERE hand_code = {0}", evnt.handcode))
                                {
 
