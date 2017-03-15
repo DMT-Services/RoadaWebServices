@@ -3221,6 +3221,12 @@ namespace RoadaWebService
         {
             eOut = new evntOut();
             int Result = 8;
+
+            if (evnt == null)
+            {
+                return 45;
+            }
+
             // low security check, don't want hackers!
             if (!LowSecurityCheck(req))
                 return 8;
@@ -3231,6 +3237,8 @@ namespace RoadaWebService
             SqlStmt wstmt = null;
             try
             {
+
+
                 Global.messLog.Flush("SendEventRecord() HC: {2} Driver: {0} Event: {1}", evnt.driver, evnt.EventType, evnt.handcode);
                 Result = 8;
                 if (GetStmt(connStr, out stmt) && GetStmt(connStr, out wstmt))
@@ -3281,214 +3289,213 @@ namespace RoadaWebService
                         }   
                         stmt.Clear();
 	                }
+                   if (stmt.DoSQLFormat("SELECT event_type , event_time , truck FROM go_events with (nolock) WHERE truck = '{0}' and event_time = '{1}' and event_type = {2}", evnt.truck, evnt.eventTime, evnt.EventType))
+                   {
+                       return 44;
+                   }
+                   else
+                   {
+                       switch (evnt.EventType)
+                       {
+
+                           case 1:
+
+                               sql.Add("event_type", evnt.EventType);
+                               sql.Add("event_time", evnt.eventTime);
+                               sql.Add("operations", evnt.Ops);
+                               sql.Add("echelon", evnt.ech);
+                               sql.Add("latitude", evnt.lat);
+                               sql.Add("longitude", evnt.lon);
+                               sql.Add("event_mess", evnt.eventMessage);
+                               sql.Add("driver", evnt.driver);
+                               sql.Add("truck", evnt.truck);
+                               sql.Add("hand_code", evnt.handcode);
+                               sql.Add("route", evnt.route);
+                               sql.Add("route_id", evnt.routeId);
+                               sql.Add("waypoint", evnt.waypoint);
+                               sql.Add("processed", 0);
+                               sql.Add("comm_type", 0);
+                               stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO go_events"));
 
 
-                    switch (evnt.EventType)
-                    {
-                            
-                        case 1: 
+                               Result = 1;
+                               break;
+                           case 2: // driver login
 
-                                sql.Add("event_type", evnt.EventType);
-                                sql.Add("event_time", evnt.eventTime);
-                                sql.Add("operations", evnt.Ops);
-                                sql.Add("echelon", evnt.ech);
-                                sql.Add("latitude", evnt.lat);
-                                sql.Add("longitude", evnt.lon);
-                                sql.Add("event_mess", evnt.eventMessage);
-                                sql.Add("driver", evnt.driver);
-                                sql.Add("truck", evnt.truck);
-                                sql.Add("hand_code", evnt.handcode);
-                                sql.Add("route",evnt.route);
-                                sql.Add("route_id",evnt.routeId);
-                                sql.Add("waypoint", evnt.waypoint);
-                                sql.Add("processed", 0);
-                                sql.Add("comm_type", 0);
-                                stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO go_events"));
+                               sql.Add("event_type", evnt.EventType);
+                               sql.Add("event_time", evnt.eventTime);
+                               sql.Add("event_mess", evnt.eventMessage);
+                               sql.Add("driver", evnt.driver);
+                               sql.Add("truck", evnt.truck);
+                               sql.Add("hand_code", evnt.handcode);
+                               sql.Add("route", evnt.route);
+                               stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO go_events"));
 
-                    
-                            Result = 1;
-                            break;
-                        case 2: // driver login
+                               sql.Clear();
 
-                                sql.Add("event_type", evnt.EventType);
-                                sql.Add("event_time", evnt.eventTime);                 
-                                sql.Add("event_mess", evnt.eventMessage);
-                                sql.Add("driver", evnt.driver);
-                                sql.Add("truck", evnt.truck);
-                                sql.Add("hand_code", evnt.handcode);
-                                sql.Add("route", evnt.route);                        
-                                stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO go_events"));
-                        
-                                sql.Clear();
+                               if (!stmt.DoSQLFormat("SELECT * FROM go_status WHERE hand_code = {0}", evnt.handcode))
+                               {
+                                   sql.Add("logged_in", 1);
+                                   sql.Add("hand_code", evnt.handcode);
+                                   sql.Add("truck_id", evnt.truck);
+                                   sql.Add("version", evnt.version);
+                                   sql.Add("user_id", evnt.driver);
+                                   sql.Add("last_log", evnt.eventTime);
+                                   sql.Add("route", evnt.route);
+                                   stmt.DoSQL(sql.BuildInsert("INSERT INTO go_status"));
 
-                                if (!stmt.DoSQLFormat("SELECT * FROM go_status WHERE hand_code = {0}", evnt.handcode))
-                                {
-                                    sql.Add("logged_in", 1);
-                                    sql.Add("hand_code", evnt.handcode);
-                                    sql.Add("truck_id", evnt.truck);
-                                    sql.Add("version", evnt.version);
-                                    sql.Add("user_id", evnt.driver);
-                                    sql.Add("last_log", evnt.eventTime);
-                                    sql.Add("route", evnt.route);      
-                                    stmt.DoSQL(sql.BuildInsert("INSERT INTO go_status"));                    
-
-                                }
-                                else
-                                {                         
-                                    sql.Add("logged_in", 1);
-                                    sql.Add("hand_code", evnt.handcode);
-                                    sql.Add("truck_id", evnt.truck);
-                                    sql.Add("version", evnt.version);
-                                    sql.Add("user_id", evnt.driver);
-                                    sql.Add("last_log", evnt.eventTime);
-                                    sql.Add("route", evnt.route);  
-                                    stmt.DoSQLFormat(sql.BuildUpdate("UPDATE go_status with (rowlock)", "WHERE hand_code = {0}"), evnt.handcode);
-                                }
+                               }
+                               else
+                               {
+                                   sql.Add("logged_in", 1);
+                                   sql.Add("hand_code", evnt.handcode);
+                                   sql.Add("truck_id", evnt.truck);
+                                   sql.Add("version", evnt.version);
+                                   sql.Add("user_id", evnt.driver);
+                                   sql.Add("last_log", evnt.eventTime);
+                                   sql.Add("route", evnt.route);
+                                   stmt.DoSQLFormat(sql.BuildUpdate("UPDATE go_status with (rowlock)", "WHERE hand_code = {0}"), evnt.handcode);
+                               }
 
 
-                       
+
                                Result = 2;
-                            break;
-                        case 3: //Device Checkin
+                               break;
+                           case 3: //Device Checkin
 
-                                sql.Add("event_type", evnt.EventType);
-                                sql.Add("event_time", evnt.eventTime);
-                                sql.Add("event_mess", evnt.eventMessage);
-                                sql.Add("driver", evnt.driver);
-                                sql.Add("truck", evnt.truck);
-                                sql.Add("latitude", evnt.lat);
-                                sql.Add("longitude", evnt.lon);
-                                sql.Add("hand_code", evnt.handcode);
-                                sql.Add("route_id", evnt.routeId);
-                                sql.Add("m_distance", evnt.mdistance);
-                                sql.Add("waypoint", evnt.waypoint);
-                                sql.Add("comm_type", 0);
-                                sql.Add("processed", 0);
-                                sql.Add("wtype", evnt.wType);
-                                stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO go_events"));
+                               sql.Add("event_type", evnt.EventType);
+                               sql.Add("event_time", evnt.eventTime);
+                               sql.Add("event_mess", evnt.eventMessage);
+                               sql.Add("driver", evnt.driver);
+                               sql.Add("truck", evnt.truck);
+                               sql.Add("latitude", evnt.lat);
+                               sql.Add("longitude", evnt.lon);
+                               sql.Add("hand_code", evnt.handcode);
+                               sql.Add("route_id", evnt.routeId);
+                               sql.Add("m_distance", evnt.mdistance);
+                               sql.Add("waypoint", evnt.waypoint);
+                               sql.Add("comm_type", 0);
+                               sql.Add("processed", 0);
+                               sql.Add("wtype", evnt.wType);
+                               stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO go_events"));
 
-                                if (evnt.dcdHC > 0)
-                                {
-                                    bool rc = stmt.DoSQLFormat("SELECT hand_code FROM vehicles with (nolock) WHERE phone_handcode = {0}", evnt.handcode);
-                                    while (rc)
-                                    {
-                                        if (stmt.ifetch("hand_code") != evnt.dcdHC)
-                                        {
-                                           wstmt.DoSQLFormat("UPDATE vehicles with (rowlock) SET phone_handcode = null, user_name = null WHERE hand_code = {0}", evnt.dcdHC);                                                       
-                                        }
-                                        rc = stmt.dbSkip();
-                                    }
+                               if (evnt.handcode > 0)
+                               {
+                                   stmt.DoSQLFormat("UPDATE vehicles with (rowlock) SET phone_handcode = null, user_name = null WHERE phone_handcode = {0}", evnt.handcode);
+                                   stmt.DoSQLFormat("UPDATE vehicles with (rowlock) SET phone_handcode = {0}, user_name = '{1}' WHERE hand_code = {2}", evnt.handcode, SqlHelper.FixUp(evnt.driver), evnt.dcdHC);      
 
-                                    stmt.DoSQLFormat("UPDATE vehicles with (rowlock) SET phone_handcode = {0}, user_name = '{1}' WHERE hand_code = {2}", evnt.handcode,SqlHelper.FixUp(evnt.driver), evnt.dcdHC);      
-                                }
-                        
-
-                                Result = 3;
-                            break;
-                        case 4: // driver logout
-
-                            sql.Add("event_type", evnt.EventType);
-                            sql.Add("event_time", evnt.eventTime);
-                            sql.Add("event_mess", evnt.eventMessage);
-                            sql.Add("driver", evnt.driver);
-                            sql.Add("truck", evnt.truck);
-                            sql.Add("hand_code", evnt.handcode);
-                            stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO go_events"));
-
-                            sql.Clear();
-
-                            if (!stmt.DoSQLFormat("SELECT * FROM go_status WHERE hand_code = {0}", evnt.handcode))
-                            {
-
-                                sql.Add("logged_in", 0);
-                                sql.Add("hand_code", evnt.handcode);
-                                sql.Add("truck_id", evnt.truck);
-                                sql.Add("user_id", evnt.driver);
-                                sql.Add("last_log", evnt.eventTime);
-                                stmt.DoSQL(sql.BuildInsert("INSERT INTO go_status"));
-
-                            }
-                            else
-                            {
-                                sql.Add("logged_in", 0);
-                                sql.Add("hand_code", evnt.handcode);
-                                sql.Add("truck_id", evnt.truck);
-                                sql.Add("user_id", evnt.driver);
-                                sql.Add("last_log", evnt.eventTime);
-                                stmt.DoSQLFormat(sql.BuildUpdate("UPDATE go_status with (rowlock)", "WHERE hand_code = {0}"), evnt.handcode);
-                            }
+                               }
 
 
-                            Result = 4;
-                            break;
+                               Result = 3;
+                               break;
+                           case 4: // driver logout
 
-                        case 5:
-                                sql.Add("event_type", evnt.EventType);
-                                sql.Add("event_time", evnt.eventTime);
-                                sql.Add("event_mess", evnt.eventMessage);
-                                sql.Add("driver", evnt.driver);
-                                sql.Add("truck", evnt.truck);
-                                sql.Add("latitude", evnt.lat);
-                                sql.Add("longitude", evnt.lon);
-                                sql.Add("hand_code", evnt.handcode);
-                                sql.Add("route_id",evnt.routeId);
-                                sql.Add("m_distance", evnt.mdistance);                       
-                                sql.Add("waypoint", evnt.waypoint);
-                                sql.Add("comm_type", 0);
-                                sql.Add("processed", 0);
-                                sql.Add("wtype", evnt.wType);
-                                stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO go_events"));
+                               sql.Add("event_type", evnt.EventType);
+                               sql.Add("event_time", evnt.eventTime);
+                               sql.Add("event_mess", evnt.eventMessage);
+                               sql.Add("driver", evnt.driver);
+                               sql.Add("truck", evnt.truck);
+                               sql.Add("hand_code", evnt.handcode);
+                               stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO go_events"));
 
-                        Result = 5;
-                            break;
+                               sql.Clear();
+
+                               if (!stmt.DoSQLFormat("SELECT * FROM go_status WHERE hand_code = {0}", evnt.handcode))
+                               {
+
+                                   sql.Add("logged_in", 0);
+                                   sql.Add("hand_code", evnt.handcode);
+                                   sql.Add("truck_id", evnt.truck);
+                                   sql.Add("user_id", evnt.driver);
+                                   sql.Add("last_log", evnt.eventTime);
+                                   stmt.DoSQL(sql.BuildInsert("INSERT INTO go_status"));
+
+                               }
+                               else
+                               {
+                                   sql.Add("logged_in", 0);
+                                   sql.Add("hand_code", evnt.handcode);
+                                   sql.Add("truck_id", evnt.truck);
+                                   sql.Add("user_id", evnt.driver);
+                                   sql.Add("last_log", evnt.eventTime);
+                                   stmt.DoSQLFormat(sql.BuildUpdate("UPDATE go_status with (rowlock)", "WHERE hand_code = {0}"), evnt.handcode);
+                               }
+
+
+                               Result = 4;
+                               break;
+
+                           case 5:
+                               sql.Add("event_type", evnt.EventType);
+                               sql.Add("event_time", evnt.eventTime);
+                               sql.Add("event_mess", evnt.eventMessage);
+                               sql.Add("driver", evnt.driver);
+                               sql.Add("truck", evnt.truck);
+                               sql.Add("latitude", evnt.lat);
+                               sql.Add("longitude", evnt.lon);
+                               sql.Add("hand_code", evnt.handcode);
+                               sql.Add("route_id", evnt.routeId);
+                               sql.Add("m_distance", evnt.mdistance);
+                               sql.Add("waypoint", evnt.waypoint);
+                               sql.Add("comm_type", 0);
+                               sql.Add("processed", 0);
+                               sql.Add("wtype", evnt.wType);
+                               stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO go_events"));
+
+                               Result = 5;
+                               break;
                            case 9: //Device Tracking
 
-                                int handcode;
+                               int handcode;
 
-                                sql.Add("rdate", evnt.eventTime);
-                                sql.Add("unit_num", evnt.truck);
-                                sql.Add("latitude", evnt.lat);
-                                sql.Add("longitude", evnt.lon);
-                                sql.Add("last_lat", evnt.lat);
-                                sql.Add("last_long", evnt.lon);
-                                sql.Add("status_v", evnt.handcode);
+                               sql.Add("rdate", evnt.eventTime);
+                               sql.Add("unit_num", evnt.truck);
+                               sql.Add("latitude", evnt.lat);
+                               sql.Add("longitude", evnt.lon);
+                               sql.Add("last_lat", evnt.lat);
+                               sql.Add("last_long", evnt.lon);
+                               sql.Add("status_v", evnt.handcode);
 
-                                if (stmt.DoSQL(String.Format("SELECT hand_code FROM vehicles WHERE unit_num = '{0}'", evnt.truck)))
-                                {
-                                    handcode = stmt.ifetch("hand_code"); //store it to update
-                                    sql.Add("hand_code", handcode);
-                                    stmt.DoSQL(sql.BuildUpdate("UPDATE handheld with (rowlock)", string.Format(" WHERE hand_code = {0}", handcode)));
-                                }
-                                else
-                                {
-                                    sql.Add("hand_code", stmt.ifetch("hand_code"));
-                                    stmt.DoSQL(sql.BuildInsert("INSERT INTO handheld"));
-                                }
-
-
-                                sql.Clear();
-                                stmt.DoSQL(String.Format("SELECT hand_code FROM vehicles WHERE unit_num = '{0}'", evnt.truck));
-                                sql.Add("idate", DateTime.Now);
-                                sql.Add("rdate", evnt.eventTime);
-                                sql.Add("unit_num", evnt.truck);
-                                sql.Add("latitude", evnt.lat);
-                                sql.Add("longitude", evnt.lon);
-                                sql.Add("speed", evnt.speed);
-                                sql.Add("degrees", evnt.heading);
-                                sql.Add("status_v", evnt.handcode); //Cell phones hand code use incase vehicle not set and records were sent
-                                sql.Add("hand_code", stmt.ifetch("hand_code"));
-                                sql.Add("cell_strength", evnt.CStr);
-                                sql.Add("network_type", evnt.net_type);
-                                stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO MessageIn"));
+                               if (stmt.DoSQL(String.Format("SELECT hand_code FROM vehicles WHERE unit_num = '{0}'", evnt.truck)))
+                               {
+                                   handcode = stmt.ifetch("hand_code"); //store it to update
+                                   sql.Add("hand_code", handcode);
+                                   stmt.DoSQL(sql.BuildUpdate("UPDATE handheld with (rowlock)", string.Format(" WHERE hand_code = {0}", handcode)));
+                               }
+                               else
+                               {
+                                   sql.Add("hand_code", stmt.ifetch("hand_code"));
+                                   stmt.DoSQL(sql.BuildInsert("INSERT INTO handheld"));
+                               }
 
 
-                                Result = 9;
-                            break;
+                               sql.Clear();
+                               stmt.DoSQL(String.Format("SELECT hand_code FROM vehicles WHERE unit_num = '{0}'", evnt.truck));
+                               sql.Add("idate", DateTime.Now);
+                               sql.Add("rdate", evnt.eventTime);
+                               sql.Add("unit_num", evnt.truck);
+                               sql.Add("latitude", evnt.lat);
+                               sql.Add("longitude", evnt.lon);
+                               sql.Add("speed", evnt.speed);
+                               sql.Add("degrees", evnt.heading);
+                               sql.Add("status_v", evnt.handcode); //Cell phones hand code use incase vehicle not set and records were sent
+                               sql.Add("hand_code", stmt.ifetch("hand_code"));
+                               sql.Add("cell_strength", evnt.CStr);
+                               sql.Add("network_type", evnt.net_type);
+                               stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO MessageIn"));
 
-                        default:
-                            Result = -1;
-                            break;
-                    }
+
+                               Result = 9;
+                               break;
+
+                           default:
+                               Result = -1;
+                               break;
+                       }
+                   }
+
+                   
                     //checks to see if dispatch has changed
                     /*
                     if (GetDispatch(req, evnt.truck, evnt.routeId) == 1)
