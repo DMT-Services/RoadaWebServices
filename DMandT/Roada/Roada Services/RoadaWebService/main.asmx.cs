@@ -2617,6 +2617,8 @@ namespace RoadaWebService
                         sql.Add("valid_loc", wdata.validLoc);
                         sql.Add("address", wdata.address);
                         sql.Add("comment", wdata.comment);
+                        sql.Add("action_taken", wdata.action);
+                        sql.Add("work_order", wdata.workOrder);
                         sql.AddNow("idate");
 
                         stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO weather_condition"));

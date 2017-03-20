@@ -274,6 +274,8 @@ namespace RoadaWebService
         public double tempRoad;
         public bool validLoc;
         public string comment;
+        public string action;
+        public string workOrder;
     }
 
     public class WeatherLocation
