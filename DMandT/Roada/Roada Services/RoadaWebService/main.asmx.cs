@@ -2697,8 +2697,8 @@ namespace RoadaWebService
                     
                     }
                     else
-                    {                                              
-                        sql.Add("ci_id", String.Format("{0}-{1}",rdata.phoneID, rdata.reportTime));                       
+                    {
+                        sql.Add("ci_id", String.Format("{0}-{1}", rdata.phoneID, rdata.reportTime));                       
 
                         stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO collision_incident"));
                         
@@ -3250,10 +3250,9 @@ namespace RoadaWebService
                    if (evnt.truck.Length > 0 && evnt.driver.Length > 0)
 	                {
                         DateTime eventthres = new DateTime();
-                        eventthres = DateTime.UtcNow;
-                        eventthres.AddDays(-3);
-
-                        bool rc = stmt.DoSQLFormat("SELECT event_type FROM vehicle_events with (nolock) WHERE driver = '{0}' AND s_date >= '{1}'", evnt.driver, eventthres);  
+                        eventthres = DateTime.UtcNow.AddDays(-3);                      
+                        //Global.messLog.Flush("event3 date range: {0}", SqlHelper.timeStamp(eventthres));
+                        bool rc = stmt.DoSQLFormat("SELECT event_type FROM vehicle_events with (nolock) WHERE driver = '{0}' AND s_date >= {1}",SqlHelper.FixUp(evnt.driver),SqlHelper.timeStamp(eventthres));  
                         while (rc)
                         {
                             switch (stmt.ifetch("event_type"))
