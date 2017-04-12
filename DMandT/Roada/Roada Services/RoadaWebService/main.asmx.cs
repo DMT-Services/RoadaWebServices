@@ -1257,6 +1257,8 @@ namespace RoadaWebService
             }
             return Result;
         }
+
+        
         [WebMethod(Description = "Send Request to Roada database to check if the device needs new config scripts")]
         public int ManagerCheckin(Request req, Comissioninfo comInfo, out ManagerData outData)
         {
@@ -1304,18 +1306,31 @@ namespace RoadaWebService
 
                 if (stmt.bfetch("update_now") || comInfo.ForceUpdate)
                 {
+                    bool validConfig = false;
                     if (stmt.bfetch("roada_go"))
                     {
-
-                        GetCustomerData(outData, stmt.fetch("db_codes"));                   
-                        GetRoadaGoConfig(outData, stmt.dfetch("go_version"));
+                        if (GetRoadaGoConfig(outData, stmt.dfetch("go_version")) && GetCustomerData(outData, stmt.fetch("db_codes")))
+                        {
+                            validConfig = true;
+                        }            
                     }
-                    if (stmt.bfetch("installer")) // Field name can ge changed to roada_diag at later date 
+                    if (stmt.bfetch("installer")) // Field name can ge changed to diag_codes at later date 
                     {
+                        if (GetCustomerDataList(outData, stmt.fetch("db_codes")) && GetDiagConfig(outData, stmt.dfetch("go_version")))
+                        {
+                            validConfig = true;
+                        }                     
+                    }
 
-                        GetCustomerDataList(outData, stmt.fetch("db_codes"));
-                        GetDiagConfig(outData, stmt.dfetch("go_version"));
-                    } 
+                    if (validConfig) // Will let device know it has a new script to replace old one with
+                    {
+                        SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
+                        sql.Add("update_now", 0);
+                        stmt.DoSQL(sql.BuildUpdate("UPDATE soft_activate", string.Format("WHERE client_guid = '{0}'", comInfo.IMEI)));
+                        Global.messLog.Flush("Device updated HandCode: {0} GUID: {1}", outData.HandCode, comInfo.IMEI);
+
+                        outData.updatenow = true;
+                    }
                 }
                
             }
@@ -1332,8 +1347,9 @@ namespace RoadaWebService
             return Result;
         }
 
-        public void GetRoadaGoConfig(ManagerData mdata, double version) 
+        public bool GetRoadaGoConfig(ManagerData mdata, double version) 
         {
+            bool validConfig = false;
             SqlConn mConn = new SqlConn("MainConn");
             SqlStmt stmt = null;
             try
@@ -1346,7 +1362,8 @@ namespace RoadaWebService
                     mdata.goConfig.PhotoInterval = stmt.ifetch("photo_interval");
                     mdata.goConfig.description = stmt.fetch("description");
                     mdata.goConfig.cameraSound = stmt.bfetch("camera_sound");
-              
+                    
+                    validConfig = true;
                 }
                 else
                 {
@@ -1360,11 +1377,13 @@ namespace RoadaWebService
             finally
             {
                 if (stmt != null)
-                    stmt.Close();
+                    stmt.Close();   
             }
+            return validConfig;
         }
-        public void GetDiagConfig(ManagerData mdata, double version)
+        public bool GetDiagConfig(ManagerData mdata, double version)
         {
+            bool validConfig = false;
             SqlConn mConn = new SqlConn("MainConn");
             SqlStmt stmt = null;
             try
@@ -1375,7 +1394,7 @@ namespace RoadaWebService
                 {
                     mdata.diagConfig.version = stmt.dfetch("version");
                     mdata.diagConfig.description = stmt.fetch("description");
-
+                    validConfig = true;
                 }
                 else
                 {
@@ -1391,9 +1410,11 @@ namespace RoadaWebService
                 if (stmt != null)
                     stmt.Close();
             }
+            return validConfig;
         }
-        private void GetCustomerData(ManagerData mdata, string custCode) 
+        private bool GetCustomerData(ManagerData mdata, string custCode) 
         {
+            bool validConfig = false;
             SqlConn mConn = new SqlConn("MainConn");
             SqlStmt stmt = null;
             try
@@ -1402,11 +1423,12 @@ namespace RoadaWebService
 
                 if (stmt.DoSQL(String.Format("SELECT * FROM customer WHERE cust_code = '{0}'", custCode)))
                 {
-                    mdata.goConfig.ServerData.customerCode = custCode;
-                    mdata.goConfig.ServerData.WebServiceUrl = stmt.fetch("go_weburl");
-                    mdata.goConfig.ServerData.PhotoBucket = stmt.fetch("go_photo_bucket");
-                    mdata.goConfig.ServerData.PickupBucket = stmt.fetch("go_pickup_bucket");
-                    mdata.goConfig.ServerData.ReportBucket = stmt.fetch("go_report_bucket");
+                    mdata.goConfig.ServerInfo.customerCode = custCode;
+                    mdata.goConfig.ServerInfo.WebServiceUrl = stmt.fetch("go_weburl");
+                    mdata.goConfig.ServerInfo.PhotoBucket = stmt.fetch("go_photo_bucket");
+                    mdata.goConfig.ServerInfo.PickupBucket = stmt.fetch("go_pickup_bucket");
+                    mdata.goConfig.ServerInfo.ReportBucket = stmt.fetch("go_report_bucket");
+                    validConfig = true;
                 }
                 else
                 {
@@ -1422,10 +1444,12 @@ namespace RoadaWebService
                 if (stmt != null)
                     stmt.Close();
             }
+            return validConfig;
         }
 
-        private void GetCustomerDataList(ManagerData mdata, string customers)
+        private bool GetCustomerDataList(ManagerData mdata, string customers)
         {
+            bool validConfig = false;
             SqlConn mConn = new SqlConn("MainConn");
             SqlStmt stmt = null;
             try
@@ -1443,8 +1467,8 @@ namespace RoadaWebService
                     asi.PhotoBucket = stmt.fetch("go_photo_bucket");
                     asi.PickupBucket = stmt.fetch("go_pickup_bucket");
                     asi.ReportBucket = stmt.fetch("go_report_bucket");
-                    mdata.diagConfig.CustomerInfo.Add(asi);                
-                    
+                    mdata.diagConfig.CustomerInfo.Add(asi);
+                    validConfig = true;
                 }
 
                 
@@ -1458,6 +1482,7 @@ namespace RoadaWebService
                 if (stmt != null)
                     stmt.Close();
             }
+            return validConfig;
         }
 
         [WebMethod(Description = "Commission Software")]
@@ -2508,7 +2533,7 @@ namespace RoadaWebService
                         dInfo.ModemVers = stmt.fetch("modem_version");
                         if (! stmt.IsNull("cell_strength"))
                             dInfo.CellStrength = stmt.ifetch("cell_strength");
-                        if (stmt.DoSQLFormat("SELECT TOP 1 * FROM messagein WHERE hand_code = {0} and rdate >= {{ts '{1}'}}", devId, dInfo.GPSDate.ToString("yyyy-MM-dd HH:mm:ss")))
+                        if (devId > 0 && stmt.DoSQLFormat("SELECT TOP 1 * FROM messagein WHERE hand_code = {0} and rdate >= {1}", devId, SqlHelper.timeStamp(dInfo.GPSDate)))
                         {
                             dInfo.WriteDate = stmt.dtfetch("idate");
                             dInfo.Degrees = stmt.ifetch("degrees");

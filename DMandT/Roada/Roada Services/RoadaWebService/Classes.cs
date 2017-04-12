@@ -64,6 +64,14 @@ namespace RoadaWebService
     
     public class ManagerData 
     {
+        public ManagerData() 
+        {
+            this.managerConfig = new RoadaManagerConfig();
+            this.goConfig = new RoadaGoConfig();
+            this.diagConfig = new RoadaDiagConfig();
+            this.usbConfig = new RoadaUSBConfig();
+        }
+        public bool updatenow;
         public double ManagerVersion;
         public int PhoneID;
         public int HandCode;
@@ -90,14 +98,23 @@ namespace RoadaWebService
     }
     public class RoadaGoConfig 
     {
+        public RoadaGoConfig() 
+        {
+            this.ServerInfo = new AppServerInfo();
+        }
+
         public double version;
-        public AppServerInfo ServerData;
+        public AppServerInfo ServerInfo;
         public string description;
         public int PhotoInterval;
         public bool cameraSound;
     }
     public class RoadaDiagConfig
     {
+        public RoadaDiagConfig() 
+        {
+            this.CustomerInfo = new List<AppServerInfo>();
+        }
         public double version;
         public string description;
         public List<AppServerInfo> CustomerInfo;
