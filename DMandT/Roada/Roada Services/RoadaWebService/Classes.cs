@@ -126,6 +126,9 @@ namespace RoadaWebService
         public string PhotoBucket;
         public string PickupBucket;
         public string ReportBucket;
+        public string ObjStoreUrl;
+        public string AmazonSecretKey;
+        public string AmazonAccessKey;
     }
     public class Request
     {
@@ -526,7 +529,23 @@ namespace RoadaWebService
 
         public bool roadaDiag { get; set; } //comission flag for Roada Diag
 
+        public double goVersion { get; set; }  //version for roadaGo
+
+        public double diagVersion { get; set; }    //version for diagVersion
     }
+
+    public class ConfigData
+    {
+        public double version { get; set; } //version of the config
+
+        public string description { get; set; } //description of the config
+
+        public int photoInterval { get; set; }  //photo interval in seconds
+
+        public bool cameraSound { get; set; }    //camera sound flag
+
+    }
+
     public class ReplicationData
     {
         public int RecordId;
