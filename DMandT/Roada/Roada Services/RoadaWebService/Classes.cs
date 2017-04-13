@@ -108,6 +108,12 @@ namespace RoadaWebService
         public string description;
         public int PhotoInterval;
         public bool cameraSound;
+        public bool adbOn;
+        public bool offlineLogin;
+        public bool photoService;
+        public bool eventService;
+        public bool ttsEnable;
+        public int MainActivity;
     }
     public class RoadaDiagConfig
     {
@@ -544,6 +550,17 @@ namespace RoadaWebService
 
         public bool cameraSound { get; set; }    //camera sound flag
 
+        public bool adbOn { get; set; }         //enable adb poweroff sequence
+
+        public bool offlineLogin { get; set; }  //enable offline Login
+
+        public bool photoService { get; set; }  //enable photoservice
+
+        public bool eventService { get; set; }  //enable event service
+
+        public bool ttsEnable { get; set; }     //enable text to speech
+
+        public int MainActivity { get; set; }   //value for MainActivity's state machine
     }
 
     public class ReplicationData
