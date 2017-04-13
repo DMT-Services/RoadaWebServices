@@ -1025,6 +1025,9 @@ namespace DMTServices
                 return s.ConnectionString;
             else
 #endif
+#if DMT_MANAGER
+                return DMT_Manager.SQLMethods.GetConnectionString(ConfigStr);;
+#endif
                 return string.Empty;
         }
 
