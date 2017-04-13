@@ -409,7 +409,7 @@ namespace DMTServices
                     if (ConnectionData.ToLower().IndexOf("provider") < 0)
                         ConnectionData = "Provider=SQLOLEDB;" + ConnectionData;
 #endif
-                        connDb = new myDbConnection(ConnectionData);
+                    connDb = new myDbConnection(ConnectionData);
                     connDb.Open();
                 }
                 catch (Exception e)
@@ -1024,12 +1024,8 @@ namespace DMTServices
             if (s != null)
                 return s.ConnectionString;
             else
-            {
-                string connection = DMT_Manager.SQLMethods.GetConnectionString(ConfigStr);
-                return connection;
-            }
 #endif
-                
+                return string.Empty;
         }
 
         /// <summary>
