@@ -238,6 +238,10 @@ namespace RoadaWebService
         public double Lon;
         public int Sog;
         public int Cog;
+        public string city;
+        public string driver;
+        public string street;
+        public string url;
         public byte[] Img;
     }
     public class CustomerSettings
@@ -642,8 +646,10 @@ namespace RoadaWebService
         public double RPM;
         public double CoolTemp;
         public double OilPress;
-    }
 
+        public string driver;
+        public string truck;
+    }
 
     public class TPatrol511
     {
