@@ -412,6 +412,7 @@ namespace RoadaWebService
         public double goVersion { get; set; }
         public double diagVersion { get; set; }
         public double managerVersion { get; set; }
+        public bool installer { get; set; }
 
     }
     public class VersionData
@@ -538,6 +539,8 @@ namespace RoadaWebService
         public bool roadaGo { get; set; } // Commision flag for Roada go
 
         public bool roadaDiag { get; set; } //comission flag for Roada Diag
+
+        public bool installer { get; set; }
 
         public double goVersion { get; set; }  //version for roadaGo
 
