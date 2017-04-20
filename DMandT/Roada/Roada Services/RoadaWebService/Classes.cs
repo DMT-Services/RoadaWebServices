@@ -61,7 +61,22 @@ namespace RoadaWebService
         public string hardware;
 
     }
-    
+    public class SideWalkData
+    {
+        public string reportId;
+        public int handCode;
+        public string UnitNum;
+        public string userName;
+        public int Colour;
+        public DateTime reportTime;
+        public int blocks;
+        public int bays;
+        public int def1;
+        public int def2;
+        public string notes;
+        public double lon;
+        public double lat;
+    }
     public class ManagerData 
     {
         public ManagerData() 

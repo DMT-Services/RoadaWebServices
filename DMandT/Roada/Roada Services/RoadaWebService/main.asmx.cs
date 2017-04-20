@@ -1326,6 +1326,7 @@ namespace RoadaWebService
                     {
                         SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
                         sql.Add("update_now", 0);
+                        sql.Add("last_checkin", DateTime.UtcNow);
                         stmt.DoSQL(sql.BuildUpdate("UPDATE soft_activate", string.Format("WHERE client_guid = '{0}'", comInfo.IMEI)));
                         Global.messLog.Flush("Device updated HandCode: {0} GUID: {1}", outData.HandCode, comInfo.IMEI);
 
@@ -3078,21 +3079,21 @@ namespace RoadaWebService
                         DateTime now = DateTime.Now.ToLocalTime();
 
                         sql.Add("install", 1);
-                        sql.Add("hand_code",data.handcode);
-                        sql.Add("unit_num",data.unitNum);
-                        sql.Add("obj_key",data.objKey);
+                        sql.Add("hand_code", data.handcode);
+                        sql.Add("unit_num", data.unitNum);
+                        sql.Add("obj_key", data.objKey);
                         sql.Add("rdate", now);
                         sql.Add("idate", data.pictureSent);
                         sql.Add("installkey", data.InstallKey);
                         sql.Add("img_url", data.imgUrl);
-                       
+
 
                         if (!stmt.DoSQLFormat("SELECT id FROM Img_Events WHERE obj_key = '{0}'", data.objKey))
                             stmt.DoSQL(sql.BuildInsert("INSERT INTO Img_Events"));
 
                         sql.Clear();
                     }
-                    
+
 
                     Result = 1;
                 }
@@ -3131,7 +3132,7 @@ namespace RoadaWebService
                     SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
                     DateTime now = DateTime.Now.ToLocalTime();
 
-                    
+
                     sql.Add("comments", data.Comments);
                     sql.Add("intallKey", data.installkey);
                     sql.Add("devID", data.DevId);
@@ -3176,7 +3177,7 @@ namespace RoadaWebService
 
                         Result = 2;
                     }
-              
+
                     Result = 1;
                 }
             }
@@ -3184,6 +3185,132 @@ namespace RoadaWebService
             {
                 Result = -3;
                 Global.messLog.Flush("Picture data Failed to send");
+            }
+            finally
+            {
+                if (stmt != null)
+                    stmt.Close();
+            }
+
+            return Result;
+        }
+
+
+
+
+        [WebMethod(Description = "Puts sidewalk pictures away")]
+        public int sendSidewalkPics(Request req, InstalledPictures picturedata)
+        {
+            int Result = -1;
+            // low security check, don't want hackers!
+            if (!LowSecurityCheck(req))
+                return Result;
+
+            string connStr = CustConnectionString(req);
+
+            SqlStmt stmt = null;
+            try
+            {
+                Result = -2;
+                if (GetStmt(connStr, out stmt))
+                {
+
+                        SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
+                        DateTime now = DateTime.Now.ToLocalTime();
+
+                        sql.Add("sidewalk", 1);
+                        sql.Add("RepKey", picturedata.InstallKey);
+                        sql.Add("hand_code", picturedata.handcode);
+                        sql.Add("unit_num", picturedata.unitNum);
+                        sql.Add("obj_key", picturedata.objKey);
+                        sql.Add("rdate", now);
+                        sql.Add("idate", picturedata.pictureSent);
+                        sql.Add("img_url", picturedata.imgUrl);
+
+
+                        if (!stmt.DoSQLFormat("SELECT id FROM Img_Events WHERE obj_key = '{0}'", picturedata.objKey))
+                            stmt.DoSQL(sql.BuildInsert("INSERT INTO Img_Events"));
+
+                        sql.Clear();
+                    
+                    
+
+                    Result = 1;
+                }
+            }
+            catch
+            {
+                Result = -3;
+                Global.messLog.Flush("Picture data Failed to send");
+            }
+            finally
+            {
+                if (stmt != null)
+                    stmt.Close();
+            }
+
+            return Result;
+        }
+
+        [WebMethod(Description = "Puts installed Data Away")]
+        public int SendSidewalkData(Request req, SideWalkData data)
+        {
+            int Result = -1;
+            // low security check, don't want hackers!
+            if (!LowSecurityCheck(req))
+                return Result;
+
+            string connStr = CustConnectionString(req);
+
+            SqlStmt stmt = null;
+            try
+            {
+                Result = -2;
+                if (GetStmt(connStr, out stmt))
+                {
+
+                    SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
+                    DateTime now = DateTime.Now.ToLocalTime();
+
+                    
+                    sql.Add("report_id", data.reportId);
+                    sql.Add("hand_code", data.handCode);
+                    sql.Add("unit_num", data.UnitNum);
+                    sql.Add("user_name", data.userName);
+                    sql.Add("colour", data.Colour);
+                    sql.Add("report_time", data.reportTime);
+                    sql.Add("bays", data.bays);
+                    sql.Add("blocks", data.blocks);
+                    sql.Add("notes", data.notes);
+                    sql.Add("def1",data.def1);
+                    sql.Add("def2", data.def2);
+                    sql.Add("latitude", data.lat);
+                    sql.Add("longitude", data.lon);
+
+
+                    if (stmt.DoSQL(String.Format("SELECT * FROM sidewalk_report WHERE report_id = '{0}'", data.reportId)))
+                    {
+
+                        stmt.DoSQL(sql.BuildUpdate("UPDATE sidewalk_report", String.Format("WHERE report_id = '{0}'", data.reportId)));
+
+                        Result = 1;
+
+                    }
+                    else
+                    {
+
+                        stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO sidewalk_report"));
+
+                        Result = 2;
+                    }
+              
+                    Result = 1;
+                }
+            }
+            catch
+            {
+                Result = -3;
+                Global.messLog.Flush(" SendSidwalkData() report Data failed to send");
             }
             finally
             {
