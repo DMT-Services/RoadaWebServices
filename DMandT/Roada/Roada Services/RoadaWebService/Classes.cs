@@ -129,6 +129,8 @@ namespace RoadaWebService
         public bool eventService;
         public bool ttsEnable;
         public int MainActivity;
+        public int updatedCount;
+        public int notUpdatedCount;
     }
     public class RoadaDiagConfig
     {
@@ -560,6 +562,8 @@ namespace RoadaWebService
         public double goVersion { get; set; }  //version for roadaGo
 
         public double diagVersion { get; set; }    //version for diagVersion
+
+        public DateTime lastCheckin { get; set; }
     }
 
     public class ConfigData
@@ -583,6 +587,10 @@ namespace RoadaWebService
         public bool ttsEnable { get; set; }     //enable text to speech
 
         public int MainActivity { get; set; }   //value for MainActivity's state machine
+
+        public int updatedCount { get; set; }   //count for devices that have successfully received config update
+
+        public int notUpdatedCount { get; set; } //count for devices that have not updated yet after config was changed.
     }
 
     public class ReplicationData
@@ -667,6 +675,7 @@ namespace RoadaWebService
 
         public string driver;
         public string truck;
+        public bool online;
     }
 
     public class TPatrol511
