@@ -540,7 +540,6 @@ namespace RoadaWebService
     public class CommData
 
     {
-
         public int id { get; set; } //Primary key
 
         public int handCode { get; set; }
@@ -564,6 +563,22 @@ namespace RoadaWebService
         public double diagVersion { get; set; }    //version for diagVersion
 
         public DateTime lastCheckin { get; set; }
+
+        public bool responseFlg { get; set; }
+
+        public int responseType { get; set; }
+
+        public string phoneResponse { get; set; }
+
+        public string command { get; set; }
+    }
+
+    public class ChangeLog
+    {
+        public string Imei { get; set; } //Unique ID from Device
+        public int eventType { get; set; }
+        public string eventLog { get; set; }
+        public DateTime changeTime { get; set; }
     }
 
     public class ConfigData
