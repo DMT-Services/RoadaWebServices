@@ -478,6 +478,9 @@ namespace RoadaWebService
     }
     public class InstalledPictures 
     {
+        public double lat;
+        public double lon;
+        public string username;
         public string objKey;
         public string unitNum;
         public int handcode;

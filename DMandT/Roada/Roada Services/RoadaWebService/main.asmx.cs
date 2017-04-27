@@ -3219,6 +3219,9 @@ namespace RoadaWebService
                         DateTime now = DateTime.Now.ToLocalTime();
 
                         sql.Add("sidewalk", 1);
+                        sql.Add("latitude", picturedata.lat);
+                        sql.Add("longitude", picturedata.lon);
+                        sql.Add("username",picturedata.username);
                         sql.Add("RepKey", picturedata.InstallKey);
                         sql.Add("hand_code", picturedata.handcode);
                         sql.Add("unit_num", picturedata.unitNum);
