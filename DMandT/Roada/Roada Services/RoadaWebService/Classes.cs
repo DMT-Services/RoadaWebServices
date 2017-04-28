@@ -211,6 +211,7 @@ namespace RoadaWebService
         public string net_type;
         public int plan;
         public string routeName;
+        public byte[] signature;
     }
     public class DispatchStatus
     {

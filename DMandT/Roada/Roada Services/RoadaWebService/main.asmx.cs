@@ -3553,6 +3553,8 @@ namespace RoadaWebService
                                sql.Add("driver", evnt.driver);
                                sql.Add("truck", evnt.truck);
                                sql.Add("hand_code", evnt.handcode);
+                               if (evnt.signature != null)
+                                   sql.Add("signature", evnt.signature);
                                stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO go_events"));
 
                                sql.Clear();
