@@ -77,6 +77,13 @@ namespace RoadaWebService
         public double lon;
         public double lat;
     }
+    public class ColumnCheckData
+    {
+        public int idField;
+        public string TableName;
+        public string ColumnName;
+        public string SqlStr;
+    }
     public class ManagerData 
     {
         public ManagerData() 
@@ -489,7 +496,11 @@ namespace RoadaWebService
         public string InstallKey;
         public DateTime pictureSent;
     }
-
+    public class goTables 
+    {
+        public int id;
+        public string sqlStatement;
+    }
     public class GPSData
     {
         public int DevId;

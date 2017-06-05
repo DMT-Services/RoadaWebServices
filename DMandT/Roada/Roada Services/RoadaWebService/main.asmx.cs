@@ -1316,10 +1316,10 @@ namespace RoadaWebService
                     }
                     if (stmt.bfetch("installer")) // Field name can ge changed to diag_codes at later date 
                     {
-                        if (GetCustomerDataList(outData, stmt.fetch("db_codes")) && GetDiagConfig(outData, stmt.dfetch("go_version")))
+                        if (GetCustomerDataList(outData, stmt.fetch("diag_customers")) && GetDiagConfig(outData, stmt.dfetch("go_version")))
                         {
                             validConfig = true;
-                        }                     
+                        }                    
                     }
 
                     if (validConfig) // Will let device know it has a new script to replace old one with
@@ -1335,10 +1335,10 @@ namespace RoadaWebService
                 }
                
             }
-            catch (Exception x)
+            catch (Exception ex)
             {
                 Result = -4;
-                Global.messLog.Flush("SendCommission() Excp: {0}", x.Message);
+                Global.messLog.Flush("ManagerCheckin() Excp:" + ex.Message);
             }
             finally
             {
@@ -1429,6 +1429,9 @@ namespace RoadaWebService
                     mdata.goConfig.ServerInfo.PhotoBucket = stmt.fetch("go_photo_bucket");
                     mdata.goConfig.ServerInfo.PickupBucket = stmt.fetch("go_pickup_bucket");
                     mdata.goConfig.ServerInfo.ReportBucket = stmt.fetch("go_report_bucket");
+                    mdata.goConfig.ServerInfo.ObjStoreUrl = stmt.fetch("obj_store_url");
+                    mdata.goConfig.ServerInfo.AmazonSecretKey = stmt.fetch("amz_secret_key");
+                    mdata.goConfig.ServerInfo.AmazonAccessKey = stmt.fetch("amz_access_key");
                     validConfig = true;
                 }
                 else
@@ -1468,6 +1471,9 @@ namespace RoadaWebService
                     asi.PhotoBucket = stmt.fetch("go_photo_bucket");
                     asi.PickupBucket = stmt.fetch("go_pickup_bucket");
                     asi.ReportBucket = stmt.fetch("go_report_bucket");
+                    asi.ObjStoreUrl = stmt.fetch("obj_store_url");
+                    asi.AmazonSecretKey = stmt.fetch("amz_secret_key");
+                    asi.AmazonAccessKey = stmt.fetch("amz_access_key");
                     mdata.diagConfig.CustomerInfo.Add(asi);
                     validConfig = true;
                 }
@@ -3818,6 +3824,89 @@ namespace RoadaWebService
             {
                 if (stmt != null)
                     stmt.Close();
+            }
+            return Result;
+        }
+        [WebMethod(Description = "Retrieve go Alter table statments")]
+        public ColumnCheckData[] GetGoAlters(Request request)
+        {
+            ColumnCheckData[] Result = null;
+            if (LowSecurityCheck(request))
+            {
+                SqlConn mConn = new SqlConn("MainConn");
+                SqlStmt stmt = null;
+                try
+                {
+                    if (mConn.dbConnect())
+                    {
+                        stmt = new SqlStmt(mConn);
+                        List<ColumnCheckData> createStmts = new List<ColumnCheckData>();
+                        bool rc = stmt.DoSQL("SELECT * FROM roadaAltertables");
+                        while (rc)
+                        {
+                            ColumnCheckData cs = new ColumnCheckData();
+                            cs.idField = stmt.ifetch("id");
+                            cs.SqlStr = stmt.fetch("sqlstring");
+                            cs.TableName = stmt.fetch("tablename");
+                            cs.ColumnName = stmt.fetch("columnname");
+
+                            createStmts.Add(cs);
+                            rc = stmt.dbSkip();
+                        }
+                        Result = createStmts.ToArray();
+                        createStmts.Clear();
+                    }
+                }
+                catch (Exception x)
+                {
+                    Global.messLog.Flush("GetGoTables() Excp: {0}", x.Message);
+                }
+                finally
+                {
+                    if (stmt != null)
+                        stmt.Close();
+                }
+            }
+            return Result;
+        }
+
+        [WebMethod(Description = "Retrieve go create table statments")]
+        public goTables[] GetGoTables(Request request)
+        {
+            goTables[] Result = null;
+            if (LowSecurityCheck(request))
+            {
+                SqlConn mConn = new SqlConn("MainConn");
+                SqlStmt stmt = null;
+                try
+                {
+                    if (mConn.dbConnect())
+                    {
+                        stmt = new SqlStmt(mConn);
+                        List<goTables> createStmts = new List<goTables>();
+                        bool rc = stmt.DoSQL("SELECT * FROM roadagotables");
+                        while (rc)
+                        {
+                            goTables cs = new goTables();
+                            cs.id = stmt.ifetch("id");
+                            cs.sqlStatement = stmt.fetch("sqlstring");
+
+                            createStmts.Add(cs);
+                            rc = stmt.dbSkip();
+                        }
+                        Result = createStmts.ToArray();
+                        createStmts.Clear();
+                    }
+                }
+                catch (Exception x)
+                {
+                    Global.messLog.Flush("GetGoTables() Excp: {0}", x.Message);
+                }
+                finally
+                {
+                    if (stmt != null)
+                        stmt.Close();
+                }               
             }
             return Result;
         }
