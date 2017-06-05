@@ -77,6 +77,24 @@ namespace RoadaWebService
         public double lon;
         public double lat;
     }
+    public class DeficiencyData
+    {
+        public string ReportId;
+        public int HandCode;
+        public string UnitNum;
+        public string UserName;
+        public DateTime ReportTime;
+        public int Type;
+        public int Issue;
+        public int Length;
+        public int Width;
+        public int Depth;
+        public int Item;
+        public int Option;
+        public string Note;
+        public double Lon;
+        public double Lat;
+    }
     public class ColumnCheckData
     {
         public int idField;

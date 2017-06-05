@@ -3330,6 +3330,127 @@ namespace RoadaWebService
             return Result;
         }
 
+#region Patrol Deficiency
+        [WebMethod(Description = "Puts Deficiency pictures away")]
+        public int SendDeficiencyPics(Request req, InstalledPictures picturedata)
+        {
+            int Result = -1;
+            // low security check, don't want hackers!
+            if (!LowSecurityCheck(req))
+                return Result;
+
+            string connStr = CustConnectionString(req);
+
+            SqlStmt stmt = null;
+            try
+            {
+                Result = -2;
+                if (GetStmt(connStr, out stmt))
+                {
+
+                    SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
+                    DateTime now = DateTime.Now.ToLocalTime();
+
+                    sql.Add("deficiency", 1);
+                    sql.Add("latitude", picturedata.lat);
+                    sql.Add("longitude", picturedata.lon);
+                    sql.Add("username", picturedata.username);
+                    sql.Add("RepKey", picturedata.InstallKey);
+                    sql.Add("hand_code", picturedata.handcode);
+                    sql.Add("unit_num", picturedata.unitNum);
+                    sql.Add("obj_key", picturedata.objKey);
+                    sql.Add("rdate", now);
+                    sql.Add("idate", picturedata.pictureSent);
+                    sql.Add("img_url", picturedata.imgUrl);
+
+                    if (!stmt.DoSQLFormat("SELECT id FROM Img_Events WHERE obj_key = '{0}'", picturedata.objKey))
+                        stmt.DoSQL(sql.BuildInsert("INSERT INTO Img_Events"));
+
+                    sql.Clear();
+
+                    Result = 1;
+                }
+            }
+            catch
+            {
+                Result = -3;
+                Global.messLog.Flush("Picture data Failed to send");
+            }
+            finally
+            {
+                if (stmt != null)
+                    stmt.Close();
+            }
+
+            return Result;
+        }
+
+        [WebMethod(Description = "Puts Deficiency Data Away")]
+        public int SendDeficiencyData(Request req, DeficiencyData data)
+        {
+            int Result = -1;
+            // low security check, don't want hackers!
+            if (!LowSecurityCheck(req))
+                return Result;
+
+            string connStr = CustConnectionString(req);
+
+            SqlStmt stmt = null;
+            try
+            {
+                Result = -2;
+                if (GetStmt(connStr, out stmt))
+                {
+                    SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
+                    DateTime now = DateTime.Now.ToLocalTime();
+                    
+                    sql.Add("report_id", data.ReportId);
+                    sql.Add("hand_code", data.HandCode);
+                    sql.Add("unit_num", data.UnitNum);
+                    sql.Add("user_name", data.UserName);
+                    sql.Add("report_time", data.ReportTime);
+                    sql.Add("type", data.Type);
+                    sql.Add("issue", data.Issue);
+                    sql.Add("length", data.Length);
+                    sql.Add("width", data.Width);
+                    sql.Add("depth", data.Depth);
+                    sql.Add("item", data.Item);
+                    sql.Add("option", data.Option);
+                    sql.Add("notes", data.Note);
+                    sql.Add("latitude", data.Lat);
+                    sql.Add("longitude", data.Lon);
+
+                    if (stmt.DoSQL(String.Format("SELECT * FROM deficiencies WHERE report_id = '{0}'", data.ReportId)))
+                    {
+                        stmt.DoSQL(sql.BuildUpdate("UPDATE deficiencies", String.Format("WHERE report_id = '{0}'", data.ReportId)));
+
+                        Result = 1;
+                    }
+                    else
+                    {
+                        stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO deficiencies"));
+
+                        Result = 2;
+                    }
+
+                    Result = 1;
+                }
+            }
+            catch
+            {
+                Result = -3;
+                Global.messLog.Flush("SendDeficiencyData() report Data failed to send");
+            }
+            finally
+            {
+                if (stmt != null)
+                    stmt.Close();
+            }
+
+            return Result;
+        }
+#endregion
+
         [WebMethod(Description = "Comissions Intaller app")]
         public int ComissionInstaller(Request req, string imei, out bool commissioned, out string Customers)
         {
