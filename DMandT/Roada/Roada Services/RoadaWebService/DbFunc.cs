@@ -255,6 +255,12 @@ namespace DMTServices
                 }
         }
 
+        public static string buildExpressConn(string catalog)
+        {
+            // changed from 'Integrated Security=true;User Instance=True' to 'Trusted_connection=True'
+            return string.Format(@"Data Source=.\SqlExpress;MultipleActiveResultSets=True;Persist Security Info=True;Initial Catalog={0};Trusted_connection=True", catalog);
+        }
+
         public static Dictionary<string, string> LoadSettings()
         {
             return LoadSettings(string.Empty);
