@@ -3410,11 +3410,12 @@ namespace RoadaWebService
                     sql.Add("user_name", data.UserName);
                     sql.Add("report_time", data.ReportTime);
                     sql.Add("type", data.Type);
+                    sql.Add("item", data.Item);
                     sql.Add("issue", data.Issue);
+                    sql.Add("status", data.Status);
                     sql.Add("length", data.Length);
                     sql.Add("width", data.Width);
                     sql.Add("depth", data.Depth);
-                    sql.Add("item", data.Item);
                     sql.Add("option", data.Option);
                     sql.Add("notes", data.Note);
                     sql.Add("latitude", data.Lat);

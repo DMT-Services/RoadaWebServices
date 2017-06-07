@@ -85,11 +85,12 @@ namespace RoadaWebService
         public string UserName;
         public DateTime ReportTime;
         public int Type;
+        public int Item;
         public int Issue;
+        public int Status;
         public int Length;
         public int Width;
         public int Depth;
-        public int Item;
         public int Option;
         public string Note;
         public double Lon;
