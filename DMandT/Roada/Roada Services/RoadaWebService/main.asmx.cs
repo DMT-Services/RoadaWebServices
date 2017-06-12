@@ -3416,7 +3416,7 @@ namespace RoadaWebService
                     sql.Add("length", data.Length);
                     sql.Add("width", data.Width);
                     sql.Add("depth", data.Depth);
-                    sql.Add("option", data.Option);
+                    sql.Add("opt", data.Option);
                     sql.Add("notes", data.Note);
                     sql.Add("latitude", data.Lat);
                     sql.Add("longitude", data.Lon);
