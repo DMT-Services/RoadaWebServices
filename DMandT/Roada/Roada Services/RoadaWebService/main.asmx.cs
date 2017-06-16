@@ -3906,6 +3906,54 @@ namespace RoadaWebService
             return Result;
         }
 
+        [WebMethod(Description = "Retrieve Mobile Users listing")]
+        public GoUser[] GetGoUsers(Request request)
+        {
+            GoUser[] Result = null;
+
+            if (!LowSecurityCheck(request))
+                return Result;
+
+            string connStr = CustConnectionString(request);
+            SqlStmt stmt = null;
+            try
+            {
+                if (GetStmt(connStr, out stmt))
+                {
+                    List<GoUser> users = new List<GoUser>();
+                    bool rc;
+                
+                    rc = stmt.DoSQLFormat("SELECT * FROM users WHERE mobile_user = {0}", 1);
+                   
+                    while (rc)
+                    {
+                        GoUser gu = new GoUser();
+                        gu.username = stmt.fetch("username");
+                        gu.password = stmt.fetch("password");
+                        gu.email = stmt.fetch("email");
+                        gu.firstname = stmt.fetch("first_name");
+                        gu.lastname = stmt.fetch("last_name");
+                        gu.phonenumber = stmt.fetch("phone_number");
+                        gu.title = stmt.fetch("title");
+                        users.Add(gu);
+                        rc = stmt.dbSkip();
+                    }
+                    Result = users.ToArray();
+                    users.Clear();
+                }
+            }
+            catch (Exception x)
+            {
+                Global.messLog.Flush("GetGouserList() Excp: {0}", x.Message);
+            }
+            finally
+            {
+                if (stmt != null)
+                    stmt.Close();
+            }
+            return Result;
+        }
+
         [WebMethod(Description = "Retrieve vehicle types listing")]
         public VehicleType[] GetVehicleTypes(Request request)
         {

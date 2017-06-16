@@ -179,6 +179,16 @@ namespace RoadaWebService
         public string AmazonSecretKey;
         public string AmazonAccessKey;
     }
+    public class GoUser 
+    {
+        public string username;
+        public string password;
+        public string email;
+        public string firstname;
+        public string lastname;
+        public string phonenumber;
+        public string title;
+    }
     public class Request
     {
         public string CustCode;
