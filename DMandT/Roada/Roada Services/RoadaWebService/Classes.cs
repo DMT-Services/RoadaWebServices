@@ -113,6 +113,8 @@ namespace RoadaWebService
             this.usbConfig = new RoadaUSBConfig();
         }
         public bool updatenow;
+        public string imei;
+        public string hardware;
         public double ManagerVersion;
         public int PhoneID;
         public int HandCode;

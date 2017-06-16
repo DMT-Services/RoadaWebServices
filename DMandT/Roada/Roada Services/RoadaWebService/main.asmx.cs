@@ -1363,6 +1363,12 @@ namespace RoadaWebService
                     mdata.goConfig.PhotoInterval = stmt.ifetch("photo_interval");
                     mdata.goConfig.description = stmt.fetch("description");
                     mdata.goConfig.cameraSound = stmt.bfetch("camera_sound");
+                    mdata.goConfig.MainActivity = stmt.ifetch("main_activity");
+                    mdata.goConfig.ttsEnable = stmt.bfetch("tts_enable");
+                    mdata.goConfig.offlineLogin = stmt.bfetch("offline_login");
+                    mdata.goConfig.adbOn = stmt.bfetch("adb_on");
+                    mdata.goConfig.photoService = stmt.bfetch("photo_service");
+                    mdata.goConfig.eventService = stmt.bfetch("event_service");
                     
                     validConfig = true;
                 }
