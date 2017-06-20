@@ -3094,8 +3094,8 @@ namespace RoadaWebService
                         sql.Add("hand_code", data.handcode);
                         sql.Add("unit_num", data.unitNum);
                         sql.Add("obj_key", data.objKey);
-                        sql.Add("rdate", now);
-                        sql.Add("idate", data.pictureSent);
+                        sql.Add("rdate", data.pictureSent);
+                        sql.Add("idate", now);
                         sql.Add("installkey", data.InstallKey);
                         sql.Add("img_url", data.imgUrl);
 
@@ -3227,28 +3227,27 @@ namespace RoadaWebService
                 if (GetStmt(connStr, out stmt))
                 {
 
-                        SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
-                        DateTime now = DateTime.Now.ToLocalTime();
+                    SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
+                    DateTime now = DateTime.Now.ToLocalTime();
 
-                        sql.Add("sidewalk", 1);
-                        sql.Add("latitude", picturedata.lat);
-                        sql.Add("longitude", picturedata.lon);
-                        sql.Add("username",picturedata.username);
-                        sql.Add("RepKey", picturedata.InstallKey);
-                        sql.Add("hand_code", picturedata.handcode);
-                        sql.Add("unit_num", picturedata.unitNum);
-                        sql.Add("obj_key", picturedata.objKey);
-                        sql.Add("rdate", now);
-                        sql.Add("idate", picturedata.pictureSent);
-                        sql.Add("img_url", picturedata.imgUrl);
+                    sql.Add("sidewalk", 1);
+                    sql.Add("latitude", picturedata.lat);
+                    sql.Add("longitude", picturedata.lon);
+                    sql.Add("username", picturedata.username);
+                    sql.Add("RepKey", picturedata.InstallKey);
+                    sql.Add("hand_code", picturedata.handcode);
+                    sql.Add("unit_num", picturedata.unitNum);
+                    sql.Add("obj_key", picturedata.objKey);
+                    sql.Add("rdate", picturedata.pictureSent);
+                    sql.Add("idate", now);
+                    sql.Add("img_url", picturedata.imgUrl);
+
+                    if (!stmt.DoSQLFormat("SELECT id FROM Img_Events WHERE obj_key = '{0}'", picturedata.objKey))
+                        stmt.DoSQL(sql.BuildInsert("INSERT INTO Img_Events"));
+
+                    sql.Clear();
 
 
-                        if (!stmt.DoSQLFormat("SELECT id FROM Img_Events WHERE obj_key = '{0}'", picturedata.objKey))
-                            stmt.DoSQL(sql.BuildInsert("INSERT INTO Img_Events"));
-
-                        sql.Clear();
-                    
-                    
 
                     Result = 1;
                 }
@@ -3287,7 +3286,6 @@ namespace RoadaWebService
                     SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
                     DateTime now = DateTime.Now.ToLocalTime();
 
-                    
                     sql.Add("report_id", data.reportId);
                     sql.Add("hand_code", data.handCode);
                     sql.Add("unit_num", data.UnitNum);
@@ -3365,8 +3363,8 @@ namespace RoadaWebService
                     sql.Add("hand_code", picturedata.handcode);
                     sql.Add("unit_num", picturedata.unitNum);
                     sql.Add("obj_key", picturedata.objKey);
-                    sql.Add("rdate", now);
-                    sql.Add("idate", picturedata.pictureSent);
+                    sql.Add("rdate", picturedata.pictureSent);
+                    sql.Add("idate", now);
                     sql.Add("img_url", picturedata.imgUrl);
 
                     if (!stmt.DoSQLFormat("SELECT id FROM Img_Events WHERE obj_key = '{0}'", picturedata.objKey))
