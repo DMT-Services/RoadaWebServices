@@ -396,6 +396,7 @@ namespace RoadaWebService
 
         public class PhotoData
         {
+            public bool ready;
             public int phandcode;
             public string unitnum;
             public int evtType;
