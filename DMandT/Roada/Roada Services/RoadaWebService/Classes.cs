@@ -394,6 +394,35 @@ namespace RoadaWebService
         public byte[] Signiture; //stores the Signiture Array
         public bool Sent;
 
+        public class PhotoData
+        {
+            public int phandcode;
+            public string unitnum;
+            public int evtType;
+            public decimal latitude;
+            public decimal longitude;
+            public int degrees;
+            public int speed;
+            public string repkey;
+            public string username;
+            public string imgUrl;
+            public string custCode;
+            public string objKey;
+            public string bucket;
+            public DateTime rdate;
+            public decimal gpsAccuracy;
+            public bool priv;
+            public bool intall;
+            public string installKey;
+            public DateTime imgcreated;
+            public bool sent;
+            public bool sidewalk;
+            public bool deficiency;
+            public string imgPath;
+            public bool photoSent;
+            public DateTime sentTime;
+        }
+
         //location info
         public decimal CurrentLat;
         public decimal CurrentLong;
@@ -626,7 +655,35 @@ namespace RoadaWebService
         public string eventLog { get; set; }
         public DateTime changeTime { get; set; }
     }
-
+    public class PhotoData
+    {
+        public int handcode;
+        public int phandcode;
+        public string unitnum;
+        public int evtType;
+        public decimal latitude;
+        public decimal longitude;
+        public int degrees;
+        public int speed;
+        public string repkey;
+        public string username;
+        public string imgUrl;
+        public string custCode;
+        public string objKey;
+        public string bucket;
+        public DateTime rdate;
+        public decimal gpsAccuracy;
+        public bool priv;
+        public bool intall;
+        public string installKey;
+        public DateTime imgcreated;
+        public bool sent;
+        public bool sidewalk;
+        public bool deficiency;
+        public string imgPath;
+        public bool photoSent;
+        public DateTime sentTime;
+    }
     public class ConfigData
     {
         public double version { get; set; } //version of the config
@@ -686,6 +743,7 @@ namespace RoadaWebService
 
     public class Vehicle
     {
+        public int fleetID;
         public int DevId;
         public string UnitNum;
         public string License;

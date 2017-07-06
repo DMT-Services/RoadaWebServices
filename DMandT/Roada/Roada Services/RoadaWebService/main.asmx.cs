@@ -2855,6 +2855,65 @@ namespace RoadaWebService
             return Result;
         }
 
+        [WebMethod(Description = "Push Camera Image")]
+        public int SendPhotoData(Request req, PhotoData pdata)
+        {
+            int Result = 0;
+            // low security check, don't want hackers!
+            if (!LowSecurityCheck(req))
+                return -2;
+
+            string connStr = CustConnectionString(req);
+
+            SqlStmt stmt = null;
+            try
+            {
+                Result = -3;
+                if (GetStmt(connStr, out stmt))
+                {
+                    SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
+
+                    sql.Add("rdate", DateTime.UtcNow);
+                    sql.Add("hand_code", pdata.handcode);
+                    sql.Add("unit_num", pdata.unitnum);
+                    sql.Add("latitude", pdata.latitude);
+                    sql.Add("longitude", pdata.longitude);
+                    sql.Add("degrees", pdata.degrees);
+                    sql.Add("speed", pdata.speed);
+                    sql.Add("RepKey", pdata.repkey);
+                    sql.Add("username", pdata.username);
+                    sql.Add("img_url", pdata.imgUrl);
+                    sql.Add("cust_code", pdata.custCode);
+                    sql.Add("obj_key", pdata.objKey);
+                    sql.Add("bucket", pdata.bucket);
+                    sql.Add("gps_accuracy", pdata.gpsAccuracy);
+                    sql.Add("private", pdata.priv);
+                    sql.Add("install", pdata.intall);
+                    sql.Add("installkey", pdata.installKey);
+                    sql.Add("img_created", pdata.imgcreated);
+                    sql.Add("sent", pdata.sent);
+                    sql.Add("sidewalk", pdata.sidewalk);
+                    sql.Add("deficiency", pdata.deficiency);
+                    sql.Add("phand_code", pdata.phandcode);
+                    sql.Add("evt_type", pdata.evtType);
+
+                    stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO img_Events"));
+                    Result = 1;
+                }
+            }
+            catch (Exception x)
+            {
+                Result = -4;
+                Global.messLog.Flush("SendPhotoData() Excp: {0}", x.Message);
+            }
+            finally
+            {
+                if (stmt != null)
+                    stmt.Close();
+            }
+            return Result;
+        }
+
         [WebMethod(Description = "Send Request to Commision Phone for roada App")]
         public int SendCommision(Request req, Comissioninfo comInfo)
         {
@@ -3887,6 +3946,7 @@ namespace RoadaWebService
                     while (rc)
                     {
                         Vehicle v = new Vehicle();
+                        v.fleetID = stmt.ifetch("fleet");
                         v.DevId = stmt.ifetch("hand_code");
                         v.UnitNum = stmt.fetch("unit_num");
                         v.License = stmt.fetch("license");
