@@ -658,6 +658,7 @@ namespace RoadaWebService
     }
     public class PhotoData
     {
+        public bool ready;
         public int handcode;
         public int phandcode;
         public string unitnum;

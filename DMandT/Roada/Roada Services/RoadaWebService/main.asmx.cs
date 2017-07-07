@@ -2872,7 +2872,7 @@ namespace RoadaWebService
                 if (GetStmt(connStr, out stmt))
                 {
                     SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
-
+                    bool rdy = pdata.ready;
                     sql.Add("rdate", DateTime.UtcNow);
                     sql.Add("hand_code", pdata.handcode);
                     sql.Add("unit_num", pdata.unitnum);
