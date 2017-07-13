@@ -222,6 +222,9 @@ namespace RoadaWebService
 
     public class evntRecord
     {
+
+        public bool sent;
+        public bool hosEvent;
         public int dcdHC;
         public int EventType;
         public DateTime eventTime;
@@ -386,6 +389,7 @@ namespace RoadaWebService
         public string reportTime; //used for the unique Time code for linking photos etc..
 
         //user info
+        public string username; //users login name
         public string repPrep; //USers name
         public string repTitle; //USers title
         public string repPhone;  // Users phone
@@ -393,36 +397,6 @@ namespace RoadaWebService
         public string phoneID; //Id of phone
         public byte[] Signiture; //stores the Signiture Array
         public bool Sent;
-
-        public class PhotoData
-        {
-            public bool ready;
-            public int phandcode;
-            public string unitnum;
-            public int evtType;
-            public decimal latitude;
-            public decimal longitude;
-            public int degrees;
-            public int speed;
-            public string repkey;
-            public string username;
-            public string imgUrl;
-            public string custCode;
-            public string objKey;
-            public string bucket;
-            public DateTime rdate;
-            public decimal gpsAccuracy;
-            public bool priv;
-            public bool intall;
-            public string installKey;
-            public DateTime imgcreated;
-            public bool sent;
-            public bool sidewalk;
-            public bool deficiency;
-            public string imgPath;
-            public bool photoSent;
-            public DateTime sentTime;
-        }
 
         //location info
         public decimal CurrentLat;
@@ -658,6 +632,7 @@ namespace RoadaWebService
     }
     public class PhotoData
     {
+        public bool done;
         public bool ready;
         public int handcode;
         public int phandcode;
