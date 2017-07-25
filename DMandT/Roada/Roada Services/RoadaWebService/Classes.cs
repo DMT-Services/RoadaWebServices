@@ -155,6 +155,7 @@ namespace RoadaWebService
         public bool offlineLogin;
         public bool photoService;
         public bool eventService;
+        public bool tracking;
         public bool ttsEnable;
         public int MainActivity;
         public int updatedCount;
