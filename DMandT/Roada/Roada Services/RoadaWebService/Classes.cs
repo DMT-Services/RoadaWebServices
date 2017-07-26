@@ -678,6 +678,8 @@ namespace RoadaWebService
 
         public bool photoService { get; set; }  //enable photoservice
 
+        public bool tracking { get; set; }     // enable tracking service
+
         public bool eventService { get; set; }  //enable event service
 
         public bool ttsEnable { get; set; }     //enable text to speech
