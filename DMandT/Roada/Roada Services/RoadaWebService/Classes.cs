@@ -156,6 +156,7 @@ namespace RoadaWebService
         public bool photoService;
         public bool eventService;
         public bool tracking;
+        public bool diag;
         public bool ttsEnable;
         public int MainActivity;
         public int updatedCount;
@@ -668,7 +669,7 @@ namespace RoadaWebService
 
         public string description { get; set; } //description of the config
 
-        public int photoInterval { get; set; }  //photo interval in seconds
+        public int photoInterval { get; set; }  //photo interval in meters
 
         public bool cameraSound { get; set; }    //camera sound flag
 
@@ -679,6 +680,8 @@ namespace RoadaWebService
         public bool photoService { get; set; }  //enable photoservice
 
         public bool tracking { get; set; }     // enable tracking service
+
+        public bool diag { get; set; }          // enable roada Diag 
 
         public bool eventService { get; set; }  //enable event service
 
