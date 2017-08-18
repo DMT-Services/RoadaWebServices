@@ -2624,20 +2624,26 @@ namespace DMTServices
 
     public static class myEncoder
     {
+        // you can use these 'defaults' if you don't need your own...
         private static string _password = "dm&tIsTheBest";
         private static string _salt = "thisIsMySalt";
 
         public static string Encrypt(string s)
         {
-            return Encrypt(s, _password);
+            return Encrypt(s, _password, _salt);
         }
 
-        public static string Encrypt(string s, string password)
+        public static string Encrypt(string s, string pass)
+        {
+            return Encrypt(s, pass, _salt);
+        }
+
+        public static string Encrypt(string s, string password, string salt)
         {
             string rc = s;
             try
             {
-                DeriveBytes rgb = new Rfc2898DeriveBytes(password, Encoding.Unicode.GetBytes(_salt));
+                DeriveBytes rgb = new Rfc2898DeriveBytes(password, Encoding.Unicode.GetBytes(salt));
                 RijndaelManaged RMCrypto = new RijndaelManaged();
                 byte[] Key = rgb.GetBytes(RMCrypto.KeySize >> 3);
                 byte[] IV = rgb.GetBytes(RMCrypto.BlockSize >> 3);
@@ -2664,15 +2670,20 @@ namespace DMTServices
 
         public static string Decrypt(string s)
         {
-            return Decrypt(s, _password);
+            return Decrypt(s, _password, _salt);
         }
 
-        public static string Decrypt(string s, string password)
+        public static string Decrypt(string s, string pass)
+        {
+            return Decrypt(s, pass, _salt);
+        }
+
+        public static string Decrypt(string s, string password, string salt)
         {
             string rc = s;
             try
             {
-                DeriveBytes rgb = new Rfc2898DeriveBytes(password, Encoding.Unicode.GetBytes(_salt));
+                DeriveBytes rgb = new Rfc2898DeriveBytes(password, Encoding.Unicode.GetBytes(salt));
                 RijndaelManaged RMCrypto = new RijndaelManaged();
                 byte[] Key = rgb.GetBytes(RMCrypto.KeySize >> 3);
                 byte[] IV = rgb.GetBytes(RMCrypto.BlockSize >> 3);
