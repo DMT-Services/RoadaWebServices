@@ -61,6 +61,28 @@ namespace RoadaWebService
         public string hardware;
 
     }
+    public class PatrolTripData
+    {
+        public int TripId;              // (Server) Database determined only!  Reverse match-up can be achived using h/c, user & time.
+        public int HandCode;
+        public string UnitNum;
+        public string UserName;
+        public DateTime ReportTime;
+        public double Lon;
+        public double Lat;
+    }
+    public class PatrolTripDetailData
+    {
+        public int TripId;
+        public int Type;
+        public DateTime Start;
+        public double StLon;
+        public double StLat;
+        public DateTime Finish;
+        public double FiLon;
+        public double FiLat;
+        public string Notes;
+    }
     public class SideWalkData
     {
         public string reportId;
