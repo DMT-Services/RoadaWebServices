@@ -156,7 +156,6 @@ namespace RoadaWebService
         public bool photoService;
         public bool eventService;
         public bool tracking;
-        public bool diag;
         public bool ttsEnable;
         public int MainActivity;
         public int updatedCount;
@@ -634,6 +633,8 @@ namespace RoadaWebService
     }
     public class PhotoData
     {
+        public bool dash;
+        public bool collision;
         public bool done;
         public bool ready;
         public int handcode;
@@ -669,7 +670,7 @@ namespace RoadaWebService
 
         public string description { get; set; } //description of the config
 
-        public int photoInterval { get; set; }  //photo interval in meters
+        public int photoInterval { get; set; }  //photo interval in seconds
 
         public bool cameraSound { get; set; }    //camera sound flag
 
@@ -678,10 +679,6 @@ namespace RoadaWebService
         public bool offlineLogin { get; set; }  //enable offline Login
 
         public bool photoService { get; set; }  //enable photoservice
-
-        public bool tracking { get; set; }     // enable tracking service
-
-        public bool diag { get; set; }          // enable roada Diag 
 
         public bool eventService { get; set; }  //enable event service
 

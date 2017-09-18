@@ -1367,6 +1367,7 @@ namespace RoadaWebService
                     mdata.goConfig.ttsEnable = stmt.bfetch("tts_enable");
                     mdata.goConfig.offlineLogin = stmt.bfetch("offline_login");
                     mdata.goConfig.adbOn = stmt.bfetch("adb_on");
+                    mdata.goConfig.tracking = stmt.bfetch("tracking");
                     mdata.goConfig.photoService = stmt.bfetch("photo_service");
                     mdata.goConfig.eventService = stmt.bfetch("event_service");
                     
@@ -2677,7 +2678,129 @@ namespace RoadaWebService
             }
             return Result;
         }
+        [WebMethod(Description = "Push Collision Report")]
+        public int SendReportNew(Request req, ReportData rdata)
+        {
 
+            int Result = 0;
+            // low security check, don't want hackers!
+            if (!LowSecurityCheck(req))
+                return -2;
+
+            string connStr = CustConnectionString(req);
+            SqlStmt stmt = null;
+            try
+            {
+                Result = -3;
+                if (GetStmt(connStr, out stmt))
+                {
+                    SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
+                    DateTime now = DateTime.Now.ToLocalTime();
+
+                    sql.Add("sig_data", rdata.Signiture);
+                    sql.Add("ci_date", rdata.DateCol);
+                    sql.Add("hwy", rdata.hwy);
+                    sql.Add("loc_direction", rdata.locDirection);
+                    sql.Add("loc_details", rdata.locDetails);
+                    sql.Add("detour", rdata.Detour);
+                    sql.Add("description", rdata.ColDesc);
+                    sql.Add("fatal", rdata.Fatal);
+                    sql.Add("injuries", rdata.injuries);
+                    sql.Add("features", rdata.Physical);
+                    sql.Add("other_info", rdata.Other);
+                    sql.Add("report_by", rdata.repPrep);
+                    sql.Add("report_phone", rdata.repPhone);
+                    sql.Add("report_datetime", rdata.repDate);
+                    sql.Add("opp_reports", rdata.chkOpp);
+                    sql.Add("fatal_report", rdata.chkFatal);
+                    sql.Add("other_report", rdata.chkOther);
+                    sql.Add("message_sign", rdata.chkSign);
+                    sql.Add("latitude", rdata.CurrentLat);
+                    sql.Add("longitude", rdata.CurrentLong);
+                    sql.Add("date_cleared", rdata.clearDate);
+                    sql.Add("damage", rdata.chkDmg);
+                    sql.Add("loc_inter", rdata.locIntersection);
+                    sql.Add("submit_time", now);
+                    sql.Add("title", rdata.repTitle);
+                    sql.Add("equipment", rdata.equipment);
+
+                    //adds and updates main report table 
+                    if (stmt.DoSQL(String.Format("SELECT ci_id FROM collision_incident WHERE ci_id = '{0}'", rdata.reportTime)))
+                    {
+
+                        stmt.DoSQL(sql.BuildUpdate("UPDATE collision_incident", String.Format("WHERE ci_id = '{0}'", rdata.reportTime)));
+
+                        Result = 1;
+
+
+                    }
+                    else
+                    {
+                        sql.Add("ci_id", rdata.reportTime);
+
+                        stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO collision_incident"));
+
+                        Result = 2;
+                    }
+
+
+
+                    //updates add adds update files to update table 
+                    int ndx = 0;
+                    foreach (DateTime record in rdata.updateTime)
+                    {
+                        if (stmt.DoSQL(String.Format("SELECT ci_id FROM collision_updates WHERE ci_id = '{0}' AND update_time = '{1}.000'", rdata.reportTime, rdata.updateTime[ndx].ToString("yyyy-MM-dd HH:mm:ss"))))
+                        {
+                            sql.Clear();
+                            sql.Add("description", rdata.upDesc[ndx]);
+                            stmt.DoSQL(sql.BuildUpdate("UPDATE collision_updates", string.Format("WHERE ci_id = '{0}' AND update_time = '{1}.000'", rdata.reportTime, rdata.updateTime[ndx].ToString("yyyy-MM-dd HH:mm:ss"))));
+                            ndx++;
+                            Result = 5;
+                        }
+
+
+                        else
+                        {
+                            if (rdata.updateTime[ndx].Year > 1000)
+                            {
+                                sql.Clear();
+                                sql.Add("ci_id", rdata.reportTime);
+                                sql.Add("update_time", rdata.updateTime[ndx]);
+                                sql.Add("description", rdata.upDesc[ndx]);
+                                stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO collision_updates"));
+                                ndx++;
+                                Result = 6;
+                            }
+                        }
+
+                    }
+                    ndx = 0;
+
+                    stmt.DoSQLFormat("DELETE FROM report_ppl WHERE ci_id = '{0}'", rdata.reportTime);
+                    for (int pplNdx = 0; pplNdx < rdata.name.Count; pplNdx++)
+                    {
+                        sql.Clear();
+                        sql.Add("ci_id",rdata.reportTime);
+                        sql.Add("name", rdata.name[pplNdx]);
+                        sql.Add("title", rdata.title[pplNdx]);
+                        sql.Add("equip", rdata.equip[pplNdx]);
+                        stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO report_ppl"));
+                        Result = 6;
+                    }
+                }
+            }
+            catch (Exception x)
+            {
+                Result = -4;
+                Global.messLog.Flush("SendRptNew() Excp: {0}", x.Message);
+            }
+            finally
+            {
+                if (stmt != null)
+                    stmt.Close();
+            }
+            return Result;
+        }
         [WebMethod(Description = "Push Collision Report")]
         public int SendReport(Request req, ReportData rdata)
         {
@@ -2872,7 +2995,8 @@ namespace RoadaWebService
                 if (GetStmt(connStr, out stmt))
                 {
                     SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
-                    bool rdy = pdata.ready;
+                    bool reeady = pdata.ready;
+                    bool done = pdata.done;
                     sql.Add("rdate", DateTime.UtcNow);
                     sql.Add("hand_code", pdata.handcode);
                     sql.Add("unit_num", pdata.unitnum);
@@ -2896,6 +3020,8 @@ namespace RoadaWebService
                     sql.Add("deficiency", pdata.deficiency);
                     sql.Add("phand_code", pdata.phandcode);
                     sql.Add("evt_type", pdata.evtType);
+                    sql.Add("dash", pdata.dash);
+                    sql.Add("collision", pdata.collision);
 
                     stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO img_Events"));
                     Result = 1;
@@ -3568,16 +3694,16 @@ namespace RoadaWebService
         public int SendEventRecord(Request req, evntRecord evnt, out evntOut eOut)
         {
             eOut = new evntOut();
-            int Result = 8;
+            int Result = -1;
 
             if (evnt == null)
             {
-                return 45;
+                return -2;
             }
 
             // low security check, don't want hackers!
             if (!LowSecurityCheck(req))
-                return 8;
+                return Result;
           
             string connStr = CustConnectionString(req);
 
@@ -3585,10 +3711,7 @@ namespace RoadaWebService
             SqlStmt wstmt = null;
             try
             {
-
-
-                Global.messLog.Flush("SendEventRecord() HC: {2} Driver: {0} Event: {1}", evnt.driver, evnt.EventType, evnt.handcode);
-                Result = 8;
+    
                 if (GetStmt(connStr, out stmt) && GetStmt(connStr, out wstmt))
                 {
                     SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
@@ -3636,12 +3759,29 @@ namespace RoadaWebService
                         }   
                         stmt.Clear();
 	                }
-                   if (stmt.DoSQLFormat("SELECT event_type , event_time , truck FROM go_events with (nolock) WHERE truck = '{0}' and event_time = '{1}' and event_type = {2}", evnt.truck, evnt.eventTime, evnt.EventType))
-                   {
-                       return 44;
+
+                   if (evnt.EventType >=6 && evnt.EventType <= 8 )//insert hos events
+                   {                                             
+                               sql.Add("event_type", evnt.EventType);
+                               sql.Add("event_time", evnt.eventTime);
+                               sql.Add("event_mess", evnt.eventMessage);
+                               sql.Add("driver", evnt.driver);
+                               sql.Add("truck", evnt.truck);
+                               sql.Add("latitude", evnt.lat);
+                               sql.Add("longitude", evnt.lon);
+                               sql.Add("hand_code", evnt.handcode);
+                               sql.Add("route_id", evnt.routeId);
+                               sql.Add("m_distance", evnt.mdistance);
+                               sql.Add("waypoint", evnt.waypoint);
+                               sql.Add("comm_type", 0);
+                               sql.Add("processed", 0);
+                               sql.Add("wtype", evnt.wType);
+
+                               if (!stmt.DoSQLFormat("SELECT * FROM Hos_events WHERE event_time = '{0}' AND driver = '{1}'",evnt.eventTime,evnt.driver))
+                               {
+                                   stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO Hos_events"));
+                               }                              
                    }
-                   else
-                   {
                        switch (evnt.EventType)
                        {
 
@@ -3858,7 +3998,7 @@ namespace RoadaWebService
                         Result = 99;
                     }
                      * */
-                }
+                
                
             }
             catch (Exception x)
