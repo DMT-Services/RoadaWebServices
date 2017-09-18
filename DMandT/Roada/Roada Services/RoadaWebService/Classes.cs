@@ -70,7 +70,7 @@ namespace RoadaWebService
         public DateTime ReportTime;
         public double Lon;
         public double Lat;
-        public object ref;
+        public object xref;
     }
     public class PatrolTripDetailData
     {
