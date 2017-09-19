@@ -1095,10 +1095,6 @@ namespace RoadaWebService
             {
                 Global.messLog.Flush("FindSpatialMatch() Excp: ", ex.Message);
             }
-            finally
-            {
-                stmt.Close();
-            }
 
             return i > 0;
         }
@@ -1268,11 +1264,11 @@ namespace RoadaWebService
             if (!LowSecurityCheck(req))
                 return -1;
 
-            SqlConn mConn = new SqlConn("MainConn");
             SqlStmt stmt = null;
             try
             {
-                stmt = new SqlStmt(mConn);
+                stmt = new SqlStmt("MainConn");
+                stmt.Mess = Global.messLog;
                 Result = -3;
 
                 Global.messLog.Flush("ManagerCheckin() Guid {0}", comInfo.IMEI);
@@ -1351,11 +1347,11 @@ namespace RoadaWebService
         public bool GetRoadaGoConfig(ManagerData mdata, double version) 
         {
             bool validConfig = false;
-            SqlConn mConn = new SqlConn("MainConn");
             SqlStmt stmt = null;
             try
             {
-                stmt = new SqlStmt(mConn);
+                stmt = new SqlStmt("MainConn");
+                stmt.Mess = Global.messLog;
 
                 if (stmt.DoSQL(String.Format("SELECT * FROM go_config WHERE version = {0}", version)))
                 {
@@ -1392,11 +1388,11 @@ namespace RoadaWebService
         public bool GetDiagConfig(ManagerData mdata, double version)
         {
             bool validConfig = false;
-            SqlConn mConn = new SqlConn("MainConn");
             SqlStmt stmt = null;
             try
             {
-                stmt = new SqlStmt(mConn);
+                stmt = new SqlStmt("MainConn");
+                stmt.Mess = Global.messLog;
 
                 if (stmt.DoSQL(String.Format("SELECT * FROM diag_config WHERE version = {0}", version)))
                 {
@@ -1423,11 +1419,11 @@ namespace RoadaWebService
         private bool GetCustomerData(ManagerData mdata, string custCode) 
         {
             bool validConfig = false;
-            SqlConn mConn = new SqlConn("MainConn");
             SqlStmt stmt = null;
             try
             {
-                stmt = new SqlStmt(mConn);
+                stmt = new SqlStmt("MainConn");
+                stmt.Mess = Global.messLog;
 
                 if (stmt.DoSQL(String.Format("SELECT * FROM customer WHERE cust_code = '{0}'", custCode)))
                 {
@@ -1461,11 +1457,11 @@ namespace RoadaWebService
         private bool GetCustomerDataList(ManagerData mdata, string customers)
         {
             bool validConfig = false;
-            SqlConn mConn = new SqlConn("MainConn");
             SqlStmt stmt = null;
             try
             {
-                stmt = new SqlStmt(mConn);
+                stmt = new SqlStmt("MainConn");
+                stmt.Mess = Global.messLog;
 
                 string[] values = customers.Split(',');
 
@@ -1853,13 +1849,11 @@ namespace RoadaWebService
 
         private void ActivateHandCode (int handcode, string IMEI)
         {
-
-            SqlConn mConn = new SqlConn("MainConn");
             SqlStmt stmt = null;
-         
             try
             {                                         
-                stmt = new SqlStmt(mConn);
+                stmt = new SqlStmt("MainConn");
+                stmt.Mess = Global.messLog;
                 SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
 
                 sql.Add("hand_code", handcode);
@@ -1875,8 +1869,6 @@ namespace RoadaWebService
             {
                 if (stmt != null)
                     stmt.Close();
-                if (mConn != null)
-                    mConn.Close();
             }     
         }
 
@@ -3048,12 +3040,11 @@ namespace RoadaWebService
             if (!LowSecurityCheck(req))
                 return -2;
 
-            SqlConn mConn = new SqlConn("MainConn");
-            mConn.Mess = Global.messLog;
             SqlStmt stmt = null;
             try
             {
-                stmt = new SqlStmt(mConn);
+                stmt = new SqlStmt("MainConn");
+                stmt.Mess = Global.messLog;
                 Result = -3;
                 Global.messLog.Flush("Send comssison At select");
 
@@ -3876,6 +3867,8 @@ namespace RoadaWebService
             {
                 if (stmt != null)
                     stmt.Close();
+                if (mConn != null)
+                    mConn.Close();
             }
 
             return Result;
@@ -4430,6 +4423,8 @@ namespace RoadaWebService
                 {
                     if (stmt != null)
                         stmt.Close();
+                    if (mConn != null)
+                        mConn.Close();
                 }
             }
             return Result;
@@ -4471,6 +4466,8 @@ namespace RoadaWebService
                 {
                     if (stmt != null)
                         stmt.Close();
+                    if (mConn != null)
+                        mConn.Close();
                 }               
             }
             return Result;
