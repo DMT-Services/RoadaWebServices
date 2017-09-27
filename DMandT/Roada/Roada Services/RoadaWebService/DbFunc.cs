@@ -150,6 +150,7 @@ namespace DMTServices
         /// Helps when you have really, really long sql statements...
         /// </summary>
         public int maxErrMess = -1;
+        public bool ignoreDupErr = false;
         public string LastError = string.Empty;
 
         //private bool closeDBConn = false;
@@ -1322,13 +1323,16 @@ namespace DMTServices
 #if !NO_MESSLOG
                 if (fParent.Mess != null)
                 {
-                    string pfx = "            ";
-                    if (fParent.maxErrMess == 0)    // don't write out the sql that caused the error
-                        pfx = "SQL Error - ";
-                    else
-                        fParent.Mess.Flush("SQL Error - " + ((fParent.maxErrMess > 0 && selectStr.Length > fParent.maxErrMess) ? (selectStr.Substring(0, fParent.maxErrMess) + "...") : selectStr));
+                    if (!fParent.ignoreDupErr || !e.Message.StartsWith("Cannot insert duplicate key row"))
+                    {
+                        string pfx = "            ";
+                        if (fParent.maxErrMess == 0)    // don't write out the sql that caused the error
+                            pfx = "SQL Error - ";
+                        else
+                            fParent.Mess.Flush("SQL Error - " + ((fParent.maxErrMess > 0 && selectStr.Length > fParent.maxErrMess) ? (selectStr.Substring(0, fParent.maxErrMess) + "...") : selectStr));
 
-                    fParent.Mess.Flush(pfx + e.Message);
+                        fParent.Mess.Flush(pfx + e.Message);
+                    }
                 }
 #endif
                 LastError = e.Message;
