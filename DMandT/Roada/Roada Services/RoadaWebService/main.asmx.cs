@@ -1095,6 +1095,10 @@ namespace RoadaWebService
             {
                 Global.messLog.Flush("FindSpatialMatch() Excp: ", ex.Message);
             }
+            finally
+            {
+                stmt.Close();
+            }
 
             return i > 0;
         }
@@ -1264,11 +1268,11 @@ namespace RoadaWebService
             if (!LowSecurityCheck(req))
                 return -1;
 
+            SqlConn mConn = new SqlConn("MainConn");
             SqlStmt stmt = null;
             try
             {
-                stmt = new SqlStmt("MainConn");
-                stmt.Mess = Global.messLog;
+                stmt = new SqlStmt(mConn);
                 Result = -3;
 
                 Global.messLog.Flush("ManagerCheckin() Guid {0}", comInfo.IMEI);
@@ -1347,11 +1351,11 @@ namespace RoadaWebService
         public bool GetRoadaGoConfig(ManagerData mdata, double version) 
         {
             bool validConfig = false;
+            SqlConn mConn = new SqlConn("MainConn");
             SqlStmt stmt = null;
             try
             {
-                stmt = new SqlStmt("MainConn");
-                stmt.Mess = Global.messLog;
+                stmt = new SqlStmt(mConn);
 
                 if (stmt.DoSQL(String.Format("SELECT * FROM go_config WHERE version = {0}", version)))
                 {
@@ -1388,11 +1392,11 @@ namespace RoadaWebService
         public bool GetDiagConfig(ManagerData mdata, double version)
         {
             bool validConfig = false;
+            SqlConn mConn = new SqlConn("MainConn");
             SqlStmt stmt = null;
             try
             {
-                stmt = new SqlStmt("MainConn");
-                stmt.Mess = Global.messLog;
+                stmt = new SqlStmt(mConn);
 
                 if (stmt.DoSQL(String.Format("SELECT * FROM diag_config WHERE version = {0}", version)))
                 {
@@ -1419,11 +1423,11 @@ namespace RoadaWebService
         private bool GetCustomerData(ManagerData mdata, string custCode) 
         {
             bool validConfig = false;
+            SqlConn mConn = new SqlConn("MainConn");
             SqlStmt stmt = null;
             try
             {
-                stmt = new SqlStmt("MainConn");
-                stmt.Mess = Global.messLog;
+                stmt = new SqlStmt(mConn);
 
                 if (stmt.DoSQL(String.Format("SELECT * FROM customer WHERE cust_code = '{0}'", custCode)))
                 {
@@ -1457,11 +1461,11 @@ namespace RoadaWebService
         private bool GetCustomerDataList(ManagerData mdata, string customers)
         {
             bool validConfig = false;
+            SqlConn mConn = new SqlConn("MainConn");
             SqlStmt stmt = null;
             try
             {
-                stmt = new SqlStmt("MainConn");
-                stmt.Mess = Global.messLog;
+                stmt = new SqlStmt(mConn);
 
                 string[] values = customers.Split(',');
 
@@ -1849,11 +1853,13 @@ namespace RoadaWebService
 
         private void ActivateHandCode (int handcode, string IMEI)
         {
+
+            SqlConn mConn = new SqlConn("MainConn");
             SqlStmt stmt = null;
+         
             try
             {                                         
-                stmt = new SqlStmt("MainConn");
-                stmt.Mess = Global.messLog;
+                stmt = new SqlStmt(mConn);
                 SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
 
                 sql.Add("hand_code", handcode);
@@ -1869,6 +1875,8 @@ namespace RoadaWebService
             {
                 if (stmt != null)
                     stmt.Close();
+                if (mConn != null)
+                    mConn.Close();
             }     
         }
 
@@ -3040,11 +3048,12 @@ namespace RoadaWebService
             if (!LowSecurityCheck(req))
                 return -2;
 
+            SqlConn mConn = new SqlConn("MainConn");
+            mConn.Mess = Global.messLog;
             SqlStmt stmt = null;
             try
             {
-                stmt = new SqlStmt("MainConn");
-                stmt.Mess = Global.messLog;
+                stmt = new SqlStmt(mConn);
                 Result = -3;
                 Global.messLog.Flush("Send comssison At select");
 
@@ -3386,197 +3395,6 @@ namespace RoadaWebService
 
 
 
-        private int SavePatrolTripData( SqlStmt stmt, PatrolTripData data )
-        {
-            // Internal to minimise duplicate code ...
-            SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
-
-            sql.Add("hand_code", data.HandCode);
-            sql.Add("unit_num", data.UnitNum);
-            sql.Add("user_name", data.UserName);
-            sql.Add("report_time", data.ReportTime);
-            sql.Add("latitude", data.Lat);
-            sql.Add("longitude", data.Lon);
-
-            bool ins;
-
-            if (data.TripId > 0)
-            {
-                if (stmt.DoSQL(String.Format("SELECT * FROM patrol_trip WHERE id = {0}", data.TripId)))
-                    ins = false;
-                else
-                    ins = true;
-            }
-            else
-            {
-                if (stmt.DoSQL(String.Format("SELECT * FROM patrol_trip WHERE hand_code = {0} AND user_name = '{1}' AND report_time = {2}", data.HandCode, data.UserName, SqlHelper.timeStamp(data.ReportTime, SqlHelper.dbType.SqlServer))))
-                {
-                    data.TripId = stmt.ifetch("id");
-                    ins = false;
-                }
-                else
-                    ins = true;
-            }
-
-            if (ins)
-            {
-                stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO patrol_trip"));
-
-                // get this record id ...
-                stmt.DoSQL("SELECT IDENT_CURRENT('patrol_trip') AS temp");
-
-                data.TripId = stmt.ifetch("temp");
-            }                           // there is no UPDATE permitted here ...
-
-            if (data.TripId > 0)
-                return data.TripId;
-            else
-                return -1;
-        }
-        private bool SavePatrolTripDetailData( SqlStmt stmt, PatrolTripDetailData data )
-        {
-            // Internal to minimise duplicate code ...
-            SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
-
-            sql.Add("trip_id", data.TripId);
-            sql.Add("rec_type", data.Type);
-            sql.Add("st_time", data.Start);
-            sql.Add("st_lat", data.StLat);
-            sql.Add("st_lon", data.StLon);
-            sql.Add("fi_time", data.Finish);
-            sql.Add("fi_lat", data.FiLat);
-            sql.Add("fi_lon", data.FiLon);
-            sql.Add("notes", data.Notes);
-
-            bool ins;
-            string where;
-
-            if (data.Type == 0)
-                where = String.Format("WHERE trip_id = {0} AND rec_type = 0", data.TripId);
-            else
-                where = String.Format("WHERE trip_id = {0} AND st_time = {1}", data.TripId, SqlHelper.timeStamp(data.Start, SqlHelper.dbType.SqlServer));
-
-            if (stmt.DoSQL("SELECT * FROM patrol_trip_detail " + where))
-                ins = false;
-            else
-                ins = true;
-
-            if (ins)
-                return stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO patrol_trip_detail"));
-            else
-                return stmt.DoSQL(sql.BuildUpdate("UPDATE patrol_trip_detail", where));
-        }
-
-        [WebMethod(Description = "Saves Patrol Trip Data to DB.  Returns 'TripId' when more than 0.")]
-        public int SendPatrolTripData( Request req, PatrolTripData data )
-        {
-            int Result = -1;
-            // low security check, don't want hackers!
-            if (!LowSecurityCheck(req))
-                return Result;
-
-            string connStr = CustConnectionString(req);
-
-            SqlStmt stmt = null;
-            try
-            {
-                Result = -2;
-                if (GetStmt(connStr, out stmt))
-                {
-                    Result = SavePatrolTripData(stmt, data);
-
-                    if (Result <= 0)
-                        Result = -4;
-                }
-            }
-            catch
-            {
-                Result = -3;
-                Global.messLog.Flush("SendPatrolTripData() report Data failed to send");
-            }
-            finally
-            {
-                if (stmt != null)
-                    stmt.Close();
-            }
-
-            return Result;
-        }
-
-        [WebMethod(Description = "Saves Patrol Trip Data to DB.  Returns 'TripId' when more than 0.")]
-        public int SendPatrolTripXData( Request req, PatrolTripData data, PatrolTripDetailData trip )
-        {
-            int Result = -1;
-            // low security check, don't want hackers!
-            if (!LowSecurityCheck(req))
-                return Result;
-
-            string connStr = CustConnectionString(req);
-
-            SqlStmt stmt = null;
-            try
-            {
-                Result = -2;
-                if (GetStmt(connStr, out stmt))
-                {
-                    Result = SavePatrolTripData(stmt, data);
-
-                    if (Result > 0)
-                        SavePatrolTripDetailData(stmt, trip);
-                    else
-                        Result = -4;
-                }
-            }
-            catch
-            {
-                Result = -3;
-                Global.messLog.Flush("SendPatrolTripXData() report Data failed to send");
-            }
-            finally
-            {
-                if (stmt != null)
-                    stmt.Close();
-            }
-
-            return Result;
-        }
-
-        [WebMethod(Description = "Saves Patrol Trip Detail Data to DB.")]
-        public int SendPatrolTripDetailData( Request req, PatrolTripDetailData data )
-        {
-            int Result = -1;
-            // low security check, don't want hackers!
-            if (!LowSecurityCheck(req))
-                return Result;
-
-            string connStr = CustConnectionString(req);
-
-            SqlStmt stmt = null;
-            try
-            {
-                Result = -2;
-                if (GetStmt(connStr, out stmt))
-                {
-                    SavePatrolTripDetailData(stmt, data);
-
-                    Result = 1;
-                }
-            }
-            catch
-            {
-                Result = -3;
-                Global.messLog.Flush("SendPatrolTripDetailData() report Data failed to send");
-            }
-            finally
-            {
-                if (stmt != null)
-                    stmt.Close();
-            }
-
-            return Result;
-        }
-
-
         [WebMethod(Description = "Puts sidewalk pictures away")]
         public int sendSidewalkPics(Request req, InstalledPictures picturedata)
         {
@@ -3867,8 +3685,6 @@ namespace RoadaWebService
             {
                 if (stmt != null)
                     stmt.Close();
-                if (mConn != null)
-                    mConn.Close();
             }
 
             return Result;
@@ -3903,7 +3719,7 @@ namespace RoadaWebService
                    if (evnt.truck.Length > 0 && evnt.driver.Length > 0)
 	                {
                         DateTime eventthres = new DateTime();
-                        eventthres = DateTime.UtcNow.AddDays(-3);                      
+                        eventthres = DateTime.Now.AddDays(-3);                      
                         //Global.messLog.Flush("event3 date range: {0}", SqlHelper.timeStamp(eventthres));
                         bool rc = stmt.DoSQLFormat("SELECT event_type FROM vehicle_events with (nolock) WHERE driver = '{0}' AND s_date >= {1}",SqlHelper.FixUp(evnt.driver),SqlHelper.timeStamp(eventthres));  
                         while (rc)
@@ -3964,8 +3780,11 @@ namespace RoadaWebService
                                if (!stmt.DoSQLFormat("SELECT * FROM Hos_events WHERE event_time = '{0}' AND driver = '{1}'",evnt.eventTime,evnt.driver))
                                {
                                    stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO Hos_events"));
-                               }                              
+                               }
+                               Result = evnt.EventType;    
                    }
+                   else
+                   {
                        switch (evnt.EventType)
                        {
 
@@ -4053,7 +3872,7 @@ namespace RoadaWebService
                                if (evnt.handcode > 0)
                                {
                                    stmt.DoSQLFormat("UPDATE vehicles with (rowlock) SET phone_handcode = null, user_name = null WHERE phone_handcode = {0}", evnt.handcode);
-                                   stmt.DoSQLFormat("UPDATE vehicles with (rowlock) SET phone_handcode = {0}, user_name = '{1}' WHERE hand_code = {2}", evnt.handcode, SqlHelper.FixUp(evnt.driver), evnt.dcdHC);      
+                                   stmt.DoSQLFormat("UPDATE vehicles with (rowlock) SET phone_handcode = {0}, user_name = '{1}' WHERE hand_code = {2}", evnt.handcode, SqlHelper.FixUp(evnt.driver), evnt.dcdHC);
 
                                }
 
@@ -4077,7 +3896,7 @@ namespace RoadaWebService
 
                                if (evnt.handcode > 0)
                                {
-                                   stmt.DoSQLFormat("UPDATE vehicles with (rowlock) SET phone_handcode = null, user_name = null WHERE phone_handcode = {0}", evnt.handcode);                               
+                                   stmt.DoSQLFormat("UPDATE vehicles with (rowlock) SET phone_handcode = null, user_name = null WHERE phone_handcode = {0}", evnt.handcode);
                                }
 
                                if (!stmt.DoSQLFormat("SELECT * FROM go_status WHERE hand_code = {0}", evnt.handcode))
@@ -4172,22 +3991,12 @@ namespace RoadaWebService
                                Result = -1;
                                break;
                        }
-                   }
-
-                   
-                    //checks to see if dispatch has changed
-                    /*
-                    if (GetDispatch(req, evnt.truck, evnt.routeId) == 1)
-                    {
-                        Result = 99;
-                    }
-                     * */
-                
-               
+                     }                       
+                   }                               
             }
             catch (Exception x)
             {
-                Result = 4;
+                Result = -1;
                 Global.messLog.Flush("SendEventRecord() Excp: {0}", x.Message);
             }
             finally
@@ -4423,8 +4232,6 @@ namespace RoadaWebService
                 {
                     if (stmt != null)
                         stmt.Close();
-                    if (mConn != null)
-                        mConn.Close();
                 }
             }
             return Result;
@@ -4466,8 +4273,6 @@ namespace RoadaWebService
                 {
                     if (stmt != null)
                         stmt.Close();
-                    if (mConn != null)
-                        mConn.Close();
                 }               
             }
             return Result;
