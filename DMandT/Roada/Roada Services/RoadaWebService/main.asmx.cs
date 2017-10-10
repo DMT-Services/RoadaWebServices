@@ -2977,7 +2977,196 @@ namespace RoadaWebService
             }
             return Result;
         }
+        private int SavePatrolTripData(SqlStmt stmt, PatrolTripData data)
+        {
+            // Internal to minimise duplicate code ...
+            SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
 
+            sql.Add("hand_code", data.HandCode);
+            sql.Add("unit_num", data.UnitNum);
+            sql.Add("user_name", data.UserName);
+            sql.Add("report_time", data.ReportTime);
+            sql.Add("latitude", data.Lat);
+            sql.Add("longitude", data.Lon);
+
+            bool ins;
+
+            if (data.TripId > 0)
+            {
+                if (stmt.DoSQL(String.Format("SELECT * FROM patrol_trip WHERE id = {0}", data.TripId)))
+                    ins = false;
+                else
+                    ins = true;
+            }
+            else
+            {
+                if (stmt.DoSQL(String.Format("SELECT * FROM patrol_trip WHERE hand_code = {0} AND user_name = '{1}' AND report_time = {2}", data.HandCode, data.UserName, SqlHelper.timeStamp(data.ReportTime, SqlHelper.dbType.SqlServer))))
+                {
+                    data.TripId = stmt.ifetch("id");
+                    ins = false;
+                }
+                else
+                    ins = true;
+            }
+
+            if (ins)
+            {
+                stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO patrol_trip"));
+
+                // get this record id ...
+                stmt.DoSQL("SELECT IDENT_CURRENT('patrol_trip') AS temp");
+
+                data.TripId = stmt.ifetch("temp");
+            }                           // there is no UPDATE permitted here ...
+
+            if (data.TripId > 0)
+                return data.TripId;
+            else
+                return -1;
+        }
+        private bool SavePatrolTripDetailData(SqlStmt stmt, PatrolTripDetailData data)
+        {
+            // Internal to minimise duplicate code ...
+            SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
+
+            sql.Add("trip_id", data.TripId);
+            sql.Add("rec_type", data.Type);
+            sql.Add("st_time", data.Start);
+            sql.Add("st_lat", data.StLat);
+            sql.Add("st_lon", data.StLon);
+            sql.Add("fi_time", data.Finish);
+            sql.Add("fi_lat", data.FiLat);
+            sql.Add("fi_lon", data.FiLon);
+            sql.Add("notes", data.Notes);
+
+            bool ins;
+            string where;
+
+            if (data.Type == 0)
+                where = String.Format("WHERE trip_id = {0} AND rec_type = 0", data.TripId);
+            else
+                where = String.Format("WHERE trip_id = {0} AND st_time = {1}", data.TripId, SqlHelper.timeStamp(data.Start, SqlHelper.dbType.SqlServer));
+
+            if (stmt.DoSQL("SELECT * FROM patrol_trip_detail " + where))
+                ins = false;
+            else
+                ins = true;
+
+            if (ins)
+                return stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO patrol_trip_detail"));
+            else
+                return stmt.DoSQL(sql.BuildUpdate("UPDATE patrol_trip_detail", where));
+        }
+
+
+        [WebMethod(Description = "Saves Patrol Trip Data to DB.  Returns 'TripId' when more than 0.")]
+        public int SendPatrolTripData(Request req, PatrolTripData data)
+        {
+            int Result = -1;
+            // low security check, don't want hackers!
+            if (!LowSecurityCheck(req))
+                return Result;
+
+            string connStr = CustConnectionString(req);
+
+            SqlStmt stmt = null;
+            try
+            {
+                Result = -2;
+                if (GetStmt(connStr, out stmt))
+                {
+                    Result = SavePatrolTripData(stmt, data);
+
+                    if (Result <= 0)
+                        Result = -4;
+                }
+            }
+            catch
+            {
+                Result = -3;
+                Global.messLog.Flush("SendPatrolTripData() report Data failed to send");
+            }
+            finally
+            {
+                if (stmt != null)
+                    stmt.Close();
+            }
+
+            return Result;
+        }
+
+        [WebMethod(Description = "Saves Patrol Trip Data to DB.  Returns 'TripId' when more than 0.")]
+        public int SendPatrolTripXData(Request req, PatrolTripData data, PatrolTripDetailData trip)
+        {
+            int Result = -1;
+            // low security check, don't want hackers!
+            if (!LowSecurityCheck(req))
+                return Result;
+
+            string connStr = CustConnectionString(req);
+
+            SqlStmt stmt = null;
+            try
+            {
+                Result = -2;
+                if (GetStmt(connStr, out stmt))
+                {
+                    Result = SavePatrolTripData(stmt, data);
+
+                    if (Result > 0)
+                        SavePatrolTripDetailData(stmt, trip);
+                    else
+                        Result = -4;
+                }
+            }
+            catch
+            {
+                Result = -3;
+                Global.messLog.Flush("SendPatrolTripXData() report Data failed to send");
+            }
+            finally
+            {
+                if (stmt != null)
+                    stmt.Close();
+            }
+
+            return Result;
+        }
+
+        [WebMethod(Description = "Saves Patrol Trip Detail Data to DB.")]
+        public int SendPatrolTripDetailData(Request req, PatrolTripDetailData data)
+        {
+            int Result = -1;
+            // low security check, don't want hackers!
+            if (!LowSecurityCheck(req))
+                return Result;
+
+            string connStr = CustConnectionString(req);
+
+            SqlStmt stmt = null;
+            try
+            {
+                Result = -2;
+                if (GetStmt(connStr, out stmt))
+                {
+                    SavePatrolTripDetailData(stmt, data);
+
+                    Result = 1;
+                }
+            }
+            catch
+            {
+                Result = -3;
+                Global.messLog.Flush("SendPatrolTripDetailData() report Data failed to send");
+            }
+            finally
+            {
+                if (stmt != null)
+                    stmt.Close();
+            }
+
+            return Result;
+        }
         [WebMethod(Description = "Push Camera Image")]
         public int SendPhotoData(Request req, PhotoData pdata)
         {
