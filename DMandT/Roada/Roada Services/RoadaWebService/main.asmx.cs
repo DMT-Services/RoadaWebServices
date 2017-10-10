@@ -4103,6 +4103,55 @@ namespace RoadaWebService
             return Result;
         }
 
+        [WebMethod(Description = "Retrieve Mobile Users Roles")]
+        public MobileRoles[] GetMobileRoles(Request request)
+        {
+            MobileRoles[] Result = null;
+
+            if (!LowSecurityCheck(request))
+                return Result;
+
+            string connStr = CustConnectionString(request);
+            SqlStmt stmt = null;
+            try
+            {
+                if (GetStmt(connStr, out stmt))
+                {
+                    List<MobileRoles> mrs = new List<MobileRoles>();
+                    bool rc;
+
+                    rc = stmt.DoSQL("SELECT * FROM go_user_roles");
+
+                    while (rc)
+                    {
+                        MobileRoles mr = new MobileRoles();
+                        mr.RoleId = stmt.ifetch("id");
+                        mr.RoleName = stmt.fetch("role_name");
+                        mr.statusPerm = stmt.bfetch("status_perm");
+                        mr.Collision = stmt.bfetch("ic_perm");
+                        mr.routing = stmt.bfetch("routing_perm");
+                        mr.weather = stmt.bfetch("weather_perm");
+                        mr.diag = stmt.bfetch("diag_perm");
+                        mr.camera = stmt.bfetch("cam_perm");
+                        mrs.Add(mr);
+                        rc = stmt.dbSkip();
+                    }
+                    Result = mrs.ToArray();
+                    mrs.Clear();
+                }
+            }
+            catch (Exception x)
+            {
+                Global.messLog.Flush("GetMobileRoleList() Excp: {0}", x.Message);
+            }
+            finally
+            {
+                if (stmt != null)
+                    stmt.Close();
+            }
+            return Result;
+        }
+
         [WebMethod(Description = "Retrieve Mobile Users listing")]
         public GoUser[] GetGoUsers(Request request)
         {
@@ -4125,6 +4174,7 @@ namespace RoadaWebService
                     while (rc)
                     {
                         GoUser gu = new GoUser();
+                        gu.userRole = stmt.ifetch("mobile_role");
                         gu.username = stmt.fetch("username");
                         gu.password = stmt.fetch("password");
                         gu.email = stmt.fetch("email");
