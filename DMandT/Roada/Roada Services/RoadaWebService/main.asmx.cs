@@ -2977,6 +2977,8 @@ namespace RoadaWebService
             }
             return Result;
         }
+
+
         private int SavePatrolTripData(SqlStmt stmt, PatrolTripData data)
         {
             // Internal to minimise duplicate code ...
@@ -3057,8 +3059,7 @@ namespace RoadaWebService
             else
                 return stmt.DoSQL(sql.BuildUpdate("UPDATE patrol_trip_detail", where));
         }
-
-
+        
         [WebMethod(Description = "Saves Patrol Trip Data to DB.  Returns 'TripId' when more than 0.")]
         public int SendPatrolTripData(Request req, PatrolTripData data)
         {
@@ -3114,7 +3115,10 @@ namespace RoadaWebService
                     Result = SavePatrolTripData(stmt, data);
 
                     if (Result > 0)
+                    {
+                        trip.TripId = Result;
                         SavePatrolTripDetailData(stmt, trip);
+                    }
                     else
                         Result = -4;
                 }
@@ -3167,6 +3171,8 @@ namespace RoadaWebService
 
             return Result;
         }
+
+
         [WebMethod(Description = "Push Camera Image")]
         public int SendPhotoData(Request req, PhotoData pdata)
         {
