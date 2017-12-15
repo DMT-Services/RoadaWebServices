@@ -1285,7 +1285,22 @@ namespace DMTServices
                         }
 #else
                         foreach (DictionaryEntry parms in SQLParams)
-                            cmd.Parameters.Add(new myParameter((string)parms.Key, parms.Value));
+                        {
+                            string paraName = (string)parms.Key;
+                            string paraType = string.Empty;
+                            if (paraName.Contains('|'))
+                            {
+                                string[] p = paraName.Split('|');
+                                if(p.Length>1)
+                                {
+                                    paraName = p[0];
+                                    paraType = p[1];
+                                }
+                            }
+                            cmd.Parameters.Add(new myParameter(paraName, parms.Value));
+                            if (paraType != string.Empty)
+                                cmd.Parameters[cmd.Parameters.Count - 1].UdtTypeName = paraType;
+                        }
 #endif
 
                         SQLParams.Clear();
