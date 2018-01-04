@@ -71,6 +71,24 @@ using myDataReader = Devart.Data.MySql.MySqlDataReader;
 using myParameter = Devart.Data.MySql.MySqlParameter;
 using myTransaction = Devart.Data.MySql.MySqlTransaction;
 
+#elif SQL_CE
+using System.Data.SqlServerCe;
+
+using myDbConnection = System.Data.SqlServerCe.SqlCeConnection;
+using myDbCommand = System.Data.SqlServerCe.SqlCeCommand;
+using myDataReader = System.Data.SqlServerCe.SqlCeDataReader;
+using myParameter = System.Data.SqlServerCe.SqlCeParameter;
+using myTransaction = System.Data.SqlServerCe.SqlCeTransaction;
+
+#elif SQLLITE
+using System.Data.SQLite;
+
+using myDbConnection = System.Data.SQLite.SQLiteConnection;
+using myDbCommand = System.Data.SQLite.SQLiteCommand;
+using myDataReader = System.Data.SQLite.SQLiteDataReader;
+using myParameter = System.Data.SQLite.SQLiteParameter;
+using myTransaction = System.Data.SQLite.SQLiteTransaction;
+
 #elif ADO_NET
 This would be 'legacy' stuff, and there is no DataReader or Transaction so probably will never be useful... ?
 using ADODB;
@@ -894,6 +912,37 @@ namespace DMTServices
                 if (restrictions.Length > 0)
                     schemaTable = dbConnection.GetSchema(sname, restrictions);
 
+                if (schemaTable == null || schemaTable.Rows == null || schemaTable.Rows.Count == 0)
+                {
+                    if (schemaTable == null)
+                        schemaTable = new DataTable();
+
+                    SqlStmt stmt = new SqlStmt(this);
+                    try
+                    {
+#if SQLLITE
+                        stmt.DoSql(string.Format("PRAGMA {0}_INFO({1})", (index) ? "index" : "table", tableName), true);
+#else
+                        stmt.DoSQLnr(string.Format("SELECT * FROM INFORMATION_SCHEMA.{0} WHERE TABLE_NAME='{1}'", (index) ? "INDEXES" : "COLUMNS", tableName));
+#endif
+                        schemaTable.BeginLoadData();
+                        try
+                        {
+                            schemaTable.Load(stmt.Reader);
+                        }
+                        finally
+                        {
+                            schemaTable.EndLoadData();
+                        }
+                    }
+                    catch { }
+                    finally
+                    {
+                        stmt.Close();
+                        stmt = null;
+                    }
+                }
+
                 if (index && schemaTable.Rows.Count == 0)
                 {
                     // there seems to be a bug/problem when getting "Indexes"
@@ -1305,7 +1354,9 @@ namespace DMTServices
 
                         SQLParams.Clear();
                     }
+#if !SQL_CE
                     cmd.CommandTimeout = fParent.defTimeOut;
+#endif
                     RowsAffected = 0;
                     if (select)
                         rdr = cmd.ExecuteReader();
