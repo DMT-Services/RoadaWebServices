@@ -1379,6 +1379,9 @@ namespace RoadaWebService
                     mdata.goConfig.tracking = stmt.bfetch("tracking");
                     mdata.goConfig.photoService = stmt.bfetch("photo_service");
                     mdata.goConfig.eventService = stmt.bfetch("event_service");
+                    mdata.goConfig.pdTimeout = stmt.ifetch("pd_timeout");
+                    mdata.goConfig.esTimeout = stmt.ifetch("es_timeout");
+                    mdata.goConfig.dmTimeout = stmt.ifetch("dm_timeout");
                     
                     validConfig = true;
                 }
@@ -1430,6 +1433,8 @@ namespace RoadaWebService
             return validConfig;
         }
 
+
+    
         private bool GetAppServerInfo(AppServerInfo ServerInfo, string custCode) 
         {
             bool validConfig = false;
@@ -2590,10 +2595,12 @@ namespace RoadaWebService
                             }
                         }
 
-                        if (stmt.DoSQLFormat("SELECT Max(id) as maxid FROM EngineIn WHERE hand_code = {0} and rdate >= {{ts '{1}'}}", devId, DateTime.UtcNow.AddMinutes(-30).ToString(LONG_DATE)))
+                        if (stmt.DoSQLFormat("SELECT * from EngineIn WHERE id=(SELECT max(id) FROM EngineIn WHERE hand_code = {0}}}", devId))
                         {
-                            if (!stmt.IsNull("maxid"))
-                            {
+
+                            if (stmt.dtfetch("rdate") >= DateTime.UtcNow.AddMinutes(-30))
+                                {
+
                                 int maxId = stmt.ifetch("maxid");
                                 stmt.DoSQLFormat("SELECT * FROM EngineIn WHERE id = {0}", maxId);
                                 dInfo.ECMDate = stmt.dtfetch("rdate");
@@ -3184,7 +3191,78 @@ namespace RoadaWebService
             return Result;
         }
 
+        [WebMethod(Description = "ValidateUserList.")]
+        public bool ValidateUserList(Request req, int Version)
+        {
+            bool Result = false;
+            // low security check, don't want hackers!
+            if (!LowSecurityCheck(req))
+                return false;
 
+            string connStr = CustConnectionString(req);
+            SqlStmt stmt = null;
+            try
+            {
+                if (GetStmt(connStr, out stmt))
+                {
+                    if (stmt.DoSQL(String.Format("SELECT TOP 1 users FROM go_update")))
+                    {
+                        int res = stmt.ifetch("users");
+
+                        if (res != Version)
+                        {
+                            Result = true;
+                        }
+                    }
+                }
+            }
+            catch (Exception x)
+            {
+                Global.messLog.Flush("ValidateUserList() Excp: {0}", x.Message);
+            }
+            finally
+            {
+                if (stmt != null)
+                    stmt.Close();
+            }
+            return Result;
+        }
+               [WebMethod(Description = "ValidateVehicleList.")]
+        public bool ValidateVehicleList(Request req, int Version)
+        {
+            bool Result = false;
+            // low security check, don't want hackers!
+            if (!LowSecurityCheck(req))
+                return false;
+
+            string connStr = CustConnectionString(req);
+            SqlStmt stmt = null;
+            try
+            {
+                if (GetStmt(connStr, out stmt))
+                {
+                    if (stmt.DoSQL(String.Format("SELECT TOP 1 vehicles FROM go_update")))
+                    {
+                        int res = stmt.ifetch("vehicles");
+
+                        if (res != Version)
+                        {
+                            Result = true;
+                        }
+                    }
+                }
+            }
+            catch (Exception x)
+            {
+                Global.messLog.Flush("ValidateUserList() Excp: {0}", x.Message);
+            }
+            finally
+            {
+                if (stmt != null)
+                    stmt.Close();
+            }
+            return Result;
+        }
         [WebMethod(Description = "Push Camera Image")]
         public int SendPhotoData(Request req, PhotoData pdata)
         {
@@ -3204,7 +3282,8 @@ namespace RoadaWebService
                     SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
                     bool reeady = pdata.ready;
                     bool done = pdata.done;
-                    sql.Add("rdate", DateTime.UtcNow);
+                    sql.Add("rdate", pdata.rdate); //the images created time in utc
+                    sql.Add("idate", DateTime.UtcNow);
                     sql.Add("hand_code", pdata.handcode);
                     sql.Add("unit_num", pdata.unitnum);
                     sql.Add("latitude", pdata.latitude);
@@ -3221,14 +3300,18 @@ namespace RoadaWebService
                     sql.Add("private", pdata.priv);
                     sql.Add("install", pdata.intall);
                     sql.Add("installkey", pdata.installKey);
-                    sql.Add("img_created", pdata.imgcreated);
+                    sql.Add("img_created", pdata.imgcreated); //Now is the image sent field
                     sql.Add("sent", pdata.sent);
                     sql.Add("sidewalk", pdata.sidewalk);
                     sql.Add("deficiency", pdata.deficiency);
                     sql.Add("phand_code", pdata.phandcode);
                     sql.Add("evt_type", pdata.evtType);
-                    sql.Add("dash", pdata.dash);
+                    sql.Add("dash", pdata.dash);                 
                     sql.Add("collision", pdata.collision);
+                    sql.Add("q_count", pdata.qCount);
+                    sql.Add("pic_q_count", pdata.picQCount);
+                    sql.Add("signal_str", pdata.SignalStr);
+                    sql.Add("net_type", pdata.NetworkType);
 
                     stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO img_Events"));
                     Result = 1;
@@ -3974,6 +4057,7 @@ namespace RoadaWebService
                         sql.Add("event_time", evnt.eventTime);
                         sql.Add("event_mess", evnt.eventMessage);
                         sql.Add("driver", evnt.driver);
+                        sql.Add("driving", evnt.driving);
                         sql.Add("truck", evnt.truck);
                         sql.Add("latitude", evnt.lat);
                         sql.Add("longitude", evnt.lon);
@@ -3984,6 +4068,12 @@ namespace RoadaWebService
                         sql.Add("comm_type", 0);
                         sql.Add("processed", 0);
                         sql.Add("wtype", evnt.wType);
+                        sql.Add("q_count",evnt.qCount);
+                        sql.Add("signal_str", evnt.SignalStr);
+                        sql.Add("net_type", evnt.net_type);
+                        sql.Add("pic_q_count", evnt.PicQCount);
+                        sql.Add("rdate", evnt.rdate);
+                        sql.Add("idate", DateTime.UtcNow);
 
                         if (!stmt.DoSQLFormat("SELECT * FROM Hos_events WHERE event_time = '{0}' AND driver = '{1}'", evnt.eventTime, evnt.driver))
                         {
@@ -4013,6 +4103,13 @@ namespace RoadaWebService
                                 sql.Add("waypoint", evnt.waypoint);
                                 sql.Add("processed", 0);
                                 sql.Add("comm_type", 0);
+                                sql.Add("q_count",evnt.qCount);
+                                sql.Add("signal_str", evnt.SignalStr);
+                                sql.Add("net_type", evnt.net_type);
+                                sql.Add("pic_q_count", evnt.PicQCount);
+                                sql.Add("rdate", evnt.rdate);
+                                sql.Add("idate", DateTime.UtcNow);
+
                                 stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO go_events"));
 
 
@@ -4027,31 +4124,31 @@ namespace RoadaWebService
                                 sql.Add("truck", evnt.truck);
                                 sql.Add("hand_code", evnt.handcode);
                                 sql.Add("route", evnt.route);
+                                sql.Add("q_count",evnt.qCount);
+                                sql.Add("signal_str", evnt.SignalStr);
+                                sql.Add("net_type", evnt.net_type);
+                                sql.Add("pic_q_count", evnt.PicQCount);
+                                sql.Add("rdate", evnt.rdate);
+                                sql.Add("idate", DateTime.UtcNow);
+
                                 stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO go_events"));
 
                                 sql.Clear();
 
+                                sql.Add("logged_in", 1);
+                                sql.Add("hand_code", evnt.handcode);
+                                sql.Add("truck_id", evnt.truck);
+                                sql.Add("version", evnt.version);
+                                sql.Add("user_id", evnt.driver);
+                                sql.Add("last_log", evnt.eventTime);
+                                sql.Add("route", evnt.route);
+
                                 if (!stmt.DoSQLFormat("SELECT * FROM go_status WHERE hand_code = {0}", evnt.handcode))
                                 {
-                                    sql.Add("logged_in", 1);
-                                    sql.Add("hand_code", evnt.handcode);
-                                    sql.Add("truck_id", evnt.truck);
-                                    sql.Add("version", evnt.version);
-                                    sql.Add("user_id", evnt.driver);
-                                    sql.Add("last_log", evnt.eventTime);
-                                    sql.Add("route", evnt.route);
                                     stmt.DoSQL(sql.BuildInsert("INSERT INTO go_status"));
-
                                 }
                                 else
                                 {
-                                    sql.Add("logged_in", 1);
-                                    sql.Add("hand_code", evnt.handcode);
-                                    sql.Add("truck_id", evnt.truck);
-                                    sql.Add("version", evnt.version);
-                                    sql.Add("user_id", evnt.driver);
-                                    sql.Add("last_log", evnt.eventTime);
-                                    sql.Add("route", evnt.route);
                                     stmt.DoSQLFormat(sql.BuildUpdate("UPDATE go_status with (rowlock)", "WHERE hand_code = {0}"), evnt.handcode);
                                 }
 
@@ -4075,6 +4172,12 @@ namespace RoadaWebService
                                 sql.Add("comm_type", 0);
                                 sql.Add("processed", 0);
                                 sql.Add("wtype", evnt.wType);
+                                sql.Add("q_count",evnt.qCount);
+                                sql.Add("signal_str", evnt.SignalStr);
+                                sql.Add("net_type", evnt.net_type);
+                                sql.Add("pic_q_count", evnt.PicQCount);
+                                sql.Add("rdate", evnt.rdate);
+                                sql.Add("idate", DateTime.UtcNow);
                                 stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO go_events"));
 
                                 if (evnt.handcode > 0)
@@ -4082,6 +4185,36 @@ namespace RoadaWebService
                                     stmt.DoSQLFormat("UPDATE vehicles with (rowlock) SET phone_handcode = null, user_name = null WHERE phone_handcode = {0}", evnt.handcode);
                                     stmt.DoSQLFormat("UPDATE vehicles with (rowlock) SET phone_handcode = {0}, user_name = '{1}' WHERE hand_code = {2}", evnt.handcode, SqlHelper.FixUp(evnt.driver), evnt.dcdHC);
 
+                                }
+
+                                 sql.Clear();
+
+                                sql.Add("logged_in", 1);
+                                sql.Add("hand_code", evnt.handcode);
+                                sql.Add("truck_id", evnt.truck);
+                                sql.Add("version", evnt.version);
+                                sql.Add("user_id", evnt.driver);
+                                sql.Add("last_log", evnt.eventTime);
+                                sql.Add("route", evnt.route);
+                                sql.Add("pic_q_count", evnt.PicQCount);
+                                sql.Add("q_count",evnt.qCount);
+                                sql.Add("signal_str",evnt.SignalStr);
+                                sql.Add("net_type", evnt.net_type);
+
+                                if (stmt.DoSQLFormat("SELECT top 1 idate FROM Img_Events WHERE phand_code = {0} order by idate desc", evnt.handcode))
+	                            {
+                                    DateTime lastImg = stmt.dtfetch("idate");
+                                    sql.Add("last_sent", lastImg);
+	                            }
+                               
+
+                                if (!stmt.DoSQLFormat("SELECT * FROM go_status WHERE hand_code = {0}", evnt.handcode))
+                                {
+                                    stmt.DoSQL(sql.BuildInsert("INSERT INTO go_status"));
+                                }
+                                else
+                                {
+                                    stmt.DoSQLFormat(sql.BuildUpdate("UPDATE go_status with (rowlock)", "WHERE hand_code = {0}"), evnt.handcode);
                                 }
 
 
@@ -4095,6 +4228,12 @@ namespace RoadaWebService
                                 sql.Add("driver", evnt.driver);
                                 sql.Add("truck", evnt.truck);
                                 sql.Add("hand_code", evnt.handcode);
+                                sql.Add("q_count",evnt.qCount);
+                                sql.Add("signal_str", evnt.SignalStr);
+                                sql.Add("net_type", evnt.net_type);
+                                sql.Add("pic_q_count", evnt.PicQCount);
+                                sql.Add("rdate", evnt.rdate);
+                                sql.Add("idate", DateTime.UtcNow);
                                 if (evnt.signature != null)
                                     sql.Add("signature", evnt.signature);
                                 stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO go_events"));
@@ -4106,25 +4245,17 @@ namespace RoadaWebService
                                 {
                                     stmt.DoSQLFormat("UPDATE vehicles with (rowlock) SET phone_handcode = null, user_name = null WHERE phone_handcode = {0}", evnt.handcode);
                                 }
-
+                                sql.Add("logged_in", 0);
+                                sql.Add("hand_code", evnt.handcode);
+                                sql.Add("truck_id", evnt.truck);
+                                sql.Add("user_id", evnt.driver);
+                                sql.Add("last_log", evnt.eventTime);
                                 if (!stmt.DoSQLFormat("SELECT * FROM go_status WHERE hand_code = {0}", evnt.handcode))
                                 {
-
-                                    sql.Add("logged_in", 0);
-                                    sql.Add("hand_code", evnt.handcode);
-                                    sql.Add("truck_id", evnt.truck);
-                                    sql.Add("user_id", evnt.driver);
-                                    sql.Add("last_log", evnt.eventTime);
                                     stmt.DoSQL(sql.BuildInsert("INSERT INTO go_status"));
-
                                 }
                                 else
-                                {
-                                    sql.Add("logged_in", 0);
-                                    sql.Add("hand_code", evnt.handcode);
-                                    sql.Add("truck_id", evnt.truck);
-                                    sql.Add("user_id", evnt.driver);
-                                    sql.Add("last_log", evnt.eventTime);
+                                {                                  
                                     stmt.DoSQLFormat(sql.BuildUpdate("UPDATE go_status with (rowlock)", "WHERE hand_code = {0}"), evnt.handcode);
                                 }
 
@@ -4147,6 +4278,12 @@ namespace RoadaWebService
                                 sql.Add("comm_type", 0);
                                 sql.Add("processed", 0);
                                 sql.Add("wtype", evnt.wType);
+                                sql.Add("q_count",evnt.qCount);
+                                sql.Add("signal_str", evnt.SignalStr);
+                                sql.Add("net_type", evnt.net_type);
+                                sql.Add("pic_q_count", evnt.PicQCount);
+                                sql.Add("rdate", evnt.rdate);
+                                sql.Add("idate", DateTime.UtcNow);
                                 stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO go_events"));
 
                                 Result = 5;
@@ -4265,10 +4402,10 @@ namespace RoadaWebService
 
 
         [WebMethod(Description = "Retrieve vehicle listing")]
-        public Vehicle[] GetVehicleList(Request request, int? fleetId)
+        public Vehicle[] GetVehicleList(Request request, int? fleetId, out int VehicleVersion)
         {
             Vehicle[] Result = null;
-
+            VehicleVersion = 0;
             if (! LowSecurityCheck(request))
                 return Result;
 
@@ -4276,6 +4413,17 @@ namespace RoadaWebService
             SqlStmt stmt = null;
             try
             {
+
+
+                if (GetStmt(connStr, out stmt))
+                {
+                    if (stmt.DoSQLFormat("SELECT * FROM go_update"))
+                    {
+                        VehicleVersion = stmt.ifetch("vehicles");
+                    }
+                    stmt.Clear();
+                }
+
                 if (GetStmt(connStr, out stmt))
                 {
                     List<Vehicle> vehicles = new List<Vehicle>();
@@ -4340,6 +4488,7 @@ namespace RoadaWebService
                         mr.routing = stmt.bfetch("routing_perm");
                         mr.weather = stmt.bfetch("weather_perm");
                         mr.diag = stmt.bfetch("diag_perm");
+                        mr.hosPerm = stmt.bfetch("hos_perm");
                         mr.camera = stmt.bfetch("cam_perm");
                         mrs.Add(mr);
                         rc = stmt.dbSkip();
@@ -4361,19 +4510,31 @@ namespace RoadaWebService
         }
 
         [WebMethod(Description = "Retrieve Mobile Users listing")]
-        public GoUser[] GetGoUsers(Request request)
+        public GoUser[] GetGoUsers(Request request, out int userVersion)
         {
             GoUser[] Result = null;
-
+            userVersion = 0;
+     
             if (!LowSecurityCheck(request))
                 return Result;
 
             string connStr = CustConnectionString(request);
             SqlStmt stmt = null;
+            SqlStmt stmt2 = null;
             try
             {
+                if (GetStmt(connStr, out stmt2))
+                {
+                    if (stmt2.DoSQLFormat("SELECT TOP 1 users FROM go_update"))
+                    {
+                        userVersion = stmt2.ifetch("users");
+                    }
+       
+                }
                 if (GetStmt(connStr, out stmt))
                 {
+
+   
                     List<GoUser> users = new List<GoUser>();
                     bool rc;
                 
@@ -4405,6 +4566,9 @@ namespace RoadaWebService
             {
                 if (stmt != null)
                     stmt.Close();
+
+                if (stmt2 != null)
+                    stmt2.Close();
             }
             return Result;
         }

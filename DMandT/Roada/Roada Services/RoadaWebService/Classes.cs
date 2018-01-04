@@ -68,6 +68,7 @@ namespace RoadaWebService
         public int RoleId;
         public string RoleName;
         public bool statusPerm;
+        public bool hosPerm;
         public bool Collision;
         public bool weather;
         public bool routing;
@@ -153,6 +154,8 @@ namespace RoadaWebService
         public int HandCode;
         public RoadaManagerConfig managerConfig;
         public bool roadaGo;
+        public int userVersion;
+        public int VehicleVersion;
         public double goVer;     
         public RoadaGoConfig goConfig;
         public bool roadaDiag;
@@ -178,7 +181,6 @@ namespace RoadaWebService
         {
             this.ServerInfo = new AppServerInfo();
         }
-
         public double version;
         public AppServerInfo ServerInfo;
         public string description;
@@ -193,6 +195,9 @@ namespace RoadaWebService
         public int MainActivity;
         public int updatedCount;
         public int notUpdatedCount;
+        public int pdTimeout;
+        public int esTimeout;
+        public int dmTimeout;
     }
     public class RoadaDiagConfig
     {
@@ -257,9 +262,10 @@ namespace RoadaWebService
 
     public class evntRecord
     {
-
+        public bool driving;
         public bool sent;
         public bool hosEvent;
+        public static string licence;
         public int dcdHC;
         public int EventType;
         public DateTime eventTime;
@@ -288,6 +294,11 @@ namespace RoadaWebService
         public int plan;
         public string routeName;
         public byte[] signature;
+        public int SignalStr;
+        public int qCount;
+        public int PicQCount;
+        public DateTime rdate;
+        public DateTime idate;
     }
     public class DispatchStatus
     {
@@ -697,6 +708,10 @@ namespace RoadaWebService
         public string imgPath;
         public bool photoSent;
         public DateTime sentTime;
+        public string NetworkType;
+        public int SignalStr;
+        public int qCount;
+        public int picQCount;
     }
     public class ConfigData
     {
