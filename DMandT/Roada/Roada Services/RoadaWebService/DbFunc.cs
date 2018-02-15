@@ -1207,7 +1207,18 @@ namespace DMTServices
             myDataReader dr = DoSQLnr(selectStr);
             DataTable dt = new DataTable();
             if (dr != null)
-                dt.Load(dr);
+            {
+                dt.BeginLoadData();
+                try
+                {
+                    dt.Load(dr);
+                }
+                finally
+                {
+                    dt.EndLoadData();
+                }
+            }
+
             return dt;
         }
 
