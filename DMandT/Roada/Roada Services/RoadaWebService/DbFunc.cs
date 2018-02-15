@@ -1200,13 +1200,27 @@ namespace DMTServices
         /// <summary>
         /// Executes a query, fills and returns a DataTable with the results
         /// </summary>
-        /// <param name="selectStr"></param>
+        /// <param name="selectStr">Select string to execute</param>
         /// <returns>DataTable</returns>
         public DataTable DoSQLdt(string selectStr)
         {
-            myDataReader dr = DoSQLnr(selectStr);
             DataTable dt = new DataTable();
-            if (dr != null)
+            DoSQLdt(selectStr, dt);
+            return dt;
+        }
+
+        /// <summary>
+        /// Excutes a query and fills the passed in DataTable with the results
+        /// (DataTable is <b>NOT</b> cleared so this will append to existing rows)
+        /// </summary>
+        /// <param name="selectStr">Select string to execute</param>
+        /// <param name="dt">DataTable to fill</param>
+        /// <returns>True if any data in results</returns>
+        public bool DoSQLdt(string selectStr, DataTable dt)
+        {
+            bool rc = false;
+            myDataReader dr = DoSQLnr(selectStr);
+            if (dr != null && dr.HasRows)
             {
                 dt.BeginLoadData();
                 try
@@ -1217,9 +1231,9 @@ namespace DMTServices
                 {
                     dt.EndLoadData();
                 }
+                rc = dt.Rows.Count > 0;
             }
-
-            return dt;
+            return rc;
         }
 
         /// <summary>
