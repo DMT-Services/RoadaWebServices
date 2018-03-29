@@ -1601,6 +1601,29 @@ namespace DMTServices
             return rc;
         }
 
+        public List<int> lifetch(string field)
+        {
+            return lifetch(field, string.Empty, ',');
+        }
+
+        public List<int> lifetch(string field, string defVals)
+        {
+            return lifetch(field, defVals, ',');
+        }
+
+        public List<int> lifetch(string field, string defVals, char sep)
+        {
+            List<int> rc = new List<int>();
+            string s = fetch(field);
+
+            if (s == string.Empty && defVals != string.Empty)
+                s = defVals;
+            if (s != string.Empty)
+                rc = new List<int>(Array.ConvertAll(s.Split(sep), int.Parse));
+
+            return rc;
+        }
+
         public bool IsNull(string field)
         {
             return ofetch(field) is System.DBNull;
