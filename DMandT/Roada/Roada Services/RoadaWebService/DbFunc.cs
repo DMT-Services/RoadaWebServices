@@ -1614,12 +1614,12 @@ namespace DMTServices
         public List<int> lifetch(string field, string defVals, char sep)
         {
             List<int> rc = new List<int>();
-            string s = fetch(field);
 
+            string s = fetch(field);
             if (s == string.Empty && defVals != string.Empty)
                 s = defVals;
             if (s != string.Empty)
-                rc = new List<int>(Array.ConvertAll(s.Split(sep), int.Parse));
+                rc = new List<int>(Array.ConvertAll(s.Split(sep), myConvert.ToInt));
 
             return rc;
         }
