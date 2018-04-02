@@ -1222,6 +1222,7 @@ namespace DMTServices
             myDataReader dr = DoSQLnr(selectStr);
             if (dr != null && dr.HasRows)
             {
+                int st = dt.Rows.Count;
                 dt.BeginLoadData();
                 try
                 {
@@ -1231,7 +1232,7 @@ namespace DMTServices
                 {
                     dt.EndLoadData();
                 }
-                rc = dt.Rows.Count > 0;
+                rc = (dt.Rows.Count > st);
             }
             return rc;
         }
