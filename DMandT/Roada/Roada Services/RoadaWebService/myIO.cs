@@ -90,6 +90,29 @@ namespace DMTServices
             return tFilename;
         }
 
+        static public string BackUp(string fFilename)
+        {
+            string tFilename = fFilename;
+
+            try
+            {
+                if (myFile.Exists(tFilename))
+                {
+                    int ct = 1;
+
+                    string justFile = Path.GetFileNameWithoutExtension(tFilename);
+                    while (myFile.Exists(tFilename))
+                        tFilename = Path.GetDirectoryName(tFilename) + "\\" + justFile + "_" + ct++.ToString() + Path.GetExtension(tFilename);
+
+                    File.Copy(fFilename, tFilename);
+                }
+            }
+            catch
+            {
+            }
+            return tFilename;
+        }
+
         static public FileStream Create(string Filename)
         {
             FileStream r = null;
