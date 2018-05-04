@@ -1429,6 +1429,9 @@ namespace DMTServices
 #endif
                 LastError = e.Message;
                 rdrClose();
+#if THROW_SQL_EXCP
+                throw new System.Exception(e.Message, e.InnerException);
+#endif
             }
 
             if (rdr != null)
