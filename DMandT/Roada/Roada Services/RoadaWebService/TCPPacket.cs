@@ -71,7 +71,15 @@ namespace DMTServices
         public Socket Client;
         [XmlIgnore]
         public FileStream fsObject = null;
-        
+        [XmlIgnore]
+        public int RxState = 0;
+        [XmlIgnore]
+        public UInt16 RxCrc;
+        [XmlIgnore]
+        public UInt16 SeqId;
+        [XmlIgnore]
+        public UInt64 Imei;
+
         // the buffer itself
 //        public byte[] Data;
 
@@ -118,6 +126,17 @@ namespace DMTServices
         public int WriteCmd(char cmd)
         {
             return WriteCmd(cmd, null, 0);
+        }
+
+        public int WriteATrackACK(UInt64 imei, UInt16 seqId)
+        {
+            this.SendBuf[0] = 0xfe; // SOH 1st byte
+            this.SendBuf[1] = 0x2;  // SOH 2nd byte
+            this.SendBuf.ValueToBE(2, imei);
+            this.SendBuf.ValueToBE(10, seqId);
+            this.SendEventArgs.SetBuffer(this.SendBuf, 0, 12);
+            this.Client.SendAsync(this.SendEventArgs);
+            return 12;
         }
 
         public void ResetBusy()
