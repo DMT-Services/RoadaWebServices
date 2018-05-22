@@ -14,6 +14,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Security.Cryptography;
 using System.IO;
+using System.Threading;
 
 // these "using xxx=yyy" are like typedef's 
 #if OLEDB
@@ -1238,6 +1239,44 @@ namespace DMTServices
         }
 
         /// <summary>
+        /// Same as DoSQLdt (executes selectStr and loads result into DataTable)
+        /// except it does a .Sleep(milliSecs) each .Read() to help stop programs from being CPU hog...
+        /// </summary>
+        /// <param name="selectStr"></param>
+        /// <returns></returns>
+        public DataTable DoSQLmdt(string selectStr, int milliSecs)
+        {
+            DataTable dt = new DataTable();
+            myDataReader rdr = DoSQLnr(selectStr);
+            if (rdr != null && rdr.HasRows)
+            {
+                DataTable sdt = rdr.GetSchemaTable();
+                if (sdt != null)
+                    foreach (DataRow dr in sdt.Rows)
+                        dt.Columns.Add(new DataColumn(dr.fetch("ColumnName"), (Type)dr["DataType"]));
+
+                dt.BeginLoadData();
+                try
+                {
+                    while (rdr.Read())
+                    {
+                        DataRow dr = dt.NewRow();
+                        foreach (DataColumn dc in dt.Columns)
+                            dr[dc.ColumnName] = rdr[dc.ColumnName];
+                        dt.Rows.Add(dr);
+
+                        Thread.Sleep(milliSecs);
+                    }
+                }
+                finally
+                {
+                    dt.EndLoadData();
+                }
+            }
+            return dt;
+        }
+
+        /// <summary>
         /// Executes a query, but DOES NOT do the DataReader.Read (or dbSkip() as we call it)
         /// </summary>
         /// <param name="selectStr"></param>
@@ -1366,7 +1405,7 @@ namespace DMTServices
                             if (paraName.Contains('|'))
                             {
                                 string[] p = paraName.Split('|');
-                                if(p.Length>1)
+                                if (p.Length > 1)
                                 {
                                     paraName = p[0];
                                     paraType = p[1];
