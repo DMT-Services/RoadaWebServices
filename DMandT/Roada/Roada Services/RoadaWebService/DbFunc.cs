@@ -669,6 +669,26 @@ namespace DMTServices
             return GetTableNames(false, string.Empty, false).Contains(tableName, StringComparer.OrdinalIgnoreCase);
         }
 
+        public bool indexExists(string tableName, string indexName)
+        {
+            return GetIndexNames(tableName).Contains(indexName, StringComparer.OrdinalIgnoreCase);
+        }
+
+        public string[] GetIndexNames(string tableName)
+        {
+            List<string> Result = new List<string>();
+            
+            DataTable dat = GetSchema(tableName, true);
+            foreach (DataRow dr in dat.Rows)
+            {
+                string ndx = dr["index_name"].ToString();
+
+                if (!Result.Contains(ndx))
+                    Result.Add(ndx);
+            }
+            return Result.ToArray();
+        }
+
         /// <summary>
         /// Return an array of strings representing the table names / views in the current connection...
         /// </summary>
