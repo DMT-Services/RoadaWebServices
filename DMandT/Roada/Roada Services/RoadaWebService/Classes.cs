@@ -7,12 +7,14 @@ using System.Collections;
 using System.Reflection;
 using System.Xml;
 using System.Xml.Serialization;
+using System.Runtime.Serialization;
 
 namespace RoadaWebService
 {
     /// <summary>
     /// Response 'Data class'
     /// </summary>
+    ///  
     public class Response
     {
         public bool Success;
@@ -74,6 +76,7 @@ namespace RoadaWebService
         public bool routing;
         public bool diag;
         public bool camera;
+        public bool super;
     }
     public class NeoTerraSystemsGatewayData
     {
@@ -95,8 +98,18 @@ namespace RoadaWebService
         public string hardware;
 
     }
+    public class DCenterData
+    {
+        public int ID;
+        public string Name;
+        public double lat;
+        public double lon;
+        public int YardNo;
+
+    }
     public class SideWalkData
     {
+        public string address;
         public string reportId;
         public int handCode;
         public string UnitNum;
@@ -164,7 +177,6 @@ namespace RoadaWebService
         public bool RoadaUSB;
         public double RoadaUSBVersion;
         public RoadaUSBConfig usbConfig;
-
     }
     public class RoadaManagerConfig
     {
@@ -187,6 +199,7 @@ namespace RoadaWebService
         public int PhotoInterval;
         public bool cameraSound;
         public bool adbOn;
+        public bool AutoResume;
         public bool offlineLogin;
         public bool photoService;
         public bool eventService;
@@ -198,6 +211,7 @@ namespace RoadaWebService
         public int pdTimeout;
         public int esTimeout;
         public int dmTimeout;
+        public bool opps;
     }
     public class RoadaDiagConfig
     {
@@ -236,6 +250,8 @@ namespace RoadaWebService
         public string CustCode;
         public string UserName;
         public string Password;
+        public string Version;
+        public int Handcode;
         public string BinPassword;
         public int CustId;
         public DateTime ReqDate;
@@ -259,9 +275,15 @@ namespace RoadaWebService
         public int outOfBounds;
         public int outOfOpp;
     }
-
+    
     public class evntRecord
     {
+        public double last_lat;
+        public double last_lon;
+        public UInt32 memory_remaining; 
+        public int BatteryLevel;
+        public bool Chargeing;
+        public bool LoggedIn;
         public bool driving;
         public bool sent;
         public bool hosEvent;
@@ -295,10 +317,24 @@ namespace RoadaWebService
         public string routeName;
         public byte[] signature;
         public int SignalStr;
+        public int EventQCount;
         public int qCount;
         public int PicQCount;
         public DateTime rdate;
         public DateTime idate;
+        //USED only for updateing most current Go_Status
+        public bool LoggedIn_GS;
+        public string driver_GS;
+        public int handcode_GS;
+        public string truck_GS;
+        public double version_GS;
+        public int CStr_GS;
+        public string net_type_GS;
+        public int PicQCount_GS;
+        public int EventQCount_GS;
+        public int qCount_GS;
+
+
     }
     public class DispatchStatus
     {
@@ -381,11 +417,11 @@ namespace RoadaWebService
         public bool DSTApp;
         public int UnixTim;
     }
-
+  
     public class WeatherData
     {
         public string reportId;
-        public DateTime fromTime;
+        public DateTime fromTime ;
         public int commId;
         public int handCode;
         public string unitNum;
@@ -712,6 +748,7 @@ namespace RoadaWebService
         public int SignalStr;
         public int qCount;
         public int picQCount;
+        public int eventQCount;
     }
     public class ConfigData
     {
