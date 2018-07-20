@@ -277,8 +277,13 @@ namespace DMTServices
 
         public static string buildExpressConn(string catalog)
         {
+            return buildExpressConn(catalog, @".\SqlExpress");
+        }
+
+        public static string buildExpressConn(string catalog, string instance)
+        {
             // changed from 'Integrated Security=true;User Instance=True' to 'Trusted_connection=True'
-            return string.Format(@"Data Source=.\SqlExpress;MultipleActiveResultSets=True;Persist Security Info=True;Initial Catalog={0};Trusted_connection=True", catalog);
+            return string.Format("Data Source={1};MultipleActiveResultSets=True;Persist Security Info=True;Initial Catalog={0};Trusted_connection=True", catalog, instance);
         }
 
         public static Dictionary<string, string> LoadSettings()
@@ -677,12 +682,9 @@ namespace DMTServices
         public string[] GetIndexNames(string tableName)
         {
             List<string> Result = new List<string>();
-            
-            DataTable dat = GetSchema(tableName, true);
-            foreach (DataRow dr in dat.Rows)
+            foreach (DataRow dr in GetSchema(tableName, true).Rows)
             {
-                string ndx = dr["index_name"].ToString();
-
+                string ndx = dr.fetch("index_name").ToLower();
                 if (!Result.Contains(ndx))
                     Result.Add(ndx);
             }
