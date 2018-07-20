@@ -1,6 +1,8 @@
 using System;
 using System.IO;
 using System.Security.AccessControl;
+using System.Text;
+
 #if WINFORMS
 using System.Windows.Forms;
 #endif
@@ -12,6 +14,15 @@ namespace DMTServices
     /// </summary>
     public static class myFile
     {
+        static public void WriteAllText(string file, string data, Encoding enc)
+        {
+            try
+            {
+                File.WriteAllText(file, data, enc);
+            }
+            catch { }
+        }
+
         static public bool Exists(string Filename)
         {
             return Exists(Filename, false);
