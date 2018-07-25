@@ -1,8 +1,6 @@
 using System;
 using System.IO;
 using System.Security.AccessControl;
-using System.Text;
-
 #if WINFORMS
 using System.Windows.Forms;
 #endif
@@ -14,15 +12,6 @@ namespace DMTServices
     /// </summary>
     public static class myFile
     {
-        static public void WriteAllText(string file, string data, Encoding enc)
-        {
-            try
-            {
-                File.WriteAllText(file, data, enc);
-            }
-            catch { }
-        }
-
         static public bool Exists(string Filename)
         {
             return Exists(Filename, false);
@@ -94,29 +83,6 @@ namespace DMTServices
                 if (overwrite && File.Exists(tFilename))
                     File.Delete(tFilename);
                 File.Move(fFilename, tFilename);
-            }
-            catch
-            {
-            }
-            return tFilename;
-        }
-
-        static public string BackUp(string fFilename)
-        {
-            string tFilename = fFilename;
-
-            try
-            {
-                if (myFile.Exists(tFilename))
-                {
-                    int ct = 1;
-
-                    string justFile = Path.GetFileNameWithoutExtension(tFilename);
-                    while (myFile.Exists(tFilename))
-                        tFilename = Path.GetDirectoryName(tFilename) + "\\" + justFile + "_" + ct++.ToString() + Path.GetExtension(tFilename);
-
-                    File.Copy(fFilename, tFilename);
-                }
             }
             catch
             {
