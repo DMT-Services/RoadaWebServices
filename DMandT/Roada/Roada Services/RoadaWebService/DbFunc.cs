@@ -14,6 +14,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Security.Cryptography;
 using System.IO;
+using System.Threading;
 
 // these "using xxx=yyy" are like typedef's 
 #if OLEDB
@@ -70,6 +71,24 @@ using myDbCommand = Devart.Data.MySql.MySqlCommand;
 using myDataReader = Devart.Data.MySql.MySqlDataReader;
 using myParameter = Devart.Data.MySql.MySqlParameter;
 using myTransaction = Devart.Data.MySql.MySqlTransaction;
+
+#elif SQL_CE
+using System.Data.SqlServerCe;
+
+using myDbConnection = System.Data.SqlServerCe.SqlCeConnection;
+using myDbCommand = System.Data.SqlServerCe.SqlCeCommand;
+using myDataReader = System.Data.SqlServerCe.SqlCeDataReader;
+using myParameter = System.Data.SqlServerCe.SqlCeParameter;
+using myTransaction = System.Data.SqlServerCe.SqlCeTransaction;
+
+#elif SQLLITE
+using System.Data.SQLite;
+
+using myDbConnection = System.Data.SQLite.SQLiteConnection;
+using myDbCommand = System.Data.SQLite.SQLiteCommand;
+using myDataReader = System.Data.SQLite.SQLiteDataReader;
+using myParameter = System.Data.SQLite.SQLiteParameter;
+using myTransaction = System.Data.SQLite.SQLiteTransaction;
 
 #elif ADO_NET
 This would be 'legacy' stuff, and there is no DataReader or Transaction so probably will never be useful... ?
@@ -150,6 +169,7 @@ namespace DMTServices
         /// Helps when you have really, really long sql statements...
         /// </summary>
         public int maxErrMess = -1;
+        public bool ignoreDupErr = false;
         public string LastError = string.Empty;
 
         //private bool closeDBConn = false;
@@ -257,8 +277,13 @@ namespace DMTServices
 
         public static string buildExpressConn(string catalog)
         {
+            return buildExpressConn(catalog, @".\SqlExpress");
+        }
+
+        public static string buildExpressConn(string catalog, string instance)
+        {
             // changed from 'Integrated Security=true;User Instance=True' to 'Trusted_connection=True'
-            return string.Format(@"Data Source=.\SqlExpress;MultipleActiveResultSets=True;Persist Security Info=True;Initial Catalog={0};Trusted_connection=True", catalog);
+            return string.Format("Data Source={1};MultipleActiveResultSets=True;Persist Security Info=True;Initial Catalog={0};Trusted_connection=True", catalog, instance);
         }
 
         public static Dictionary<string, string> LoadSettings()
@@ -649,6 +674,23 @@ namespace DMTServices
             return GetTableNames(false, string.Empty, false).Contains(tableName, StringComparer.OrdinalIgnoreCase);
         }
 
+        public bool indexExists(string tableName, string indexName)
+        {
+            return GetIndexNames(tableName).Contains(indexName, StringComparer.OrdinalIgnoreCase);
+        }
+
+        public string[] GetIndexNames(string tableName)
+        {
+            List<string> Result = new List<string>();
+            foreach (DataRow dr in GetSchema(tableName, true).Rows)
+            {
+                string ndx = dr.fetch("index_name").ToLower();
+                if (!Result.Contains(ndx))
+                    Result.Add(ndx);
+            }
+            return Result.ToArray();
+        }
+
         /// <summary>
         /// Return an array of strings representing the table names / views in the current connection...
         /// </summary>
@@ -892,6 +934,37 @@ namespace DMTServices
                 string[] restrictions = GetRestrictions(ref sname, tableName);
                 if (restrictions.Length > 0)
                     schemaTable = dbConnection.GetSchema(sname, restrictions);
+
+                if (schemaTable == null || schemaTable.Rows == null || schemaTable.Rows.Count == 0)
+                {
+                    if (schemaTable == null)
+                        schemaTable = new DataTable();
+
+                    SqlStmt stmt = new SqlStmt(this);
+                    try
+                    {
+#if SQLLITE
+                        stmt.DoSql(string.Format("PRAGMA {0}_INFO({1})", (index) ? "index" : "table", tableName), true);
+#else
+                        stmt.DoSQLnr(string.Format("SELECT * FROM INFORMATION_SCHEMA.{0} WHERE TABLE_NAME='{1}'", (index) ? "INDEXES" : "COLUMNS", tableName));
+#endif
+                        schemaTable.BeginLoadData();
+                        try
+                        {
+                            schemaTable.Load(stmt.Reader);
+                        }
+                        finally
+                        {
+                            schemaTable.EndLoadData();
+                        }
+                    }
+                    catch { }
+                    finally
+                    {
+                        stmt.Close();
+                        stmt = null;
+                    }
+                }
 
                 if (index && schemaTable.Rows.Count == 0)
                 {
@@ -1150,14 +1223,78 @@ namespace DMTServices
         /// <summary>
         /// Executes a query, fills and returns a DataTable with the results
         /// </summary>
-        /// <param name="selectStr"></param>
+        /// <param name="selectStr">Select string to execute</param>
         /// <returns>DataTable</returns>
         public DataTable DoSQLdt(string selectStr)
         {
-            myDataReader dr = DoSQLnr(selectStr);
             DataTable dt = new DataTable();
-            if (dr != null)
-                dt.Load(dr);
+            DoSQLdt(selectStr, dt);
+            return dt;
+        }
+
+        /// <summary>
+        /// Excutes a query and fills the passed in DataTable with the results
+        /// (DataTable is <b>NOT</b> cleared so this will append to existing rows)
+        /// </summary>
+        /// <param name="selectStr">Select string to execute</param>
+        /// <param name="dt">DataTable to fill</param>
+        /// <returns>True if any data in results</returns>
+        public bool DoSQLdt(string selectStr, DataTable dt)
+        {
+            bool rc = false;
+            myDataReader dr = DoSQLnr(selectStr);
+            if (dr != null && dr.HasRows)
+            {
+                int st = dt.Rows.Count;
+                dt.BeginLoadData();
+                try
+                {
+                    dt.Load(dr);
+                }
+                finally
+                {
+                    dt.EndLoadData();
+                }
+                rc = (dt.Rows.Count > st);
+            }
+            return rc;
+        }
+
+        /// <summary>
+        /// Same as DoSQLdt (executes selectStr and loads result into DataTable)
+        /// except it does a .Sleep(milliSecs) each .Read() to help stop programs from being CPU hog...
+        /// </summary>
+        /// <param name="selectStr"></param>
+        /// <returns></returns>
+        public DataTable DoSQLmdt(string selectStr, int milliSecs)
+        {
+            DataTable dt = new DataTable();
+            myDataReader rdr = DoSQLnr(selectStr);
+            if (rdr != null && rdr.HasRows)
+            {
+                DataTable sdt = rdr.GetSchemaTable();
+                if (sdt != null)
+                    foreach (DataRow dr in sdt.Rows)
+                        dt.Columns.Add(new DataColumn(dr.fetch("ColumnName"), (Type)dr["DataType"]));
+
+                dt.BeginLoadData();
+                try
+                {
+                    while (rdr.Read())
+                    {
+                        DataRow dr = dt.NewRow();
+                        foreach (DataColumn dc in dt.Columns)
+                            dr[dc.ColumnName] = rdr[dc.ColumnName];
+                        dt.Rows.Add(dr);
+
+                        Thread.Sleep(milliSecs);
+                    }
+                }
+                finally
+                {
+                    dt.EndLoadData();
+                }
+            }
             return dt;
         }
 
@@ -1284,12 +1421,29 @@ namespace DMTServices
                         }
 #else
                         foreach (DictionaryEntry parms in SQLParams)
-                            cmd.Parameters.Add(new myParameter((string)parms.Key, parms.Value));
+                        {
+                            string paraName = (string)parms.Key;
+                            string paraType = string.Empty;
+                            if (paraName.Contains('|'))
+                            {
+                                string[] p = paraName.Split('|');
+                                if (p.Length > 1)
+                                {
+                                    paraName = p[0];
+                                    paraType = p[1];
+                                }
+                            }
+                            cmd.Parameters.Add(new myParameter(paraName, parms.Value));
+                            if (paraType != string.Empty)
+                                cmd.Parameters[cmd.Parameters.Count - 1].UdtTypeName = paraType;
+                        }
 #endif
 
                         SQLParams.Clear();
                     }
+#if !SQL_CE
                     cmd.CommandTimeout = fParent.defTimeOut;
+#endif
                     RowsAffected = 0;
                     if (select)
                         rdr = cmd.ExecuteReader();
@@ -1322,17 +1476,23 @@ namespace DMTServices
 #if !NO_MESSLOG
                 if (fParent.Mess != null)
                 {
-                    string pfx = "            ";
-                    if (fParent.maxErrMess == 0)    // don't write out the sql that caused the error
-                        pfx = "SQL Error - ";
-                    else
-                        fParent.Mess.Flush("SQL Error - " + ((fParent.maxErrMess > 0 && selectStr.Length > fParent.maxErrMess) ? (selectStr.Substring(0, fParent.maxErrMess) + "...") : selectStr));
+                    if (!fParent.ignoreDupErr || !e.Message.StartsWith("Cannot insert duplicate key row"))
+                    {
+                        string pfx = "            ";
+                        if (fParent.maxErrMess == 0)    // don't write out the sql that caused the error
+                            pfx = "SQL Error - ";
+                        else
+                            fParent.Mess.Flush("SQL Error - " + ((fParent.maxErrMess > 0 && selectStr.Length > fParent.maxErrMess) ? (selectStr.Substring(0, fParent.maxErrMess) + "...") : selectStr));
 
-                    fParent.Mess.Flush(pfx + e.Message);
+                        fParent.Mess.Flush(pfx + e.Message);
+                    }
                 }
 #endif
                 LastError = e.Message;
                 rdrClose();
+#if THROW_SQL_EXCP
+                throw new System.Exception(e.Message, e.InnerException);
+#endif
             }
 
             if (rdr != null)
@@ -1503,6 +1663,29 @@ namespace DMTServices
             string s = fetch(field);
             if (s != string.Empty)
                 rc = new List<string>(s.Split(sep));
+            return rc;
+        }
+
+        public List<int> lifetch(string field)
+        {
+            return lifetch(field, string.Empty, ',');
+        }
+
+        public List<int> lifetch(string field, string defVals)
+        {
+            return lifetch(field, defVals, ',');
+        }
+
+        public List<int> lifetch(string field, string defVals, char sep)
+        {
+            List<int> rc = new List<int>();
+
+            string s = fetch(field);
+            if (s == string.Empty && defVals != string.Empty)
+                s = defVals;
+            if (s != string.Empty)
+                rc = new List<int>(Array.ConvertAll(s.Split(sep), myConvert.ToInt));
+
             return rc;
         }
 
@@ -2624,20 +2807,26 @@ namespace DMTServices
 
     public static class myEncoder
     {
+        // you can use these 'defaults' if you don't need your own...
         private static string _password = "dm&tIsTheBest";
         private static string _salt = "thisIsMySalt";
 
         public static string Encrypt(string s)
         {
-            return Encrypt(s, _password);
+            return Encrypt(s, _password, _salt);
         }
 
-        public static string Encrypt(string s, string password)
+        public static string Encrypt(string s, string pass)
+        {
+            return Encrypt(s, pass, _salt);
+        }
+
+        public static string Encrypt(string s, string password, string salt)
         {
             string rc = s;
             try
             {
-                DeriveBytes rgb = new Rfc2898DeriveBytes(password, Encoding.Unicode.GetBytes(_salt));
+                DeriveBytes rgb = new Rfc2898DeriveBytes(password, Encoding.Unicode.GetBytes(salt));
                 RijndaelManaged RMCrypto = new RijndaelManaged();
                 byte[] Key = rgb.GetBytes(RMCrypto.KeySize >> 3);
                 byte[] IV = rgb.GetBytes(RMCrypto.BlockSize >> 3);
@@ -2664,15 +2853,20 @@ namespace DMTServices
 
         public static string Decrypt(string s)
         {
-            return Decrypt(s, _password);
+            return Decrypt(s, _password, _salt);
         }
 
-        public static string Decrypt(string s, string password)
+        public static string Decrypt(string s, string pass)
+        {
+            return Decrypt(s, pass, _salt);
+        }
+
+        public static string Decrypt(string s, string password, string salt)
         {
             string rc = s;
             try
             {
-                DeriveBytes rgb = new Rfc2898DeriveBytes(password, Encoding.Unicode.GetBytes(_salt));
+                DeriveBytes rgb = new Rfc2898DeriveBytes(password, Encoding.Unicode.GetBytes(salt));
                 RijndaelManaged RMCrypto = new RijndaelManaged();
                 byte[] Key = rgb.GetBytes(RMCrypto.KeySize >> 3);
                 byte[] IV = rgb.GetBytes(RMCrypto.BlockSize >> 3);
