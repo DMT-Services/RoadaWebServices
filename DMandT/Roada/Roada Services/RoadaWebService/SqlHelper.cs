@@ -955,9 +955,16 @@ namespace DMTServices
         //   'select ... table1 union select ... table2' string
         public static string CreateUnion(string tableName1, string tableName2, string whereClause1, string whereClause2, string orderBy, SqlConn conn)
         {
+            return CreateUnion(tableName1, tableName2, whereClause1, whereClause2, orderBy, conn, 0);
+        }
+
+        public static string CreateUnion(string tableName1, string tableName2, string whereClause1, string whereClause2, string orderBy, SqlConn conn, int top)
+        {
             string rc = string.Empty;
             if (conn != null)
             {
+                if (!conn.Connected())
+                    conn.dbConnect();
                 if (conn.Connected())
                 {
                     string table1 = "select ";
@@ -985,7 +992,10 @@ namespace DMTServices
                     table1 += "0 as TableNumber";
                     table2 += "1 as TableNumber";
 
-                    rc = table1 + " from " + tableName1 + " with (nolock) " + whereClause1 + " union " + table2 + " from " + tableName2 + " with (nolock)" + whereClause2 + " " + orderBy;
+                    rc = table1 + " from " + tableName1 + " with (nolock) " + whereClause1 + " union " + table2 + " from " + tableName2 + " with (nolock) " + whereClause2;
+                    if (top > 0)
+                        rc = "select top " + top.ToString() + " * from (" + rc + ") ur";
+                    rc += " " + orderBy;
                 }
             }
             return rc;
@@ -1033,6 +1043,11 @@ namespace DMTServices
                 Field = '[' + Field + ']';
 
             return Field;
+        }
+
+        public string BuildCmd(string table, string suffix)
+        {
+            return BuildCmd(table, false, suffix, false);
         }
 
         public string BuildCmd(string table, bool insert, string suffix)

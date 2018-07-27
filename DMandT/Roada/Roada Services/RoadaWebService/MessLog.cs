@@ -301,6 +301,11 @@ namespace DMTServices
             else
                 Result = Result.Remove(p + 1, Result.Length - p - 1);   // strip the .exe name
 
+            // newer Visual Studio uses bin\Release or bin\Debug for WinForms...
+            if (Result.ToLower().EndsWith(@"\debug\"))
+                Result = Result.Substring(0, Result.Length - 6);
+            if (Result.ToLower().EndsWith(@"\release\"))
+                Result = Result.Substring(0, Result.Length - 8);
             // when we are a web site it's the dll on the bin directory, so move up one from there...
             if (Result.ToLower().EndsWith(@"\bin\"))
                 Result = Result.Substring(0, Result.Length - 4);
