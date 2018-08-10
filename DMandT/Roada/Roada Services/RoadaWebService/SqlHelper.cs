@@ -332,7 +332,7 @@ namespace DMTServices
         {
             if (DataSource == dbType.SqlServer)
             {
-                string[] check = { "order", "desc", "key", "user", "type" };
+                string[] check = { "order", "desc", "key", "user", "type", "option" };
                 foreach (string s in check)
                     if (colName == s)
                         return "[" + colName + "]";
