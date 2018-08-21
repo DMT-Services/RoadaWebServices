@@ -7,12 +7,14 @@ using System.Collections;
 using System.Reflection;
 using System.Xml;
 using System.Xml.Serialization;
+using System.Runtime.Serialization;
 
 namespace RoadaWebService
 {
     /// <summary>
     /// Response 'Data class'
     /// </summary>
+    ///  
     public class Response
     {
         public bool Success;
@@ -40,7 +42,42 @@ namespace RoadaWebService
         public int FleetId;
         public bool Visible;
     }
-
+    public class PatrolTripData
+    {
+        public int TripId;              // (Server) Database determined only!  Reverse match-up can be achived using h/c, user & time.
+        public int HandCode;
+        public string UnitNum;
+        public string UserName;
+        public DateTime ReportTime;
+        public double Lon;
+        public double Lat;
+        public object xref;
+    }
+    public class PatrolTripDetailData
+    {
+        public int TripId;
+        public int Type;
+        public DateTime Start;
+        public double StLon;
+        public double StLat;
+        public DateTime Finish;
+        public double FiLon;
+        public double FiLat;
+        public string Notes;
+    }
+    public class MobileRoles
+    {
+        public int RoleId;
+        public string RoleName;
+        public bool statusPerm;
+        public bool hosPerm;
+        public bool Collision;
+        public bool weather;
+        public bool routing;
+        public bool diag;
+        public bool camera;
+        public bool super;
+    }
     public class NeoTerraSystemsGatewayData
     {
         public DateTime Dt;
@@ -61,8 +98,18 @@ namespace RoadaWebService
         public string hardware;
 
     }
+    public class DCenterData
+    {
+        public int ID;
+        public string Name;
+        public double lat;
+        public double lon;
+        public int YardNo;
+
+    }
     public class SideWalkData
     {
+        public string address;
         public string reportId;
         public int handCode;
         public string UnitNum;
@@ -120,7 +167,8 @@ namespace RoadaWebService
         public int HandCode;
         public RoadaManagerConfig managerConfig;
         public bool roadaGo;
-
+        public int userVersion;
+        public int VehicleVersion;
         public double goVer;     
         public RoadaGoConfig goConfig;
         public bool roadaDiag;
@@ -129,7 +177,6 @@ namespace RoadaWebService
         public bool RoadaUSB;
         public double RoadaUSBVersion;
         public RoadaUSBConfig usbConfig;
-
     }
     public class RoadaManagerConfig
     {
@@ -146,27 +193,25 @@ namespace RoadaWebService
         {
             this.ServerInfo = new AppServerInfo();
         }
-
         public double version;
         public AppServerInfo ServerInfo;
         public string description;
         public int PhotoInterval;
         public bool cameraSound;
         public bool adbOn;
-        public bool autoResume;
-        public bool Opps;
+        public bool AutoResume;
         public bool offlineLogin;
         public bool photoService;
         public bool eventService;
         public bool tracking;
-        public int PDtimeout;
-        public int EStimeout;
-        public int DMtimeout;
-        public bool diag;
         public bool ttsEnable;
         public int MainActivity;
         public int updatedCount;
         public int notUpdatedCount;
+        public int pdTimeout;
+        public int esTimeout;
+        public int dmTimeout;
+        public bool opps;
     }
     public class RoadaDiagConfig
     {
@@ -182,7 +227,6 @@ namespace RoadaWebService
     {
         public string customerCode;
         public string WebServiceUrl;
-        public string testUrl;
         public string PhotoBucket;
         public string PickupBucket;
         public string ReportBucket;
@@ -192,6 +236,7 @@ namespace RoadaWebService
     }
     public class GoUser 
     {
+        public int userRole;
         public string username;
         public string password;
         public string email;
@@ -205,6 +250,8 @@ namespace RoadaWebService
         public string CustCode;
         public string UserName;
         public string Password;
+        public string Version;
+        public int Handcode;
         public string BinPassword;
         public int CustId;
         public DateTime ReqDate;
@@ -228,12 +275,19 @@ namespace RoadaWebService
         public int outOfBounds;
         public int outOfOpp;
     }
-
+    
     public class evntRecord
     {
-
+        public double last_lat;
+        public double last_lon;
+        public UInt32 memory_remaining; 
+        public int BatteryLevel;
+        public bool Chargeing;
+        public bool LoggedIn;
+        public bool driving;
         public bool sent;
         public bool hosEvent;
+        public static string licence;
         public int dcdHC;
         public int EventType;
         public DateTime eventTime;
@@ -262,6 +316,25 @@ namespace RoadaWebService
         public int plan;
         public string routeName;
         public byte[] signature;
+        public int SignalStr;
+        public int EventQCount;
+        public int qCount;
+        public int PicQCount;
+        public DateTime rdate;
+        public DateTime idate;
+        //USED only for updateing most current Go_Status
+        public bool LoggedIn_GS;
+        public string driver_GS;
+        public int handcode_GS;
+        public string truck_GS;
+        public double version_GS;
+        public int CStr_GS;
+        public string net_type_GS;
+        public int PicQCount_GS;
+        public int EventQCount_GS;
+        public int qCount_GS;
+
+
     }
     public class DispatchStatus
     {
@@ -344,11 +417,11 @@ namespace RoadaWebService
         public bool DSTApp;
         public int UnixTim;
     }
-
+  
     public class WeatherData
     {
         public string reportId;
-        public DateTime fromTime;
+        public DateTime fromTime ;
         public int commId;
         public int handCode;
         public string unitNum;
@@ -475,8 +548,6 @@ namespace RoadaWebService
         public string dbcodes { get; set; } //Db_code for Roada Go
         public string DeviceHardware { get; set; } //type of device          
         public string Imei { get; set; } //Unique ID from Device
-
-        public string nickName { get; set; }     
         public string diagCustomers { get; set; } // List of customers comma seperated
         public bool roadaGo { get; set; } // Commision flag for Roada go
         public bool roadaDiag { get; set; } //comission flag for Roada Diag
@@ -547,6 +618,13 @@ namespace RoadaWebService
         public int id;
         public string sqlStatement;
     }
+    public class tabletTables
+    {
+        public string sqlCmd;
+        public string tablename;
+        public string indexname;
+        public string columnname;
+    }
     public class GPSData
     {
         public int DevId;
@@ -601,16 +679,6 @@ namespace RoadaWebService
     public class CommData
 
     {
-
-        public DeviceInfo devinfo = new DeviceInfo();
-    
-
-       
-
-        public int memoryRemaining { get; set; }
-
-        public int BatteryLevel { get; set; }
-
         public int id { get; set; } //Primary key
 
         public int handCode { get; set; }
@@ -619,7 +687,6 @@ namespace RoadaWebService
 
         public string DeviceHardware { get; set; } //type of device          
 
-        public string nickName { get; set; }
         public string Imei { get; set; } //Unique ID from Device
 
         public string diagCustomers { get; set; } // List of customers comma seperated
@@ -643,10 +710,6 @@ namespace RoadaWebService
         public string phoneResponse { get; set; }
 
         public string command { get; set; }
-
-        public bool testPhone { get; set; }
-
-        public bool updateNow { get; set; }
     }
 
     public class ChangeLog
@@ -658,6 +721,8 @@ namespace RoadaWebService
     }
     public class PhotoData
     {
+        public bool dash;
+        public bool collision;
         public bool done;
         public bool ready;
         public int handcode;
@@ -686,6 +751,11 @@ namespace RoadaWebService
         public string imgPath;
         public bool photoSent;
         public DateTime sentTime;
+        public string NetworkType;
+        public int SignalStr;
+        public int qCount;
+        public int picQCount;
+        public int eventQCount;
     }
     public class ConfigData
     {
@@ -693,25 +763,17 @@ namespace RoadaWebService
 
         public string description { get; set; } //description of the config
 
-        public int photoInterval { get; set; }  //photo interval in meters
+        public int photoInterval { get; set; }  //photo interval in seconds
 
         public bool cameraSound { get; set; }    //camera sound flag
 
         public bool adbOn { get; set; }         //enable adb poweroff sequence
 
-        public bool autoResume { get; set; } //enables auto resume based off geofences
-
-        public bool Opps { get; set; } //enables operations tickets and routing 
-
         public bool offlineLogin { get; set; }  //enable offline Login
 
         public bool photoService { get; set; }  //enable photoservice
 
-        public bool tracking { get; set; }     // enable tracking service
-
-        public bool diag { get; set; }          // enable roada Diag 
-
-        public bool eventService { get; set; }  //enable event service (also enables HOS events 12-12-17)
+        public bool eventService { get; set; }  //enable event service
 
         public bool ttsEnable { get; set; }     //enable text to speech
 
@@ -720,12 +782,6 @@ namespace RoadaWebService
         public int updatedCount { get; set; }   //count for devices that have successfully received config update
 
         public int notUpdatedCount { get; set; } //count for devices that have not updated yet after config was changed.
-
-        public int EStimeout { get; set; } //timeout value for event service
-
-        public int PDtimeout { get; set; } //timeout value for photo data 
-
-        public int DMtimeout { get; set; } //timeout value for manager checkin
     }
 
     public class ReplicationData

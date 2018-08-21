@@ -280,7 +280,6 @@ namespace RoadaWebService
             return Result;
         }
 
-
         [WebMethod(Description = "Refreshes valid memory queue list.  Internal use only.")]
         public Response RefreshQueueList(Request request, out string[] custCodes)
         {
@@ -689,9 +688,9 @@ namespace RoadaWebService
 
             return Result;
         }
+
         private void InsertErrorRecord(string customer, string error ,Request req)
         {
-
             SqlStmt stmt = null;
             try
             {
@@ -703,8 +702,6 @@ namespace RoadaWebService
                 stmt = new SqlStmt();
                 if (GetStmt(connStr, out stmt))
                 {
-
-          
                     sql.Add("cust_code", customer);
                     sql.Add("service_name", serviceName);
                     sql.Add("error_message", error);
@@ -732,18 +729,29 @@ namespace RoadaWebService
                 }
             }
         }
+
         private bool LowSecurityCheck(Request request)
+        {
+            return LowSecurityCheck(request, string.Empty);
+        }
+
+        private bool LowSecurityCheck(Request request, string function)
         {
             bool Result = false;
             if (request != null)
             {
                 Result = (request.UserName == DEFAULT_USER && request.Password == DEFAULT_PASSWORD);
                 if (!Result)
-                    Global.messLog.Flush("LowSecurityCheck() failed with {0} and {1}", request.UserName, request.Password);
+                    Global.messLog.Flush("LowSecurityCheck() failed with {0} and {1} {2}", request.UserName, request.Password, function);
+                else
+                {
+                    if (function != string.Empty)
+                        Global.messLog.Flush("{0}() HC: {1}", function, request.Handcode);
+                }
             }
             else
             {
-                Global.messLog.Flush("Recieved Null Request");
+                Global.messLog.Flush("Received Null Request");
             }
                 
             return Result;
@@ -3427,6 +3435,77 @@ namespace RoadaWebService
             return lastEvent;
         }
 
+        private string getBucket(string url)
+        {
+            string rc = url;
+            int l = rc.IndexOf("//");
+            if(l >= 0)
+            {
+                rc = rc.Substring(l + 2);
+                l = rc.IndexOf(".");
+                if (l > 0)
+                    rc = rc.Substring(0, l);
+            }
+            if (rc.Length > 80)
+                rc = rc.Substring(0, 79);
+            return rc;
+        }
+
+        private PhotoData convertInstallPic(InstalledPictures picturedata)
+        {
+            PhotoData pData = new PhotoData();
+            pData.latitude = (decimal)picturedata.lat;
+            pData.longitude = (decimal)picturedata.lon;
+            pData.username = picturedata.username;
+            pData.installKey = picturedata.InstallKey;
+            pData.handcode = picturedata.handcode;
+            pData.unitnum = picturedata.unitNum;
+            pData.objKey = picturedata.objKey;
+            pData.rdate = picturedata.pictureSent;
+            pData.imgUrl = picturedata.imgUrl;
+            pData.bucket = getBucket(picturedata.imgUrl);
+            return pData;
+        }
+
+        private void storePicData(PhotoData pdata, SqlStmt stmt)
+        {
+            SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
+
+            sql.Add("rdate", pdata.rdate);
+            // sql.Add("rdate", pdata.imgcreated); // remember to remove if we turn on collision utc
+            sql.AddNow("idate");//, DateTime.UtcNow);
+            sql.Add("hand_code", pdata.handcode);
+            sql.Add("unit_num", pdata.unitnum);
+            sql.Add("latitude", pdata.latitude);
+            sql.Add("longitude", pdata.longitude);
+            sql.Add("degrees", pdata.degrees);
+            sql.Add("speed", pdata.speed);
+            sql.Add("RepKey", pdata.repkey);
+            sql.Add("username", pdata.username);
+            sql.Add("img_url", pdata.imgUrl);
+            sql.Add("cust_code", pdata.custCode);
+            sql.Add("obj_key", pdata.objKey);
+            sql.Add("bucket", pdata.bucket);
+            sql.Add("gps_accuracy", pdata.gpsAccuracy);
+            sql.Add("private", pdata.priv);
+            sql.Add("install", pdata.intall);
+            sql.Add("installkey", pdata.installKey);
+            sql.Add("img_created", pdata.imgcreated); //Now is the image sent field
+            sql.Add("sent", pdata.sent);
+            sql.Add("sidewalk", pdata.sidewalk);
+            sql.Add("deficiency", pdata.deficiency);
+            sql.Add("phand_code", pdata.phandcode);
+            sql.Add("evt_type", pdata.evtType);
+            sql.Add("dash", pdata.dash);
+            sql.Add("collision", pdata.collision);
+            sql.Add("q_count", pdata.qCount);
+            sql.Add("pic_q_count", pdata.picQCount);
+            sql.Add("signal_str", pdata.SignalStr);
+            sql.Add("net_type", pdata.NetworkType);
+
+            stmt.DoSQL(sql.BuildCmd("img_events", true));
+        }
+
         [WebMethod(Description = "Push Camera Image")]
         public int SendPhotoData(Request req, PhotoData pdata)
         {
@@ -3443,13 +3522,11 @@ namespace RoadaWebService
                 Result = -3;
                 if (GetStmt(connStr, out stmt))
                 {
-
-
+#if OLDWAY
                     SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
                     bool reeady = pdata.ready;
                     bool done = pdata.done;
            
-
                     sql.Add("rdate", pdata.rdate);
                     // sql.Add("rdate", pdata.imgcreated); // remeber to remove if we turn on collision utc
                     sql.Add("idate", DateTime.UtcNow);
@@ -3485,6 +3562,11 @@ namespace RoadaWebService
                     stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO img_Events"));
 
                     sql.Clear();
+#else
+                    storePicData(pdata, stmt);
+#endif
+
+                    SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
 
                     sql.Add("hand_code", pdata.phandcode); 
                     sql.Add("truck_id", pdata.unitnum);
@@ -3791,6 +3873,12 @@ namespace RoadaWebService
                 {
                     foreach (var data in picturedata)
                     {
+                        PhotoData pData = convertInstallPic(data);
+                        pData.custCode = req.CustCode;
+                        pData.intall = true;
+
+                        storePicData(pData, stmt);
+#if OLDWAY
                         SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
                         DateTime now = DateTime.Now.ToLocalTime();
 
@@ -3808,8 +3896,8 @@ namespace RoadaWebService
                             stmt.DoSQL(sql.BuildInsert("INSERT INTO Img_Events"));
 
                         sql.Clear();
+#endif
                     }
-
 
                     Result = 1;
                 }
@@ -3845,10 +3933,8 @@ namespace RoadaWebService
                 Result = -2;
                 if (GetStmt(connStr, out stmt))
                 {
-
                     SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
                     DateTime now = DateTime.Now.ToLocalTime();
-
 
                     sql.Add("comments", data.Comments);
                     sql.Add("intallKey", data.installkey);
@@ -3881,21 +3967,16 @@ namespace RoadaWebService
 
                     if (stmt.DoSQL(String.Format("SELECT * FROM InstallData WHERE intallKey = '{0}'", data.installkey)))
                     {
-
                         stmt.DoSQL(sql.BuildUpdate("UPDATE InstallData", String.Format("WHERE intallKey = '{0}'", data.installkey)));
-
                         Result = 1;
-
                     }
                     else
                     {
-
                         stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO InstallData"));
-
                         Result = 2;
                     }
 
-                    Result = 1;
+                    //Result = 1;
                 }
             }
             catch(Exception ex)
@@ -3932,7 +4013,12 @@ namespace RoadaWebService
                 Result = -2;
                 if (GetStmt(connStr, out stmt))
                 {
+                    PhotoData pData = convertInstallPic(picturedata);
+                    pData.custCode = req.CustCode;
+                    pData.sidewalk = true;
 
+                    storePicData(pData, stmt);
+#if OLDWAY
                     SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
                     DateTime now = DateTime.Now.ToLocalTime();
 
@@ -3952,9 +4038,7 @@ namespace RoadaWebService
                         stmt.DoSQL(sql.BuildInsert("INSERT INTO Img_Events"));
 
                     sql.Clear();
-
-
-
+#endif
                     Result = 1;
                 }
             }
@@ -4049,7 +4133,7 @@ namespace RoadaWebService
         {
             int Result = -1;
             // low security check, don't want hackers!
-            if (!LowSecurityCheck(req))
+            if (!LowSecurityCheck(req, "SendDeficiencyPics"))
                 return Result;
 
             string connStr = CustConnectionString(req);
@@ -4060,6 +4144,12 @@ namespace RoadaWebService
                 Result = -2;
                 if (GetStmt(connStr, out stmt))
                 {
+                    PhotoData pData = convertInstallPic(picturedata);
+                    pData.custCode = req.CustCode;
+                    pData.deficiency  = true;
+
+                    storePicData(pData, stmt);
+#if OLDWAY
 
                     SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
                     DateTime now = DateTime.Now.ToLocalTime();
@@ -4080,7 +4170,7 @@ namespace RoadaWebService
                         stmt.DoSQL(sql.BuildInsert("INSERT INTO Img_Events"));
 
                     sql.Clear();
-
+#endif
                     Result = 1;
                 }
             }
@@ -4103,7 +4193,7 @@ namespace RoadaWebService
         {
             int Result = -1;
             // low security check, don't want hackers!
-            if (!LowSecurityCheck(req))
+            if (!LowSecurityCheck(req, "SendDeficiencyData"))
                 return Result;
 
             string connStr = CustConnectionString(req);
@@ -4115,7 +4205,6 @@ namespace RoadaWebService
                 if (GetStmt(connStr, out stmt))
                 {
                     SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
-                    DateTime now = DateTime.Now.ToLocalTime();
                     
                     sql.Add("report_id", data.ReportId);
                     sql.Add("hand_code", data.HandCode);
@@ -4134,20 +4223,22 @@ namespace RoadaWebService
                     sql.Add("latitude", data.Lat);
                     sql.Add("longitude", data.Lon);
 
-                    if (stmt.DoSQL(String.Format("SELECT * FROM deficiencies WHERE report_id = '{0}'", data.ReportId)))
-                    {
-                        stmt.DoSQL(sql.BuildUpdate("UPDATE deficiencies", String.Format("WHERE report_id = '{0}'", data.ReportId)));
+                    string where = string.Format("WHERE report_id='{0}'", data.ReportId);
 
-                        Result = 1;
+                    if (stmt.DoSQL("SELECT id FROM deficiencies " + where))
+                    {
+                        Result = stmt.ifetch("id");     // return the ID of the existing record...
+                        stmt.DoSQL(sql.BuildCmd("deficiencies", false, where));
                     }
                     else
                     {
-                        stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO deficiencies"));
-
-                        Result = 2;
+                        // MUST set second param to true as this makes it run the insert 
+                        // as an ExecuteReader instead of ExecuteNonQuery so we can get back the inserted id
+                        stmt.DoSQL(sql.BuildInsert("INSERT INTO deficiencies", " output inserted.id VALUES "), true);
+                        Result = stmt.ifetch("id");     // return the ID of the new record...
                     }
 
-                    Result = 1;
+                    //Result = 1;
                 }
             }
             catch(Exception ex)
@@ -4848,6 +4939,7 @@ namespace RoadaWebService
             }
             return Result;
         }
+
         [WebMethod(Description = "Retrieve go Alter table statments")]
         public ColumnCheckData[] GetGoAlters(Request request)
         {
@@ -4926,6 +5018,58 @@ namespace RoadaWebService
                 }               
             }
             return Result;
+        }
+
+
+#if SQL
+create table tablet_sql
+(
+id int identity(1,1) primary key,
+sqlstring varchar(max),
+tablename varchar(128),
+indexname varchar(128),
+columnname varchar(128)
+)
+#endif
+        [WebMethod(Description = "Retrieve all create/alter table statements for the RoadaTabPatrol app")]
+        public tabletTables[] setupTabletDB(Request request)
+        {
+            tabletTables[] Result = null;
+            if (LowSecurityCheck(request))
+            {
+                SqlStmt stmt = new SqlStmt("MainConn");
+                try
+                {
+                    List<tabletTables> sqlCmds = new List<tabletTables>();
+                    bool rc = stmt.DoSQL("SELECT * FROM tablet_sql");
+                    while (rc)
+                    {
+                        tabletTables tb = new tabletTables();
+                        tb.sqlCmd = stmt.fetch("sqlstring");
+                        tb.tablename = stmt.fetch("tablename");
+                        tb.indexname = stmt.fetch("indexname");
+                        tb.columnname = stmt.fetch("columnname");
+                        sqlCmds.Add(tb);
+
+                        rc = stmt.dbSkip();
+                    }
+
+                    Result = sqlCmds.ToArray();
+                }
+                catch (Exception ex)
+                {
+                    Global.messLog.Flush("setupTabletDB() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, ex.Message);
+                    InsertErrorRecord(request.CustCode, string.Format("setupTabletDB() Failed to send HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, ex.Message), request);
+                }
+                finally
+                {
+                    if (stmt != null)
+                        stmt.Close();
+                    stmt = null;
+                }
+            }
+            return Result;
+
         }
 
         private bool GetStmt(string connStr, out SqlStmt stmt)
