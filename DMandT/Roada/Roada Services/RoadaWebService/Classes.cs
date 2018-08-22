@@ -124,24 +124,31 @@ namespace RoadaWebService
         public double lon;
         public double lat;
     }
+    [DataContract]
     public class DeficiencyData
     {
-        public string ReportId;
-        public int HandCode;
-        public string UnitNum;
-        public string UserName;
-        public DateTime ReportTime;
-        public int Type;
-        public int Item;
-        public int Issue;
-        public int Status;
-        public int Length;
-        public int Width;
-        public int Depth;
-        public int Option;
-        public string Note;
-        public double Lon;
-        public double Lat;
+        [DataMember(IsRequired = false, EmitDefaultValue = false)]
+        public int ServerId { get; set; }
+        public string ReportId { get; set; }
+        [DataMember(IsRequired = false, EmitDefaultValue = false)]
+        public int RequestId { get; set; }
+        public int HandCode { get; set; }
+        public string UnitNum { get; set; }
+        public string UserName { get; set; }
+        public DateTime ReportTime { get; set; }
+        public int Type { get; set; }
+        public int Item { get; set; }
+        public int Issue { get; set; }
+        public int Status { get; set; }
+        public int Length { get; set; }
+        public int Width { get; set; }
+        public int Depth { get; set; }
+        public int Option { get; set; }
+        public string Note { get; set; }
+        public double Lon { get; set; }
+        public double Lat { get; set; }
+        [DataMember(IsRequired = false, EmitDefaultValue = false)]
+        public string Location { get; set; }
     }
     public class ColumnCheckData
     {

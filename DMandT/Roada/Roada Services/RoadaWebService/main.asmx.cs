@@ -14,6 +14,7 @@ using System.Diagnostics;
 using System.Xml;
 using System.Web.Configuration;
 using System.Web.Script.Services;
+using System.ComponentModel;
 
 namespace RoadaWebService
 {
@@ -24,7 +25,7 @@ namespace RoadaWebService
     [WebServiceBinding(ConformsTo = WsiProfiles.BasicProfile1_1)]
     [System.ComponentModel.ToolboxItem(false)]
     // To allow this Web Service to be called from script, using ASP.NET AJAX, uncomment the following line. 
-    // [System.Web.Script.Services.ScriptService]
+    [System.Web.Script.Services.ScriptService]
     public class ROADAService : System.Web.Services.WebService
     {
         private System.Object lockThis = new System.Object();
@@ -45,7 +46,7 @@ namespace RoadaWebService
         {
 
         }
-        
+
         private string[] ReadQueueList(bool forceRefresh)
         {
             List<string> custCodes = new List<string>();
@@ -74,19 +75,19 @@ namespace RoadaWebService
                                     q.UserName = user;
                                     q.Password = stmt.fetch("wserv_password");
                                     q.QName = string.Format(@"FormatName:DIRECT=OS:roadaserv\private$\{0}", q.CustCode);
-/*      can't do this to remote queue
- *                                  if (! MessageQueue.Exists(q.QName))
-                                    {
-                                        try
-                                        {   
-                                            MessageQueue.Create(q.QName, true);
-                                        }
-                                        catch (Exception ex)
-                                        {
-                                            Global.messLog.Flush(String.Format("MessageQueue Create Exception: {0}", ex.Message));
-                                            qok = false;
-                                        }
-                                    } */
+                                    /*      can't do this to remote queue
+                                     *                                  if (! MessageQueue.Exists(q.QName))
+                                                                        {
+                                                                            try
+                                                                            {   
+                                                                                MessageQueue.Create(q.QName, true);
+                                                                            }
+                                                                            catch (Exception ex)
+                                                                            {
+                                                                                Global.messLog.Flush(String.Format("MessageQueue Create Exception: {0}", ex.Message));
+                                                                                qok = false;
+                                                                            }
+                                                                        } */
                                     // make sure the queue was created ok
                                     q.MyMessage = new System.Messaging.Message(q.QName);
                                     q.MessageTx = new MessageQueueTransaction();
@@ -155,7 +156,7 @@ namespace RoadaWebService
                         Global.messLog.Flush("ReadCustomers: Error connecting to main database!");
                 }
                 catch (Exception ex)
-                {                   
+                {
                     Global.messLog.Flush(string.Format("Excp ReadCustomers: {0}", ex.Message));
 
                 }
@@ -195,7 +196,7 @@ namespace RoadaWebService
                 case -7:
                     r.ErrMessage = "Buffer too small";
                     break;
-                     
+
             }
             if (err != 0)
                 Global.messLog.Flush(r.ErrMessage);
@@ -223,13 +224,13 @@ namespace RoadaWebService
                     if (request.CustCode == q.CustCode)
                     {
                         bool ok = true;
-                        if(! ignoreAuth)
+                        if (!ignoreAuth)
                         {
                             ok = false;
-                            if(request.UserName == q.UserName && request.Password == q.Password)
-                                ok = ! checkBin || request.BinPassword == "1dmtserv2";
+                            if (request.UserName == q.UserName && request.Password == q.Password)
+                                ok = !checkBin || request.BinPassword == "1dmtserv2";
                         }
-                        if(ok)
+                        if (ok)
                         {
                             Result = q;
                             break;
@@ -311,7 +312,7 @@ namespace RoadaWebService
                 Result = GetResponse(0);
                 foreach (TCPPacketBuffer b in buffer)
                 {
-                    if (! AddToMSMQueue(q, b))
+                    if (!AddToMSMQueue(q, b))
                     {
                         Result = GetResponse(-2);
                         break;
@@ -427,7 +428,7 @@ namespace RoadaWebService
 
             byte cnt = 1;        // 1 gps reading
             // temperature data?
-            if(gpsData.TempValid)
+            if (gpsData.TempValid)
                 cnt |= 0x80;
             if (gpsData.MetersTravelled != 0)
                 cnt |= 0x20;
@@ -476,7 +477,7 @@ namespace RoadaWebService
 
             b.DataLength = p;
             b.Data[5] = (byte)(p - 5);      // individual length
-            
+
             return b;
         }
 
@@ -504,7 +505,7 @@ namespace RoadaWebService
                         catch (Exception ex)
                         {
                             Global.messLog.Flush(string.Format("MakeGPSReading Excp: {0}", ex.Message));
-                            
+
                             bool test = myConvert.ToBoolean(WebConfigurationManager.AppSettings["iamtest"]);
 
                             Result = GetResponse(-3);
@@ -618,7 +619,7 @@ namespace RoadaWebService
             Flatten((UInt16)ace.BlastRate, b.Data, ref p);
             Flatten((UInt16)ace.PrewetRate, b.Data, ref p);
             Flatten((UInt16)ace.SpinnerWidth, b.Data, ref p);
-            
+
             // material type
             b.Data[p++] = ace.MatType;
 
@@ -672,8 +673,8 @@ namespace RoadaWebService
                         catch (Exception ex)
                         {
                             Global.messLog.Flush(string.Format("MakeACE Excp: {0}", ex.Message));
-                            
-                          
+
+
                             Result = GetResponse(-3);
                         }
 
@@ -689,7 +690,7 @@ namespace RoadaWebService
             return Result;
         }
 
-        private void InsertErrorRecord(string customer, string error ,Request req)
+        private void InsertErrorRecord(string customer, string error, Request req)
         {
             SqlStmt stmt = null;
             try
@@ -709,7 +710,7 @@ namespace RoadaWebService
                     sql.AddNow("error_time");
                     sql.Add("test", test);
                 }
-               
+
                 if (!stmt.DoSQL(sql.BuildInsert("INSERT INTO service_errors")))
                 {
                     Global.messLog.Flush(string.Format("Failed to insert logg error"));
@@ -722,10 +723,10 @@ namespace RoadaWebService
             }
             finally
             {
-                if (stmt!= null)
+                if (stmt != null)
                 {
                     stmt.Close();
-                    stmt = null;      
+                    stmt = null;
                 }
             }
         }
@@ -753,7 +754,7 @@ namespace RoadaWebService
             {
                 Global.messLog.Flush("Received Null Request");
             }
-                
+
             return Result;
         }
 
@@ -800,7 +801,7 @@ namespace RoadaWebService
                 catch (Exception ex)
                 {
                     Global.messLog.Flush("AddPatrolWeather() Ex: {0}", ex.Message);
-                    InsertErrorRecord(request.CustCode, "AddPatrolWeather() " + ex.Message , request);
+                    InsertErrorRecord(request.CustCode, "AddPatrolWeather() " + ex.Message, request);
                 }
                 finally
                 {
@@ -815,7 +816,7 @@ namespace RoadaWebService
         public Trip[] RequestTrips(Request request, int handCode, DateTime startDate, int rowCount)
         {
             Trip[] Result = null;
-            if(LowSecurityCheck(request))
+            if (LowSecurityCheck(request))
             {
                 string connStr = CustConnectionString(request);
                 SqlStmt stmt = null;
@@ -860,7 +861,7 @@ namespace RoadaWebService
         {
             GPSData[] Result = null;
 
-            if (! LowSecurityCheck(request))
+            if (!LowSecurityCheck(request))
                 return Result;
 
             string connStr = CustConnectionString(request);
@@ -909,7 +910,7 @@ namespace RoadaWebService
             catch (Exception x)
             {
                 Global.messLog.Flush("GPSDataRangeRequest() Excp: {0}", x.Message);
-                InsertErrorRecord(request.CustCode, "GPSDataRangeRequest()" + x.Message , request);
+                InsertErrorRecord(request.CustCode, "GPSDataRangeRequest()" + x.Message, request);
             }
             finally
             {
@@ -945,10 +946,10 @@ namespace RoadaWebService
                         sql.Add("last", route.Last);
                         sql.Add("type", route.RType);
 
-                        string whereClause =  string.Format("WHERE code = '{0}'", sql.FixUpEx(route.Code));
-                        bool insFlag = ! stmt.DoSQLFormat("SELECT id FROM routes {0}", whereClause);
+                        string whereClause = string.Format("WHERE code = '{0}'", sql.FixUpEx(route.Code));
+                        bool insFlag = !stmt.DoSQLFormat("SELECT id FROM routes {0}", whereClause);
                         int routeId = -1;
-                        if (! insFlag)
+                        if (!insFlag)
                             routeId = stmt.ifetch("id");
                         // either update or insert into the routes table
                         string cmdStr = sql.BuildCmd("routes", insFlag, whereClause, true);
@@ -1005,7 +1006,7 @@ namespace RoadaWebService
                 catch (Exception ex)
                 {
                     Global.messLog.Flush("SaveRoute() Ex: {0}", ex.Message);
-                    InsertErrorRecord(request.CustCode, "SaveRoute() " + ex.Message , request);
+                    InsertErrorRecord(request.CustCode, "SaveRoute() " + ex.Message, request);
                 }
                 finally
                 {
@@ -1307,6 +1308,7 @@ namespace RoadaWebService
                             y.Visible = stmt.tfetch("visible");
                             y.FleetId = stmt.ifetch("fid");
                             yards.Add(y);
+
                             rc = stmt.dbSkip();
                         }
                         Result = yards.ToArray();
@@ -1315,7 +1317,7 @@ namespace RoadaWebService
                 }
                 catch (Exception ex)
                 {
-                    Global.messLog.Flush("RequestYards() HandCode:{0} Version:{1} Error:{2}",request.Handcode,request.Version, ex.Message);
+                    Global.messLog.Flush("RequestYards() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, ex.Message);
                     InsertErrorRecord(request.CustCode, "RequestYards() " + ex.Message, request);
                 }
                 finally
@@ -1337,16 +1339,16 @@ namespace RoadaWebService
                 return -1;
             else
                 if (GetAppServerInfo(outData, req.CustCode, false))
-                    return 1;
-                else
-                    return -2;
+                return 1;
+            else
+                return -2;
         }
-        
+
         [WebMethod(Description = "Send Request to Roada database to check if the device needs new config scripts")]
         public ManagerData ManagerCheckin(Request request, Comissioninfo comInfo)
         {
 
-            ManagerData Result = null; 
+            ManagerData Result = null;
             // low security check, don't want hackers!
             if (!LowSecurityCheck(request))
                 return null;
@@ -1387,14 +1389,14 @@ namespace RoadaWebService
                     Result.roadaGo = stmt.bfetch("roada_go");
                     Result.goVer = stmt.dfetch("go_version");
                     testUrl = stmt.bfetch("testurl");
-                    
+
                 }
                 else
                 {
                     return null;
                 }
 
-               
+
 
                 if (stmt.bfetch("update_now") || comInfo.ForceUpdate)
                 {
@@ -1404,14 +1406,14 @@ namespace RoadaWebService
                         if (GetRoadaGoConfig(Result, stmt.dfetch("go_version")) && GetAppServerInfo(Result.goConfig.ServerInfo, stmt.fetch("db_codes"), testUrl))
                         {
                             validConfig = true;
-                        }            
+                        }
                     }
                     if (stmt.bfetch("installer")) // Field name can ge changed to diag_codes at later date 
                     {
                         if (GetCustomerDataList(Result, stmt.fetch("diag_customers")) && GetDiagConfig(Result, stmt.dfetch("go_version")))
                         {
                             validConfig = true;
-                        }                    
+                        }
                     }
 
                     if (validConfig) // Will let device know it has a new script to replace old one with
@@ -1420,11 +1422,11 @@ namespace RoadaWebService
                         sql.Add("update_now", 0);
                         sql.Add("last_checkin", DateTime.UtcNow);
                         stmt.DoSQL(sql.BuildUpdate("UPDATE soft_activate", string.Format("WHERE client_guid = '{0}'", comInfo.IMEI)));
-                       // Global.messLog.Flush("Device updated HandCode: {0} GUID: {1}", Result.HandCode, comInfo.IMEI);
+                        // Global.messLog.Flush("Device updated HandCode: {0} GUID: {1}", Result.HandCode, comInfo.IMEI);
                         Result.updatenow = true;
                     }
                 }
-               
+
             }
             catch (Exception ex)
             {
@@ -1439,8 +1441,8 @@ namespace RoadaWebService
             }
             return Result;
         }
-        
-        public bool GetRoadaGoConfig(ManagerData mdata, double version) 
+
+        public bool GetRoadaGoConfig(ManagerData mdata, double version)
         {
             bool validConfig = false;
             SqlStmt stmt = null;
@@ -1467,7 +1469,7 @@ namespace RoadaWebService
                     mdata.goConfig.esTimeout = stmt.ifetch("es_timeout");
                     mdata.goConfig.dmTimeout = stmt.ifetch("dm_timeout");
                     mdata.goConfig.opps = stmt.bfetch("opps");
-                    
+
                     validConfig = true;
                 }
                 else
@@ -1482,7 +1484,7 @@ namespace RoadaWebService
             finally
             {
                 if (stmt != null)
-                    stmt.Close();   
+                    stmt.Close();
             }
             return validConfig;
         }
@@ -1519,8 +1521,8 @@ namespace RoadaWebService
         }
 
 
-    
-        private bool GetAppServerInfo(AppServerInfo ServerInfo, string custCode, bool TestServer) 
+
+        private bool GetAppServerInfo(AppServerInfo ServerInfo, string custCode, bool TestServer)
         {
             bool validConfig = false;
             SqlStmt stmt = null;
@@ -1529,7 +1531,7 @@ namespace RoadaWebService
                 stmt = new SqlStmt("MainConn");
                 stmt.Mess = Global.messLog;
 
-                if (stmt.DoSQL(String.Format("SELECT * FROM customer WHERE cust_code = '{0}'", custCode))) 
+                if (stmt.DoSQL(String.Format("SELECT * FROM customer WHERE cust_code = '{0}'", custCode)))
                 {
                     ServerInfo.customerCode = custCode;
                     if (TestServer)
@@ -1539,7 +1541,7 @@ namespace RoadaWebService
                     else
                     {
                         ServerInfo.WebServiceUrl = stmt.fetch("go_weburl");
-                    }                   
+                    }
                     ServerInfo.PhotoBucket = stmt.fetch("go_photo_bucket");
                     ServerInfo.PickupBucket = stmt.fetch("go_pickup_bucket");
                     ServerInfo.ReportBucket = stmt.fetch("go_report_bucket");
@@ -1557,7 +1559,7 @@ namespace RoadaWebService
             {
                 Global.messLog.Flush("GetAppServerInfo() {0}", ex.Message);
             }
-            finally 
+            finally
             {
                 if (stmt != null)
                     stmt.Close();
@@ -1592,7 +1594,7 @@ namespace RoadaWebService
                     validConfig = true;
                 }
 
-                
+
             }
             catch (Exception ex)
             {
@@ -1732,7 +1734,7 @@ namespace RoadaWebService
                         }
                     }
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     Global.messLog.Flush("PhoneSoft" + ex.Message);
                     InsertErrorRecord(request.CustCode, "PhoneSoft() " + ex.Message, request);
@@ -1752,7 +1754,7 @@ namespace RoadaWebService
         public string[] GetObjects(Request request, VersionInfo[] versions)
         {
             string[] Result = new string[0];
-            if(LowSecurityCheck(request))
+            if (LowSecurityCheck(request))
             {
                 SqlStmt stmt = new SqlStmt("mainconn");
                 stmt.Mess = Global.messLog;
@@ -1786,7 +1788,7 @@ namespace RoadaWebService
                     }
                     Result = objList.ToArray();
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     Global.messLog.Flush("GetObjects() " + ex.Message);
                     InsertErrorRecord(request.CustCode, "GetObjects() " + ex.Message, request);
@@ -1827,7 +1829,7 @@ namespace RoadaWebService
                     stmt.DoSQL(sql.BuildUpdate("UPDATE soft_activate", string.Format("WHERE id = {0}", request.CustId)));
                     Result = true;
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     Global.messLog.Flush("SetObjects" + ex.Message);
                     InsertErrorRecord(request.CustCode, "SetObjects() " + ex.Message, request);
@@ -1847,7 +1849,7 @@ namespace RoadaWebService
         {
             byte[] Result = new byte[0];
             count = 0;
-            if (! LowSecurityCheck(request))
+            if (!LowSecurityCheck(request))
                 block = -2;     // failed security check!
             else
             {
@@ -1866,7 +1868,7 @@ namespace RoadaWebService
                     fs.Close();
                     fs = null;
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     Global.messLog.Flush("GetFileBlock Excp: " + ex.Message);
                     InsertErrorRecord(request.CustCode, "GetFileBlock() " + ex.Message, request);
@@ -1895,7 +1897,7 @@ namespace RoadaWebService
                     fs = null;
                     Result = true;
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     Global.messLog.Flush(string.Format("SetFileBlock() Failed writing block of file {0}", fileName));
                     InsertErrorRecord(request.CustCode, "SetFileBlock() " + ex.Message, request);
@@ -1921,7 +1923,7 @@ namespace RoadaWebService
                     File.Move(pathName + Path.GetFileName(oldName), pathName + Path.GetFileName(newName));
                     Result = true;
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     Global.messLog.Flush(string.Format("RenameFile() Failed renaming {0} to {1}", oldName, newName));
                     InsertErrorRecord(request.CustCode, "RenameFile() " + ex.Message, request);
@@ -1930,7 +1932,7 @@ namespace RoadaWebService
             return Result;
         }
 
-        
+
 
         [WebMethod(Description = "Get the client table info")]
         public Client[] GetClients(Request request)
@@ -1982,25 +1984,25 @@ namespace RoadaWebService
             return Result;
         }
 
-        private void ActivateHandCode (int handcode, string IMEI)
+        private void ActivateHandCode(int handcode, string IMEI)
         {
 
             SqlConn mConn = new SqlConn("MainConn");
             SqlStmt stmt = null;
-         
+
             try
-            {                                         
+            {
                 stmt = new SqlStmt(mConn);
                 SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
 
                 sql.Add("hand_code", handcode);
-                stmt.DoSQLFormat(sql.BuildUpdate("UPDATE soft_activate with (rowlock)", " WHERE client_guid = '{0}'"), IMEI);            
-                
+                stmt.DoSQLFormat(sql.BuildUpdate("UPDATE soft_activate with (rowlock)", " WHERE client_guid = '{0}'"), IMEI);
+
             }
             catch (Exception ex)
             {
                 Global.messLog.Flush("Excp in GetClients: " + ex.Message);
-                     
+
             }
             finally
             {
@@ -2008,42 +2010,42 @@ namespace RoadaWebService
                     stmt.Close();
                 if (mConn != null)
                     mConn.Close();
-            }     
+            }
         }
 
         private CustomerSettings getCustInfo(string CustomerCode)
         {
-                CustomerSettings CSet = null; 
-                SqlConn mConn = new SqlConn("MainConn");
-                SqlStmt stmt = null;
-                try
+            CustomerSettings CSet = null;
+            SqlConn mConn = new SqlConn("MainConn");
+            SqlStmt stmt = null;
+            try
+            {
+                if (mConn.dbConnect())
                 {
-                    if (mConn.dbConnect())
-                    {
-                        stmt = new SqlStmt(mConn);
-                        stmt.DoSQL(string.Format("SELECT * FROM customer WHERE cust_code = '{0}'", CustomerCode));
-                        CSet = new CustomerSettings();
-                        CSet.Handcode = stmt.ifetch("next_id");
-                        
-                        CSet.PortNumber = stmt.fetch("lmdirect_port");
-                        CSet.CameraIP = stmt.fetch("camera_ip");
-                    }
-                    else
-                    {
-                        CSet.ErrorResp = "Failed to get Data From Customer";
-                    }  
+                    stmt = new SqlStmt(mConn);
+                    stmt.DoSQL(string.Format("SELECT * FROM customer WHERE cust_code = '{0}'", CustomerCode));
+                    CSet = new CustomerSettings();
+                    CSet.Handcode = stmt.ifetch("next_id");
+
+                    CSet.PortNumber = stmt.fetch("lmdirect_port");
+                    CSet.CameraIP = stmt.fetch("camera_ip");
                 }
-                catch (Exception ex)
+                else
                 {
-                    CSet.ErrorResp = "Exception thrown " + ex.ToString();
+                    CSet.ErrorResp = "Failed to get Data From Customer";
                 }
-                finally
-                {
-                    if (stmt != null)
-                        stmt.Close();
-                    if (mConn != null)
-                        mConn.Close();
-                }
+            }
+            catch (Exception ex)
+            {
+                CSet.ErrorResp = "Exception thrown " + ex.ToString();
+            }
+            finally
+            {
+                if (stmt != null)
+                    stmt.Close();
+                if (mConn != null)
+                    mConn.Close();
+            }
 
             return CSet;
         }
@@ -2052,7 +2054,7 @@ namespace RoadaWebService
         public CustomerSettings GetCustomerSettings(Request request, int currentHandcode, string IMEI)
         {
             CustomerSettings custSet = new CustomerSettings();
-            
+
 
             if (!LowSecurityCheck(request))
             {
@@ -2060,19 +2062,19 @@ namespace RoadaWebService
             }
             else
             {
-                
-            string connStr = CustConnectionString(request);
-            SqlStmt stmt = null;
+
+                string connStr = CustConnectionString(request);
+                SqlStmt stmt = null;
                 try
                 {
                     custSet.ErrorResp = "Failed to Get Customer Settings";
-                    
+
                     if (GetStmt(connStr, out stmt))
-                    {                     
+                    {
                         if (currentHandcode < 1)
                         {
                             custSet = getCustInfo(request.CustCode); // get starting value and other customer settings                           
-                           
+
                             SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
 
                             while (stmt.DoSQL(string.Format("SELECT hand_code FROM handheld WHERE hand_code = '{0}'", custSet.Handcode)))
@@ -2085,16 +2087,16 @@ namespace RoadaWebService
                             stmt.DoSQL(sql.BuildInsert("INSERT INTO handheld"));
 
                             ActivateHandCode(custSet.Handcode, IMEI);// adds hand code to the soft_activate table
-                         
-                                                        
+
+
                         }
                         else
                         {
                             custSet = getCustInfo(request.CustCode); // gets latest customer settings
                             custSet.Handcode = currentHandcode; //sets handcode back to current handcode 
 
-                        }                  
-                       
+                        }
+
                     }
                 }
                 catch (Exception ex)
@@ -2105,16 +2107,16 @@ namespace RoadaWebService
                 finally
                 {
                     if (stmt != null)
-                        stmt.Close();                
+                        stmt.Close();
                 }
-            }            
+            }
             return custSet;
         }
 
         private string SerializeObject(object obj, Type objType)
         {
             string Result = string.Empty;
-            StringWriter writer= new StringWriter();
+            StringWriter writer = new StringWriter();
             try
             {
                 XmlSerializer serializer = new XmlSerializer(objType);
@@ -2186,7 +2188,7 @@ namespace RoadaWebService
 
 
         [WebMethod(Description = "Retrieves replication data from the server")]
-        public ReplicationData[] GetReplicationData( Request request, string dbCode, int startRecord )
+        public ReplicationData[] GetReplicationData(Request request, string dbCode, int startRecord)
         {
             // I needed to preserve this older version for backwards compatibility.
             return GetReplicationDataX(request, dbCode, "", -1, startRecord);
@@ -2263,7 +2265,7 @@ namespace RoadaWebService
                 Global.messLog.Flush("Unknown customer code CustConnectionString() {0}", request.CustCode);
                 InsertErrorRecord(request.CustCode, "CustConnectionString() " + request.CustCode.ToString(), request);
             }
-        
+
             return Result;
         }
 
@@ -2321,9 +2323,9 @@ namespace RoadaWebService
             {
                 rc = DateTime.ParseExact(s, "yyyyMMddHHmmss", null);
             }
-            catch 
+            catch
             {
-                Global.messLog.Flush("Bad Date String {0}", s);    
+                Global.messLog.Flush("Bad Date String {0}", s);
             }
             return rc;
         }
@@ -2410,7 +2412,7 @@ namespace RoadaWebService
                         }
                         // iterate through the responses from the ConnectPort X2 gateway
                         List<XBResp> resp = new List<XBResp>();
-                        foreach(XBData x in dat)
+                        foreach (XBData x in dat)
                         {
                             sql.Clear();
                             sql.AddNow("last_date");
@@ -2424,7 +2426,7 @@ namespace RoadaWebService
                                 sql.Add("rem_req_off", false);
                                 sql.Add("sch_req", false);
                                 sql.Add("def_run_time", defRunTime);
-                                if (! heaterFound)
+                                if (!heaterFound)
                                     stmt.DoSQL(sql.BuildInsert("INSERT INTO heater"));
                                 XBResp xbr = new XBResp();
                                 xbr.Addr = x.Addr;
@@ -2571,7 +2573,7 @@ namespace RoadaWebService
                         stmt.Close();
                     }
                 }
-                catch(Exception x)
+                catch (Exception x)
                 {
                     Global.messLog.Flush("CommissionGateway() Excp: {0}", x.Message);
                     InsertErrorRecord(request.CustCode, "CommissionGateway() " + x.Message, request);
@@ -2603,7 +2605,7 @@ namespace RoadaWebService
                         Result = -3;
                         if (stmt.DoSQLFormat("SELECT * FROM users WHERE username = '{0}'", stmt.FixQuote(request.UserName)))
                         {
-                           
+
                             if (!stmt.tfetch("mobile_user"))
                             {
                                 Result = -5;
@@ -2642,7 +2644,7 @@ namespace RoadaWebService
 
                                 }
                             }
-                           
+
                         }
                     }
                 }
@@ -2667,7 +2669,7 @@ namespace RoadaWebService
         {
             DeviceInfo dInfo = null;
 
-            if (! LowSecurityCheck(request))
+            if (!LowSecurityCheck(request))
                 return dInfo;
 
             string connStr = CustConnectionString(request);
@@ -2688,7 +2690,7 @@ namespace RoadaWebService
                         dInfo.Speed = stmt.ifetch("speed");
                         dInfo.FirmVers = stmt.fetch("firmware_version");
                         dInfo.ModemVers = stmt.fetch("modem_version");
-                        if (! stmt.IsNull("cell_strength"))
+                        if (!stmt.IsNull("cell_strength"))
                             dInfo.CellStrength = stmt.ifetch("cell_strength");
                         if (devId > 0 && stmt.DoSQLFormat("SELECT TOP 1 * FROM messagein WHERE hand_code = {0} and rdate >= {1}", devId, SqlHelper.timeStamp(dInfo.GPSDate)))
                         {
@@ -2706,7 +2708,7 @@ namespace RoadaWebService
                                 dInfo.AirTemp = airTemp;
                             }
                         }
-         
+
                         if (stmt.DoSQLFormat("SELECT Max(id) as maxid FROM spreader_activity WHERE hand_code = {0} and rdate >= {{ts '{1}'}}", devId, DateTime.UtcNow.AddMinutes(-30).ToString(LONG_DATE)))
                         {
                             if (!stmt.IsNull("maxid"))
@@ -2738,7 +2740,7 @@ namespace RoadaWebService
                                     dInfo.OilPress = stmt.dfetch("avgoilp");
                             }
                         }*/
-                    
+
                     }
                 }
             }
@@ -2777,7 +2779,7 @@ namespace RoadaWebService
                     if (wdata.fromTime.Year > 1000)
                     {
                         sql.Clear();
-                        sql.Add("ci_id",wdata.reportId);    
+                        sql.Add("ci_id", wdata.reportId);
                         sql.Add("start_time", wdata.fromTime);
                         sql.Add("comm_id", wdata.commId);
                         sql.Add("unit_num", wdata.unitNum);
@@ -2807,7 +2809,7 @@ namespace RoadaWebService
                         sql.AddNow("idate");
 
                         stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO weather_condition"));
-                                 
+
                         Result = 1;
                     }
                 }
@@ -2816,7 +2818,7 @@ namespace RoadaWebService
             {
                 Result = -4;
                 Global.messLog.Flush("SendWeatherReport() HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, x.Message);
-                InsertErrorRecord(req.CustCode, "SendWeatherReport() " + x.Message , req);
+                InsertErrorRecord(req.CustCode, "SendWeatherReport() " + x.Message, req);
             }
             finally
             {
@@ -2927,7 +2929,7 @@ namespace RoadaWebService
                     for (int pplNdx = 0; pplNdx < rdata.name.Count; pplNdx++)
                     {
                         sql.Clear();
-                        sql.Add("ci_id",rdata.reportTime);
+                        sql.Add("ci_id", rdata.reportTime);
                         sql.Add("name", rdata.name[pplNdx]);
                         sql.Add("title", rdata.title[pplNdx]);
                         sql.Add("equip", rdata.equip[pplNdx]);
@@ -2952,7 +2954,7 @@ namespace RoadaWebService
         [WebMethod(Description = "Push Collision Report")]
         public int SendReport(Request req, ReportData rdata)
         {
-            
+
             int Result = 0;
             // low security check, don't want hackers!
             if (!LowSecurityCheck(req))
@@ -2962,9 +2964,9 @@ namespace RoadaWebService
             SqlStmt stmt = null;
             try
             {
-                 Result = -3;
-                 if (GetStmt(connStr, out stmt))
-                 { 
+                Result = -3;
+                if (GetStmt(connStr, out stmt))
+                {
                     SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
                     DateTime now = DateTime.Now.ToLocalTime();
 
@@ -2991,74 +2993,74 @@ namespace RoadaWebService
                     sql.Add("date_cleared", rdata.clearDate);
                     sql.Add("damage", rdata.chkDmg);
                     sql.Add("loc_inter", rdata.locIntersection);
-                    sql.Add("submit_time",now);
-                    sql.Add("title",rdata.repTitle);
-                    sql.Add("equipment",rdata.equipment);
+                    sql.Add("submit_time", now);
+                    sql.Add("title", rdata.repTitle);
+                    sql.Add("equipment", rdata.equipment);
 
-                     //adds and updates main report table 
-                     if (stmt.DoSQL(String.Format("SELECT ci_id FROM collision_incident WHERE ci_id = '{0}-{1}'", rdata.phoneID, rdata.reportTime)))                        
-                     {                                
-                                            
+                    //adds and updates main report table 
+                    if (stmt.DoSQL(String.Format("SELECT ci_id FROM collision_incident WHERE ci_id = '{0}-{1}'", rdata.phoneID, rdata.reportTime)))
+                    {
+
                         stmt.DoSQL(sql.BuildUpdate("UPDATE collision_incident", String.Format("WHERE ci_id = '{0}-{1}'", rdata.phoneID, rdata.reportTime)));
 
                         Result = 1;
 
-                    
+
                     }
                     else
                     {
-                        sql.Add("ci_id", String.Format("{0}-{1}", rdata.phoneID, rdata.reportTime));                       
+                        sql.Add("ci_id", String.Format("{0}-{1}", rdata.phoneID, rdata.reportTime));
 
                         stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO collision_incident"));
-                        
+
                         Result = 2;
                     }
 
-                    
-
-                     //updates add adds update files to update table 
-                     int ndx = 0;
-                     foreach (DateTime record in rdata.updateTime)
-                     {
-                         if (stmt.DoSQL(String.Format("SELECT ci_id FROM collision_updates WHERE ci_id = '{0}-{1}' AND update_time = '{2}.000'",rdata.phoneID , rdata.reportTime, rdata.updateTime[ndx].ToString("yyyy-MM-dd HH:mm:ss"))))
-                         {
-                             sql.Clear();
-                             sql.Add("description", rdata.upDesc[ndx]);
-                             stmt.DoSQL(sql.BuildUpdate("UPDATE collision_updates", string.Format("WHERE ci_id = '{0}-{1}' AND update_time = '{2}.000'", rdata.phoneID, rdata.reportTime, rdata.updateTime[ndx].ToString("yyyy-MM-dd HH:mm:ss"))));
-                             ndx++;
-                             Result = 5;
-                         }
 
 
-                         else
-                         {
-                             if (rdata.updateTime[ndx].Year > 1000)
-                             {
-                                 sql.Clear();
-                                 sql.Add("ci_id", String.Format("{0}-{1}", rdata.phoneID, rdata.reportTime));
-                                 sql.Add("update_time", rdata.updateTime[ndx]);
-                                 sql.Add("description", rdata.upDesc[ndx]);
-                                 stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO collision_updates"));
-                                 ndx++;
-                                 Result = 6;
-                             }
-                         }
-                        
-                     }
-                     ndx = 0;
+                    //updates add adds update files to update table 
+                    int ndx = 0;
+                    foreach (DateTime record in rdata.updateTime)
+                    {
+                        if (stmt.DoSQL(String.Format("SELECT ci_id FROM collision_updates WHERE ci_id = '{0}-{1}' AND update_time = '{2}.000'", rdata.phoneID, rdata.reportTime, rdata.updateTime[ndx].ToString("yyyy-MM-dd HH:mm:ss"))))
+                        {
+                            sql.Clear();
+                            sql.Add("description", rdata.upDesc[ndx]);
+                            stmt.DoSQL(sql.BuildUpdate("UPDATE collision_updates", string.Format("WHERE ci_id = '{0}-{1}' AND update_time = '{2}.000'", rdata.phoneID, rdata.reportTime, rdata.updateTime[ndx].ToString("yyyy-MM-dd HH:mm:ss"))));
+                            ndx++;
+                            Result = 5;
+                        }
 
-                     stmt.DoSQLFormat("DELETE FROM report_ppl WHERE ci_id = '{0}-{1}'", rdata.phoneID, rdata.reportTime);
-                     for (int pplNdx = 0; pplNdx < rdata.name.Count; pplNdx++ )
-                     {
-                             sql.Clear();
-                             sql.Add("ci_id", String.Format("{0}-{1}", rdata.phoneID, rdata.reportTime));
-                             sql.Add("name", rdata.name[pplNdx]);
-                             sql.Add("title", rdata.title[pplNdx]);
-                             sql.Add("equip", rdata.equip[pplNdx]);
-                             stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO report_ppl"));
-                             Result = 7;
-                     }
-                 } 
+
+                        else
+                        {
+                            if (rdata.updateTime[ndx].Year > 1000)
+                            {
+                                sql.Clear();
+                                sql.Add("ci_id", String.Format("{0}-{1}", rdata.phoneID, rdata.reportTime));
+                                sql.Add("update_time", rdata.updateTime[ndx]);
+                                sql.Add("description", rdata.upDesc[ndx]);
+                                stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO collision_updates"));
+                                ndx++;
+                                Result = 6;
+                            }
+                        }
+
+                    }
+                    ndx = 0;
+
+                    stmt.DoSQLFormat("DELETE FROM report_ppl WHERE ci_id = '{0}-{1}'", rdata.phoneID, rdata.reportTime);
+                    for (int pplNdx = 0; pplNdx < rdata.name.Count; pplNdx++)
+                    {
+                        sql.Clear();
+                        sql.Add("ci_id", String.Format("{0}-{1}", rdata.phoneID, rdata.reportTime));
+                        sql.Add("name", rdata.name[pplNdx]);
+                        sql.Add("title", rdata.title[pplNdx]);
+                        sql.Add("equip", rdata.equip[pplNdx]);
+                        stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO report_ppl"));
+                        Result = 7;
+                    }
+                }
             }
             catch (Exception x)
             {
@@ -3209,7 +3211,7 @@ namespace RoadaWebService
             else
                 return stmt.DoSQL(sql.BuildUpdate("UPDATE patrol_trip_detail", where));
         }
-        
+
         [WebMethod(Description = "Saves Patrol Trip Data to DB.  Returns 'TripId' when more than 0.")]
         public int SendPatrolTripData(Request req, PatrolTripData data)
         {
@@ -3274,7 +3276,7 @@ namespace RoadaWebService
                         Result = -4;
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Result = -3;
                 Global.messLog.Flush("SendPatrolTripXData() report Data failed to send");
@@ -3310,7 +3312,7 @@ namespace RoadaWebService
                     Result = 1;
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Result = -3;
                 Global.messLog.Flush("SendPatrolTripDetailData() report Data failed to send");
@@ -3362,7 +3364,7 @@ namespace RoadaWebService
             }
             return Result;
         }
-               [WebMethod(Description = "ValidateVehicleList.")]
+        [WebMethod(Description = "ValidateVehicleList.")]
         public bool ValidateVehicleList(Request req, int Version)
         {
             bool Result = false;
@@ -3405,7 +3407,7 @@ namespace RoadaWebService
         public DateTime SupportDashboardCheck(Request req)
         {
             DateTime lastEvent = new DateTime();
-           
+
             // low security check, don't want hackers!
             if (!LowSecurityCheck(req))
                 return lastEvent;
@@ -3439,7 +3441,7 @@ namespace RoadaWebService
         {
             string rc = url;
             int l = rc.IndexOf("//");
-            if(l >= 0)
+            if (l >= 0)
             {
                 rc = rc.Substring(l + 2);
                 l = rc.IndexOf(".");
@@ -3568,9 +3570,9 @@ namespace RoadaWebService
 
                     SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
 
-                    sql.Add("hand_code", pdata.phandcode); 
+                    sql.Add("hand_code", pdata.phandcode);
                     sql.Add("truck_id", pdata.unitnum);
-                    sql.Add("user_id", pdata.username);            
+                    sql.Add("user_id", pdata.username);
                     sql.Add("signal_str", pdata.SignalStr);
                     sql.Add("net_type", pdata.NetworkType);
                     sql.Add("last_sent", DateTime.UtcNow);
@@ -3699,16 +3701,16 @@ namespace RoadaWebService
                 if (GetStmt(connStr, out stmt) && GetStmt(connStr, out wstmt))
                 {
                     SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
-                    bool rc = stmt.DoSQLFormat("SELECT * FROM go_events WHERE truck = '{0}' and comm_type = 1 and isnull(processed,0) = 0 order by event_time desc", info.unitNum);                    
+                    bool rc = stmt.DoSQLFormat("SELECT * FROM go_events WHERE truck = '{0}' and comm_type = 1 and isnull(processed,0) = 0 order by event_time desc", info.unitNum);
                     info.routeId = stmt.ifetch("route_id");
                     info.operations = stmt.fetch("operations");
                     info.driver = stmt.fetch("driver");
-                    
-                    while (rc) 
+
+                    while (rc)
                     {
-                        wstmt.DoSQLFormat("UPDATE go_events with (rowlock) SET processed = 1 WHERE id = {0}", stmt.ifetch("id")); 
-                        rc = stmt.dbSkip(); 
-                    }          
+                        wstmt.DoSQLFormat("UPDATE go_events with (rowlock) SET processed = 1 WHERE id = {0}", stmt.ifetch("id"));
+                        rc = stmt.dbSkip();
+                    }
                 }
             }
             catch (Exception x)
@@ -3744,9 +3746,9 @@ namespace RoadaWebService
 
                     if (stmt.ifetch("event_type") == 1 && stmt.ifetch("route_id") > 0)
                     {
-                            status = 1;                       
+                        status = 1;
                     }
-                 
+
                 }
             }
             catch (Exception x)
@@ -3778,9 +3780,9 @@ namespace RoadaWebService
                     List<HosEvent> hosevnts = new List<HosEvent>();
                     bool rc;
                     if (user_name != null && currentDate != null)
-                    currentDate = currentDate.AddDays(-14);
+                        currentDate = currentDate.AddDays(-14);
                     rc = stmt.DoSQLFormat("SELECT * FROM go_hos WHERE user_name = '{0}' AND time_event >= {1} ORDER BY time_event DESC", user_name, SqlHelper.timeStamp(currentDate, SqlHelper.dbType.SqlServer));
-                   
+
                     while (rc)
                     {
                         HosEvent Hev = new HosEvent();
@@ -3816,7 +3818,7 @@ namespace RoadaWebService
             if (!LowSecurityCheck(req))
                 return Result;
 
-           
+
             string connStr = CustConnectionString(req);
 
             SqlStmt stmt = null;
@@ -3827,24 +3829,24 @@ namespace RoadaWebService
                 {
                     SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
                     DateTime now = DateTime.Now.ToLocalTime();
-                    
+
                     sql.Add("r_date", now);
                     sql.Add("user_name", evnt.user_name);
                     sql.Add("time_event", evnt.eventTime);
                     sql.Add("event_code", evnt.code);
-                    sql.Add("handcode", evnt.handcode);       
-                    sql.Add("duty",evnt.duty);
+                    sql.Add("handcode", evnt.handcode);
+                    sql.Add("duty", evnt.duty);
                     sql.Add("driving", evnt.driving);
                     stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO go_hos"));
-                    
+
                     Result = 1;
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Result = -3;
                 Global.messLog.Flush("HOS Event Message Failed HOS HandCode: {0}", evnt.handcode.ToString());
-                InsertErrorRecord(req.CustCode,string.Format("GetHosEvents() Handcode{0} Error{1}", req.Handcode, ex.Message), req);
+                InsertErrorRecord(req.CustCode, string.Format("GetHosEvents() Handcode{0} Error{1}", req.Handcode, ex.Message), req);
             }
             finally
             {
@@ -3902,11 +3904,11 @@ namespace RoadaWebService
                     Result = 1;
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Result = -3;
-                Global.messLog.Flush("Picture data Failed to send HandCode:{0} Version:{1} Error:{2}",req.Handcode,req.Version, ex.Message);
-                InsertErrorRecord(req.CustCode, string.Format("Picture data Failed to send HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, ex.Message),req);
+                Global.messLog.Flush("Picture data Failed to send HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, ex.Message);
+                InsertErrorRecord(req.CustCode, string.Format("Picture data Failed to send HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, ex.Message), req);
             }
             finally
             {
@@ -3979,11 +3981,11 @@ namespace RoadaWebService
                     //Result = 1;
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Result = -3;
                 Global.messLog.Flush("SendInstallData() Failed to send HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, ex.Message);
-                InsertErrorRecord(req.CustCode, string.Format("SendInstallData Failed to send HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, ex.Message),req);
+                InsertErrorRecord(req.CustCode, string.Format("SendInstallData Failed to send HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, ex.Message), req);
             }
             finally
             {
@@ -4042,11 +4044,11 @@ namespace RoadaWebService
                     Result = 1;
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Result = -3;
                 Global.messLog.Flush("sendSidewalkPics() Failed to send HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, ex.Message);
-                InsertErrorRecord(req.CustCode, string.Format("sendSidewalkPics() Failed to send HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, ex.Message),req);
+                InsertErrorRecord(req.CustCode, string.Format("sendSidewalkPics() Failed to send HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, ex.Message), req);
             }
             finally
             {
@@ -4087,7 +4089,7 @@ namespace RoadaWebService
                     sql.Add("bays", data.bays);
                     sql.Add("blocks", data.blocks);
                     sql.Add("notes", data.notes);
-                    sql.Add("def1",data.def1);
+                    sql.Add("def1", data.def1);
                     sql.Add("def2", data.def2);
                     sql.Add("latitude", data.lat);
                     sql.Add("longitude", data.lon);
@@ -4108,15 +4110,15 @@ namespace RoadaWebService
 
                         Result = 2;
                     }
-              
+
                     Result = 1;
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Result = -3;
                 Global.messLog.Flush("sendSidewalkData() Failed to send HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, ex.Message);
-                InsertErrorRecord(req.CustCode, string.Format("sendSidewalkData() Failed to send HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, ex.Message),req);
+                InsertErrorRecord(req.CustCode, string.Format("sendSidewalkData() Failed to send HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, ex.Message), req);
             }
             finally
             {
@@ -4127,7 +4129,7 @@ namespace RoadaWebService
             return Result;
         }
 
-#region Patrol Deficiency
+        #region Patrol Deficiency
         [WebMethod(Description = "Puts Deficiency pictures away")]
         public int SendDeficiencyPics(Request req, InstalledPictures picturedata)
         {
@@ -4146,7 +4148,7 @@ namespace RoadaWebService
                 {
                     PhotoData pData = convertInstallPic(picturedata);
                     pData.custCode = req.CustCode;
-                    pData.deficiency  = true;
+                    pData.deficiency = true;
 
                     storePicData(pData, stmt);
 #if OLDWAY
@@ -4188,6 +4190,35 @@ namespace RoadaWebService
             return Result;
         }
 
+        // defines the relationship between DeficiencyData class and deficiencies fields
+        // first string is name in class, second is name in database
+        string[,] deficiencyLayout = { { "ServerId", "id"},
+                                       { "ReportId", "report_id"},
+                                       { "RequestId", "RequestId"},
+                                       { "HandCode", "hand_code"},
+                                       { "UnitNum", "unit_num"},
+                                       { "UserName", "user_name"},
+                                       { "ReportTime", "report_time"},
+                                       { "Type", "type"},
+                                       { "Item", "item"},
+                                       { "Issue", "issue"},
+                                       { "Status", "status"},
+                                       { "Length", "length"},
+                                       { "Width", "width"},
+                                       { "Depth", "depth"},
+                                       { "Option", "opt"},
+                                       { "Note", "notes" },
+                                       { "Lat", "latitude" },
+                                       { "Lon", "longitude" },
+                                       { "Location", "location_desc"} };
+
+        [WebMethod(Description = "Receive Deficiency Data as JSON")]
+        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public int SendDeficiencyJson(Request req, DeficiencyData data)
+        {
+            return SendDeficiencyData(req, data);
+        }
+
         [WebMethod(Description = "Puts Deficiency Data Away")]
         public int SendDeficiencyData(Request req, DeficiencyData data)
         {
@@ -4205,23 +4236,8 @@ namespace RoadaWebService
                 if (GetStmt(connStr, out stmt))
                 {
                     SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
-                    
-                    sql.Add("report_id", data.ReportId);
-                    sql.Add("hand_code", data.HandCode);
-                    sql.Add("unit_num", data.UnitNum);
-                    sql.Add("user_name", data.UserName);
-                    sql.Add("report_time", data.ReportTime);
-                    sql.Add("type", data.Type);
-                    sql.Add("item", data.Item);
-                    sql.Add("issue", data.Issue);
-                    sql.Add("status", data.Status);
-                    sql.Add("length", data.Length);
-                    sql.Add("width", data.Width);
-                    sql.Add("depth", data.Depth);
-                    sql.Add("opt", data.Option);
-                    sql.Add("notes", data.Note);
-                    sql.Add("latitude", data.Lat);
-                    sql.Add("longitude", data.Lon);
+                    procData.fillQuery(data, deficiencyLayout, sql);
+                    sql.Remove("id");       // this is only used when sending data TO Tablets
 
                     string where = string.Format("WHERE report_id='{0}'", data.ReportId);
 
@@ -4241,11 +4257,11 @@ namespace RoadaWebService
                     //Result = 1;
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Result = -3;
                 Global.messLog.Flush("SendDeficiencyData() report Data failed to send: " + ex.Message);
-                InsertErrorRecord(req.CustCode, string.Format("SendDeficiencyData() report Data failed to send HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, ex.Message),req);
+                InsertErrorRecord(req.CustCode, string.Format("SendDeficiencyData() report Data failed to send HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, ex.Message), req);
             }
             finally
             {
@@ -4255,9 +4271,57 @@ namespace RoadaWebService
 
             return Result;
         }
+
+        [WebMethod(Description = "Receive Deficiency Data as JSON")]
+        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public DeficiencyData[] GetDeficiencyJson(Request req, int daysBack)
+        {
+            return GetDeficiencyData(req, daysBack);
+        }
+
+        public DeficiencyData defData;
+
+        [WebMethod(Description = "Gets Deficiency Data for X daysBack")]
+        public DeficiencyData[] GetDeficiencyData(Request req, int daysBack)
+        {
+            List<DeficiencyData> result = new List<DeficiencyData>();
+
+            // low security check, don't want hackers!
+            if (LowSecurityCheck(req, "GetDeficiencyData"))
+            {
+                string connStr = CustConnectionString(req);
+                SqlStmt stmt = null;
+                try
+                {
+                    if (GetStmt(connStr, out stmt))
+                    {
+                        bool rc = stmt.DoSQLFormat("select * from deficiencies where report_time>getdate()-{0}", daysBack);
+                        while (rc)
+                        {
+                            DeficiencyData defData = new DeficiencyData();
+                            procData.fillClass(defData, deficiencyLayout, stmt);
+                            result.Add(defData);
+
+                            rc = stmt.dbSkip();
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Global.messLog.Flush("GetDeficiencyData() report Data failed to retrieve: " + ex.Message);
+                    InsertErrorRecord(req.CustCode, string.Format("GetDeficiencyData() report Data failed to retrieve HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, ex.Message), req);
+                }
+                finally
+                {
+                    if (stmt != null)
+                        stmt.Close();
+                }
+            }
+            return result.ToArray();
+        }
 #endregion
 
-        [WebMethod(Description = "Comissions Intaller app")]
+        [WebMethod(Description = "Comissions Installer app")]
         public int ComissionInstaller(Request req, string imei, out bool commissioned, out string Customers)
         {
             Customers = "";
@@ -4266,7 +4330,7 @@ namespace RoadaWebService
             // low security check, don't want hackers!
             if (!LowSecurityCheck(req))
                 return Result;
-           
+
             SqlConn mConn = new SqlConn("MainConn");
             SqlStmt stmt = null;
             try
@@ -4277,15 +4341,15 @@ namespace RoadaWebService
                     stmt = new SqlStmt(mConn);
                     if (!stmt.DoSQL(String.Format("SELECT * FROM soft_activate WHERE client_guid = '{0}'", imei)))
                     {
-                        SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);                  
-                        sql.Add("client_guid", imei);                    
+                        SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
+                        sql.Add("client_guid", imei);
                         stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO soft_activate"));
                     }
 
                     stmt.DoSQLFormat("SELECT * FROM soft_activate WHERE client_guid = '{0}'", imei);
-                    Result = stmt.ifetch("id"); //returns the newly created ID for the phones Confiuration    
+                    Result = stmt.ifetch("id"); //returns the newly created ID for the phones Configuration    
 
-                    commissioned = stmt.bfetch("installer");                    
+                    commissioned = stmt.bfetch("installer");
                     if (commissioned)
                     {
                         Customers = stmt.fetch("db_codes");
@@ -4296,8 +4360,8 @@ namespace RoadaWebService
             catch (Exception ex)
             {
                 Global.messLog.Flush("ComissionInstaller() Failed to send HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, ex.Message);
-                InsertErrorRecord(req.CustCode, string.Format("ComissionInstaller() Failed to send HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, ex.Message),req);
-                Result = -3;       
+                InsertErrorRecord(req.CustCode, string.Format("ComissionInstaller() Failed to send HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, ex.Message), req);
+                Result = -3;
             }
             finally
             {
@@ -4310,7 +4374,7 @@ namespace RoadaWebService
             return Result;
         }
 
-        private void UpdateGoStatus(evntRecord evnt, Request req) 
+        private void UpdateGoStatus(evntRecord evnt, Request req)
         {
             SqlStmt stmt = null;
             try
@@ -4324,7 +4388,7 @@ namespace RoadaWebService
                     {
                         sql.Add("last_lat", evnt.last_lat);
                         sql.Add("last_lon", evnt.last_lon);
-                    }                   
+                    }
                     sql.Add("memory_remaining", evnt.memory_remaining);
                     sql.Add("battery_level", evnt.BatteryLevel);
                     sql.Add("charging", evnt.Chargeing);
@@ -4356,18 +4420,18 @@ namespace RoadaWebService
                         stmt.DoSQL(sql.BuildInsert("INSERT INTO go_status"));
                     }
                 }
-               
+
             }
             catch (Exception ex)
             {
                 Global.messLog.Flush("UpdateGoStatus() HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, ex.Message);
             }
-            finally 
+            finally
             {
                 if (stmt != null)
-                    stmt.Close();       
+                    stmt.Close();
             }
-          
+
         }
         private void InsertgoEvent(evntRecord evnt, Request req)
         {
@@ -4378,7 +4442,6 @@ namespace RoadaWebService
                 if (GetStmt(connStr, out stmt))
                 {
                     SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
-
 
                     sql.Add("event_type", evnt.EventType);
                     sql.Add("event_time", evnt.eventTime);
@@ -4416,7 +4479,6 @@ namespace RoadaWebService
                         }
                     }
                 }
-
             }
             catch (Exception ex)
             {
@@ -4427,8 +4489,8 @@ namespace RoadaWebService
                 if (stmt != null)
                     stmt.Close();
             }
-
         }
+
         private void UpdateMessageIn(evntRecord evnt, Request req)
         {
             SqlStmt stmt = null;
@@ -4504,7 +4566,7 @@ namespace RoadaWebService
                 {
                     SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
 
-                   
+
                     if (!string.IsNullOrEmpty(truck) && !string.IsNullOrEmpty(driver))
                     {
                         result = new evntOut();
@@ -4556,9 +4618,9 @@ namespace RoadaWebService
             {
 
                 Global.messLog.Flush("GetEventOps() HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, ex.Message);
-                InsertErrorRecord(req.CustCode, string.Format("GetEventOps() Failed to send HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, ex.Message),req);
+                InsertErrorRecord(req.CustCode, string.Format("GetEventOps() Failed to send HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, ex.Message), req);
             }
-            finally 
+            finally
             {
                 if (stmt != null)
                     stmt.Close();
@@ -4570,7 +4632,7 @@ namespace RoadaWebService
 
         [WebMethod(Description = "Consumes Event records send from Roada Go")]
         public int SendEventRecord(Request req, evntRecord evnt)
-        {         
+        {
             int Result = -1;
 
             if (evnt == null)
@@ -4581,11 +4643,11 @@ namespace RoadaWebService
             // low security check, don't want hackers!
             if (!LowSecurityCheck(req))
                 return Result;
-          
+
             string connStr = CustConnectionString(req);
 
             SqlStmt stmt = null;
-     
+
             try
             {
 
@@ -4606,21 +4668,21 @@ namespace RoadaWebService
                     {
                         UpdateMessageIn(evnt, req); //only does this if phone is acting as DCD (configureable on the DMT manager)
                     }
-                   
+
                 }
             }
             catch (Exception x)
             {
                 Result = -1;
                 Global.messLog.Flush("SendEventRecord() HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, x.Message);
-                InsertErrorRecord(req.CustCode, string.Format("SendEventRecord() Failed to send HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, x.Message),req);
+                InsertErrorRecord(req.CustCode, string.Format("SendEventRecord() Failed to send HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, x.Message), req);
             }
             finally
             {
                 if (stmt != null)
                     stmt.Close();
             }
-             
+
             return Result;
         }
 
@@ -4638,21 +4700,21 @@ namespace RoadaWebService
             string connStr = CustConnectionString(req);
             SqlStmt stmt = null;
             try
-            {                
+            {
                 if (GetStmt(connStr, out stmt))
                 {
-                                       
-                    SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
-                      
-                   stmt.DoSQLFormat("SELECT * FROM go_status WHERE hand_code = '{0}'",handcode);
 
-                   data.online = stmt.ifetch("logged_in");
-                   data.truck = stmt.fetch("truck_id");
-                   data.user = stmt.fetch("user_id");
-                   
-                   stmt.DoSQLFormat("SELECT password FROM users WHERE username = '{0}'", data.user);
-                   data.password = stmt.fetch("password");
-                   Global.messLog.Flush("GetLoginStatus() HC: {0} Cust: {1} Truck: {2} LoggedIn: {3}", handcode, req.CustCode, data.truck, data.online);
+                    SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
+
+                    stmt.DoSQLFormat("SELECT * FROM go_status WHERE hand_code = '{0}'", handcode);
+
+                    data.online = stmt.ifetch("logged_in");
+                    data.truck = stmt.fetch("truck_id");
+                    data.user = stmt.fetch("user_id");
+
+                    stmt.DoSQLFormat("SELECT password FROM users WHERE username = '{0}'", data.user);
+                    data.password = stmt.fetch("password");
+                    Global.messLog.Flush("GetLoginStatus() HC: {0} Cust: {1} Truck: {2} LoggedIn: {3}", handcode, req.CustCode, data.truck, data.online);
                 }
 
             }
@@ -4660,7 +4722,7 @@ namespace RoadaWebService
             {
 
                 Global.messLog.Flush("GetLoginStatus() HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, x.Message);
-                InsertErrorRecord(req.CustCode, string.Format("GetLoginStatus() Failed to send HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, x.Message),req);
+                InsertErrorRecord(req.CustCode, string.Format("GetLoginStatus() Failed to send HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, x.Message), req);
             }
             finally
             {
@@ -4676,7 +4738,7 @@ namespace RoadaWebService
         {
             Vehicle[] Result = null;
             VehicleVersion = 0;
-            if (! LowSecurityCheck(request))
+            if (!LowSecurityCheck(request))
                 return Result;
 
             string connStr = CustConnectionString(request);
@@ -4717,10 +4779,10 @@ namespace RoadaWebService
                     vehicles.Clear();
                 }
             }
-            catch(Exception x)
+            catch (Exception x)
             {
                 Global.messLog.Flush("GetVehicleList() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
-                InsertErrorRecord(request.CustCode, string.Format("GetVehicleList() Failed to send HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version,x.Message),request);
+                InsertErrorRecord(request.CustCode, string.Format("GetVehicleList() Failed to send HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message), request);
             }
             finally
             {
@@ -4772,7 +4834,7 @@ namespace RoadaWebService
             catch (Exception x)
             {
                 Global.messLog.Flush("GetMobileRoleList() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
-                InsertErrorRecord(request.CustCode, string.Format("GetMobileRoleList() Failed to send HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message),request);
+                InsertErrorRecord(request.CustCode, string.Format("GetMobileRoleList() Failed to send HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message), request);
             }
             finally
             {
@@ -4793,7 +4855,7 @@ namespace RoadaWebService
             string connStr = CustConnectionString(request);
             SqlStmt stmt = null;
             try
-            {              
+            {
                 if (GetStmt(connStr, out stmt))
                 {
                     List<DCenterData> DCenters = new List<DCenterData>();
@@ -4819,12 +4881,12 @@ namespace RoadaWebService
             catch (Exception x)
             {
                 Global.messLog.Flush("GetDCLatLongs() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
-                InsertErrorRecord(request.CustCode, string.Format("GetDCLatLongs() Failed to send HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message),request);
+                InsertErrorRecord(request.CustCode, string.Format("GetDCLatLongs() Failed to send HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message), request);
             }
             finally
             {
                 if (stmt != null)
-                    stmt.Close();               
+                    stmt.Close();
             }
             return Result;
         }
@@ -4835,7 +4897,7 @@ namespace RoadaWebService
         {
             GoUser[] Result = null;
             userVersion = 0;
-     
+
             if (!LowSecurityCheck(request))
                 return Result;
 
@@ -4850,17 +4912,17 @@ namespace RoadaWebService
                     {
                         userVersion = stmt2.ifetch("users");
                     }
-       
+
                 }
                 if (GetStmt(connStr, out stmt))
                 {
 
-   
+
                     List<GoUser> users = new List<GoUser>();
                     bool rc;
-                
+
                     rc = stmt.DoSQLFormat("SELECT * FROM users WHERE mobile_user = {0}", 1);
-                   
+
                     while (rc)
                     {
                         GoUser gu = new GoUser();
@@ -4882,7 +4944,7 @@ namespace RoadaWebService
             catch (Exception x)
             {
                 Global.messLog.Flush("GetGouserList() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
-                InsertErrorRecord(request.CustCode, string.Format("GetGouserList() Failed to send HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message),request);
+                InsertErrorRecord(request.CustCode, string.Format("GetGouserList() Failed to send HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message), request);
             }
             finally
             {
@@ -4900,7 +4962,7 @@ namespace RoadaWebService
         {
             VehicleType[] Result = null;
 
-            if (! LowSecurityCheck(request))
+            if (!LowSecurityCheck(request))
                 return Result;
 
             string connStr = CustConnectionString(request);
@@ -4930,7 +4992,7 @@ namespace RoadaWebService
             catch (Exception x)
             {
                 Global.messLog.Flush("GetVehicleTypes() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
-                InsertErrorRecord(request.CustCode, string.Format("GetVehicleTypes() Failed to send HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message),request);
+                InsertErrorRecord(request.CustCode, string.Format("GetVehicleTypes() Failed to send HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message), request);
             }
             finally
             {
@@ -4971,7 +5033,7 @@ namespace RoadaWebService
                 catch (Exception x)
                 {
                     Global.messLog.Flush("GetGoTables() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
-                    InsertErrorRecord(request.CustCode, string.Format("GetGoTables() Failed to send HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message),request);
+                    InsertErrorRecord(request.CustCode, string.Format("GetGoTables() Failed to send HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message), request);
                 }
                 finally
                 {
@@ -4987,10 +5049,10 @@ namespace RoadaWebService
         {
             goTables[] Result = null;
             if (LowSecurityCheck(request))
-            {    
+            {
                 SqlStmt stmt = new SqlStmt("MainConn");
                 try
-                {                  
+                {
                     List<goTables> createStmts = new List<goTables>();
                     bool rc = stmt.DoSQL("SELECT * FROM go_create_tables");
                     while (rc)
@@ -5009,13 +5071,13 @@ namespace RoadaWebService
                 catch (Exception x)
                 {
                     Global.messLog.Flush("GetGoTables() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
-                    InsertErrorRecord(request.CustCode, string.Format("GetGoTables() Failed to send HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message),request);
+                    InsertErrorRecord(request.CustCode, string.Format("GetGoTables() Failed to send HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message), request);
                 }
                 finally
                 {
                     if (stmt != null)
-                        stmt.Close();                   
-                }               
+                        stmt.Close();
+                }
             }
             return Result;
         }
@@ -5069,7 +5131,6 @@ columnname varchar(128)
                 }
             }
             return Result;
-
         }
 
         private bool GetStmt(string connStr, out SqlStmt stmt)
@@ -5078,7 +5139,7 @@ columnname varchar(128)
             stmt.Mess = Global.messLog;
             stmt.ConnectionData = connStr;
             bool Result = stmt.dbConnect();
-            if (! Result)
+            if (!Result)
                 Global.messLog.Flush("Failed to connect to {0}", connStr);
             return Result;
         }
@@ -5088,7 +5149,7 @@ columnname varchar(128)
         {
             GPSData[] Result = null;
 
-            if (! LowSecurityCheck(request))
+            if (!LowSecurityCheck(request))
                 return Result;
 
             string connStr = CustConnectionString(request);
@@ -5139,7 +5200,7 @@ columnname varchar(128)
             catch (Exception x)
             {
                 Global.messLog.Flush("GPSDataRequest() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
-                InsertErrorRecord(request.CustCode, string.Format("GPSDataRequest() Failed to send HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message),request);
+                InsertErrorRecord(request.CustCode, string.Format("GPSDataRequest() Failed to send HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message), request);
             }
             finally
             {
@@ -5159,8 +5220,8 @@ columnname varchar(128)
         }
 
         [WebMethod(Description = "Retrieves replication data from the server")]
-        public ReplicationData[] GetReplicationDataY( Request request,
-                                                      string dbCode, string region, int histMax, int startRecord, int limit )
+        public ReplicationData[] GetReplicationDataY(Request request,
+                                                      string dbCode, string region, int histMax, int startRecord, int limit)
         {
             /* Note:    For DB that have multiple regions (and a lot of data across them), we can narrow what we
              *          replicate by "region" (see 'yard' table, 'name' field).  As well, should there be a lot
@@ -5242,7 +5303,7 @@ columnname varchar(128)
                                 sql += string.Format("* FROM datarep WHERE record_id > {0} and client_id != {1}",
                                                         startRecord, request.CustId);
                                 if (histMax > -1)
-                                    sql +=  string.Format(" AND idate >= '{0}'", max.ToString("yyyy-MM-dd"));
+                                    sql += string.Format(" AND idate >= '{0}'", max.ToString("yyyy-MM-dd"));
                                 sql += " ORDER BY record_id";
                                 bool rc = stmt.DoSQL(sql);
                                 while (rc)
@@ -5307,7 +5368,9 @@ columnname varchar(128)
 
             return Result;
         }
+
     }
+
     public class MQueue
     {
         public string CustCode;
