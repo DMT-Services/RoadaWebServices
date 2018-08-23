@@ -40,11 +40,9 @@ namespace RoadaWebService
         const int DEFAULT_RUN_TIME = 40;
         const double VERSION = 1.3;
         private const int MaxDownloadBatchSize = 1000;
-        // spatial data lookup
 
         private void InitializeComponent()
         {
-
         }
 
         private string[] ReadQueueList(bool forceRefresh)
@@ -75,19 +73,21 @@ namespace RoadaWebService
                                     q.UserName = user;
                                     q.Password = stmt.fetch("wserv_password");
                                     q.QName = string.Format(@"FormatName:DIRECT=OS:roadaserv\private$\{0}", q.CustCode);
+
                                     /*      can't do this to remote queue
-                                     *                                  if (! MessageQueue.Exists(q.QName))
-                                                                        {
-                                                                            try
-                                                                            {   
-                                                                                MessageQueue.Create(q.QName, true);
-                                                                            }
-                                                                            catch (Exception ex)
-                                                                            {
-                                                                                Global.messLog.Flush(String.Format("MessageQueue Create Exception: {0}", ex.Message));
-                                                                                qok = false;
-                                                                            }
-                                                                        } */
+                                    if (! MessageQueue.Exists(q.QName))
+                                        {
+                                            try
+                                            {   
+                                                MessageQueue.Create(q.QName, true);
+                                            }
+                                            catch (Exception ex)
+                                            {
+                                                Global.messLog.Flush(String.Format("MessageQueue Create Exception: {0}", ex.Message));
+                                                qok = false;
+                                            }
+                                        } */
+
                                     // make sure the queue was created ok
                                     q.MyMessage = new System.Messaging.Message(q.QName);
                                     q.MessageTx = new MessageQueueTransaction();
@@ -196,7 +196,6 @@ namespace RoadaWebService
                 case -7:
                     r.ErrMessage = "Buffer too small";
                     break;
-
             }
             if (err != 0)
                 Global.messLog.Flush(r.ErrMessage);
@@ -759,12 +758,12 @@ namespace RoadaWebService
         }
 
         [WebMethod(Description = "Add Patrol Weather Information")]
-        public int AddPatrolWeather(Request request, TPatrol511 patrol)
+        public int AddPatrolWeather(Request req, TPatrol511 patrol)
         {
             int Result = -1;
-            if (CheckCredentials(request))
+            if (CheckCredentials(req))
             {
-                string connStr = CustConnectionString(request);
+                string connStr = CustConnectionString(req);
                 SqlStmt stmt = null;
                 try
                 {
@@ -801,7 +800,7 @@ namespace RoadaWebService
                 catch (Exception ex)
                 {
                     Global.messLog.Flush("AddPatrolWeather() Ex: {0}", ex.Message);
-                    InsertErrorRecord(request.CustCode, "AddPatrolWeather() " + ex.Message, request);
+                    InsertErrorRecord(req.CustCode, "AddPatrolWeather() " + ex.Message, req);
                 }
                 finally
                 {
@@ -813,12 +812,12 @@ namespace RoadaWebService
         }
 
         [WebMethod(Description = "Request list of processed trips")]
-        public Trip[] RequestTrips(Request request, int handCode, DateTime startDate, int rowCount)
+        public Trip[] RequestTrips(Request req, int handCode, DateTime startDate, int rowCount)
         {
             Trip[] Result = null;
-            if (LowSecurityCheck(request))
+            if (LowSecurityCheck(req))
             {
-                string connStr = CustConnectionString(request);
+                string connStr = CustConnectionString(req);
                 SqlStmt stmt = null;
                 try
                 {
@@ -845,7 +844,7 @@ namespace RoadaWebService
                 catch (Exception ex)
                 {
                     Global.messLog.Flush("RequestTrips() Ex: {0}", ex.Message);
-                    InsertErrorRecord(request.CustCode, "RequestTrips() " + ex.Message, request);
+                    InsertErrorRecord(req.CustCode, "RequestTrips() " + ex.Message, req);
                 }
                 finally
                 {
@@ -857,14 +856,14 @@ namespace RoadaWebService
         }
 
         [WebMethod(Description = "Retrieve range of GPS readings")]
-        public GPSData[] GPSDataRangeRequest(Request request, int devId, string unitNum, int maxRows, bool firstBlock, DateTime start, DateTime end)
+        public GPSData[] GPSDataRangeRequest(Request req, int devId, string unitNum, int maxRows, bool firstBlock, DateTime start, DateTime end)
         {
             GPSData[] Result = null;
 
-            if (!LowSecurityCheck(request))
+            if (!LowSecurityCheck(req))
                 return Result;
 
-            string connStr = CustConnectionString(request);
+            string connStr = CustConnectionString(req);
             SqlStmt stmt = null;
             try
             {
@@ -910,7 +909,7 @@ namespace RoadaWebService
             catch (Exception x)
             {
                 Global.messLog.Flush("GPSDataRangeRequest() Excp: {0}", x.Message);
-                InsertErrorRecord(request.CustCode, "GPSDataRangeRequest()" + x.Message, request);
+                InsertErrorRecord(req.CustCode, "GPSDataRangeRequest()" + x.Message, req);
             }
             finally
             {
@@ -1226,12 +1225,12 @@ namespace RoadaWebService
 
 
         [WebMethod(Description = "Get details of the temperature and street location at a specific time")]
-        public WeatherLocation GetWeatherLocation(Request request, int devId, DateTime locationDate)
+        public WeatherLocation GetWeatherLocation(Request req, int devId, DateTime locationDate)
         {
             WeatherLocation Result = null;
-            if (LowSecurityCheck(request))
+            if (LowSecurityCheck(req))
             {
-                string connStr = CustConnectionString(request);
+                string connStr = CustConnectionString(req);
                 SqlStmt stmt = null;
                 try
                 {
@@ -1269,7 +1268,7 @@ namespace RoadaWebService
                 catch (Exception ex)
                 {
                     Global.messLog.Flush("GetWeatherLocation() Ex: {0}", ex.Message);
-                    InsertErrorRecord(request.CustCode, "GetWeatherLocation() " + ex.Message, request);
+                    InsertErrorRecord(req.CustCode, "GetWeatherLocation() " + ex.Message, req);
                 }
                 finally
                 {
@@ -1345,12 +1344,12 @@ namespace RoadaWebService
         }
 
         [WebMethod(Description = "Send Request to Roada database to check if the device needs new config scripts")]
-        public ManagerData ManagerCheckin(Request request, Comissioninfo comInfo)
+        public ManagerData ManagerCheckin(Request req, Comissioninfo comInfo)
         {
 
             ManagerData Result = null;
             // low security check, don't want hackers!
-            if (!LowSecurityCheck(request))
+            if (!LowSecurityCheck(req))
                 return null;
 
             SqlStmt stmt = null;
@@ -1360,7 +1359,7 @@ namespace RoadaWebService
                 stmt.Mess = Global.messLog;
                 Result = new ManagerData();
 
-                Global.messLog.Flush("ManagerCheckin() HC: {0} Version: {1} IMEI: {2}", request.Handcode, request.Version, comInfo.IMEI);
+                Global.messLog.Flush("ManagerCheckin() HC: {0} Version: {1} IMEI: {2}", req.Handcode, req.Version, comInfo.IMEI);
                 if (!stmt.DoSQL(String.Format("SELECT * FROM soft_activate WHERE client_guid = '{0}'", comInfo.IMEI)))
                 {
                     SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
@@ -1431,8 +1430,8 @@ namespace RoadaWebService
             catch (Exception ex)
             {
                 Result = null;
-                Global.messLog.Flush("ManagerCheckin()HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, ex.Message);
-                InsertErrorRecord(request.CustCode, "ManagerCheckin() " + ex.Message, request);
+                Global.messLog.Flush("ManagerCheckin()HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, ex.Message);
+                InsertErrorRecord(req.CustCode, "ManagerCheckin() " + ex.Message, req);
             }
             finally
             {
@@ -2589,10 +2588,10 @@ namespace RoadaWebService
 
 
         [WebMethod(Description = "Validate user login info")]
-        public int ValidateUser(Request request, out UserInfo info)
+        public int ValidateUser(Request req, out UserInfo info)
         {
             int Result = -1;
-            string connStr = CustConnectionString(request);
+            string connStr = CustConnectionString(req);
             info = null;
             if (connStr != string.Empty)
             {
@@ -2603,9 +2602,8 @@ namespace RoadaWebService
                     if (GetStmt(connStr, out stmt))
                     {
                         Result = -3;
-                        if (stmt.DoSQLFormat("SELECT * FROM users WHERE username = '{0}'", stmt.FixQuote(request.UserName)))
+                        if (stmt.DoSQLFormat("SELECT * FROM users WHERE username = '{0}'", stmt.FixQuote(req.UserName)))
                         {
-
                             if (!stmt.tfetch("mobile_user"))
                             {
                                 Result = -5;
@@ -2613,7 +2611,7 @@ namespace RoadaWebService
                             else
                             {
                                 Result = -6;
-                                if (stmt.fetch("password") == request.Password)
+                                if (stmt.fetch("password") == req.Password)
                                 {
                                     info = new UserInfo();
                                     info.FirstName = stmt.fetch("first_name");
@@ -2624,7 +2622,6 @@ namespace RoadaWebService
                                     info.title = stmt.fetch("title");
                                     //info.EmployeeNum = stmt.fetch("employee_num");
                                     info.role = stmt.ifetch("mobile_role");
-
 
                                     stmt.Clear();
                                     Result = -4;
@@ -2639,9 +2636,6 @@ namespace RoadaWebService
                                         info.camPerm = stmt.ifetch("cam_perm");
                                         Result = 1;
                                     }
-
-
-
                                 }
                             }
 
@@ -2650,10 +2644,9 @@ namespace RoadaWebService
                 }
                 catch (Exception x)
                 {
-                    Global.messLog.Flush("ValidateUser() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
-                    InsertErrorRecord(request.CustCode, "ValidateUser() " + x.Message, request);
+                    Global.messLog.Flush("ValidateUser() HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, x.Message);
+                    InsertErrorRecord(req.CustCode, "ValidateUser() " + x.Message, req);
                 }
-
                 finally
                 {
                     if (stmt != null)
@@ -3332,76 +3325,136 @@ namespace RoadaWebService
         {
             bool Result = false;
             // low security check, don't want hackers!
-            if (!LowSecurityCheck(req))
-                return false;
-
-            string connStr = CustConnectionString(req);
-            SqlStmt stmt = null;
-            try
+            if (LowSecurityCheck(req))
             {
-                if (GetStmt(connStr, out stmt))
+                string connStr = CustConnectionString(req);
+                SqlStmt stmt = null;
+                try
                 {
-                    if (stmt.DoSQL(String.Format("SELECT TOP 1 users FROM go_update")))
+                    if (GetStmt(connStr, out stmt))
                     {
-                        int res = stmt.ifetch("users");
-
-                        if (res != Version)
-                        {
-                            Result = true;
-                        }
+                        if (stmt.DoSQL("SELECT TOP 1 users FROM go_update"))
+                            Result = (stmt.ifetch("users") != Version);
+                    }
+                }
+                catch (Exception x)
+                {
+                    Global.messLog.Flush("ValidateUserList() HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, x.Message);
+                    InsertErrorRecord(req.CustCode, "ValidateUserList() " + x.Message, req);
+                }
+                finally
+                {
+                    if (stmt != null)
+                    {
+                        stmt.Close();
+                        stmt = null;
                     }
                 }
             }
-            catch (Exception x)
-            {
-                Global.messLog.Flush("ValidateUserList() HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, x.Message);
-                InsertErrorRecord(req.CustCode, "ValidateUserList() " + x.Message, req);
-            }
-            finally
-            {
-                if (stmt != null)
-                    stmt.Close();
-            }
             return Result;
         }
+
         [WebMethod(Description = "ValidateVehicleList.")]
         public bool ValidateVehicleList(Request req, int Version)
         {
             bool Result = false;
             // low security check, don't want hackers!
-            if (!LowSecurityCheck(req))
-                return false;
-
-            string connStr = CustConnectionString(req);
-            SqlStmt stmt = null;
-            try
+            if (LowSecurityCheck(req))
             {
-                if (GetStmt(connStr, out stmt))
+                string connStr = CustConnectionString(req);
+                SqlStmt stmt = null;
+                try
                 {
-                    if (stmt.DoSQL(String.Format("SELECT TOP 1 vehicles FROM go_update")))
+                    if (GetStmt(connStr, out stmt))
                     {
-                        int res = stmt.ifetch("vehicles");
-
-                        if (res != Version)
-                        {
-                            Result = true;
-                        }
+                        if (stmt.DoSQL("SELECT TOP 1 vehicles FROM go_update"))
+                            Result = (stmt.ifetch("vehicles") != Version);
                     }
                 }
-            }
-            catch (Exception x)
-            {
-                Global.messLog.Flush("ValidateUserList()HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, x.Message);
-                InsertErrorRecord(req.CustCode, "ValidateUserList() " + x.Message, req);
-            }
-            finally
-            {
-                if (stmt != null)
-                    stmt.Close();
+                catch (Exception x)
+                {
+                    Global.messLog.Flush("ValidateUserList()HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, x.Message);
+                    InsertErrorRecord(req.CustCode, "ValidateUserList() " + x.Message, req);
+                }
+                finally
+                {
+                    if (stmt != null)
+                    {
+                        stmt.Close();
+                        stmt = null;
+                    }
+                }
             }
             return Result;
         }
 
+        [WebMethod(Description = "Get User table version number")]
+        public int getUserListVersion(Request req)
+        {
+            int Result = -1;
+            // low security check, don't want hackers!
+            if (LowSecurityCheck(req))
+            {
+                string connStr = CustConnectionString(req);
+                SqlStmt stmt = null;
+                try
+                {
+                    if (GetStmt(connStr, out stmt))
+                    {
+                        if (stmt.DoSQL("SELECT TOP 1 users FROM go_update"))
+                            Result = stmt.ifetch("users");
+                    }
+                }
+                catch (Exception x)
+                {
+                    Global.messLog.Flush("getUserListVersion() HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, x.Message);
+                    InsertErrorRecord(req.CustCode, "getUserListVersion() " + x.Message, req);
+                }
+                finally
+                {
+                    if (stmt != null)
+                    {
+                        stmt.Close();
+                        stmt = null;
+                    }
+                }
+            }
+            return Result;
+        }
+
+        [WebMethod(Description = "Get Vehicle table version number")]
+        public int getVehicleListVersion(Request req)
+        {
+            int Result = -1;
+            // low security check, don't want hackers!
+            if (LowSecurityCheck(req))
+            {
+                string connStr = CustConnectionString(req);
+                SqlStmt stmt = null;
+                try
+                {
+                    if (GetStmt(connStr, out stmt))
+                    {
+                        if (stmt.DoSQL("SELECT TOP 1 vehicles FROM go_update"))
+                            Result = stmt.ifetch("vehicles");
+                    }
+                }
+                catch (Exception x)
+                {
+                    Global.messLog.Flush("getVehicleListVersion() HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, x.Message);
+                    InsertErrorRecord(req.CustCode, "getVehicleListVersion() " + x.Message, req);
+                }
+                finally
+                {
+                    if (stmt != null)
+                    {
+                        stmt.Close();
+                        stmt = null;
+                    }
+                }
+            }
+            return Result;
+        }
 
         [WebMethod(Description = "SupportDashboardCheck")]
         public DateTime SupportDashboardCheck(Request req)
@@ -4219,7 +4272,7 @@ namespace RoadaWebService
             return SendDeficiencyData(req, data);
         }
 
-        [WebMethod(Description = "Puts Deficiency Data Away")]
+        [WebMethod(Description = "Receive Deficiency Data")]
         public int SendDeficiencyData(Request req, DeficiencyData data)
         {
             int Result = -1;
@@ -4248,20 +4301,18 @@ namespace RoadaWebService
                     }
                     else
                     {
-                        // MUST set second param to true as this makes it run the insert 
+                        // MUST set second param of DoSQL() to true as this makes it run the insert 
                         // as an ExecuteReader instead of ExecuteNonQuery so we can get back the inserted id
                         stmt.DoSQL(sql.BuildInsert("INSERT INTO deficiencies", " output inserted.id VALUES "), true);
                         Result = stmt.ifetch("id");     // return the ID of the new record...
                     }
-
-                    //Result = 1;
                 }
             }
             catch (Exception ex)
             {
                 Result = -3;
-                Global.messLog.Flush("SendDeficiencyData() report Data failed to send: " + ex.Message);
-                InsertErrorRecord(req.CustCode, string.Format("SendDeficiencyData() report Data failed to send HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, ex.Message), req);
+                Global.messLog.Flush("SendDeficiencyData() data failed to receive: " + ex.Message);
+                InsertErrorRecord(req.CustCode, string.Format("SendDeficiencyData() data failed to receive HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, ex.Message), req);
             }
             finally
             {
@@ -4272,16 +4323,14 @@ namespace RoadaWebService
             return Result;
         }
 
-        [WebMethod(Description = "Receive Deficiency Data as JSON")]
+        [WebMethod(Description = "Return Deficiency Data as JSON")]
         [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
         public DeficiencyData[] GetDeficiencyJson(Request req, int daysBack)
         {
             return GetDeficiencyData(req, daysBack);
         }
 
-        public DeficiencyData defData;
-
-        [WebMethod(Description = "Gets Deficiency Data for X daysBack")]
+        [WebMethod(Description = "Returns all Deficiency Data since daysBack")]
         public DeficiencyData[] GetDeficiencyData(Request req, int daysBack)
         {
             List<DeficiencyData> result = new List<DeficiencyData>();
@@ -4308,8 +4357,8 @@ namespace RoadaWebService
                 }
                 catch (Exception ex)
                 {
-                    Global.messLog.Flush("GetDeficiencyData() report Data failed to retrieve: " + ex.Message);
-                    InsertErrorRecord(req.CustCode, string.Format("GetDeficiencyData() report Data failed to retrieve HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, ex.Message), req);
+                    Global.messLog.Flush("GetDeficiencyData() data failed to retrieve: " + ex.Message);
+                    InsertErrorRecord(req.CustCode, string.Format("GetDeficiencyData() data failed to retrieve HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, ex.Message), req);
                 }
                 finally
                 {
@@ -4319,7 +4368,7 @@ namespace RoadaWebService
             }
             return result.ToArray();
         }
-#endregion
+        #endregion
 
         [WebMethod(Description = "Comissions Installer app")]
         public int ComissionInstaller(Request req, string imei, out bool commissioned, out string Customers)
@@ -4716,11 +4765,9 @@ namespace RoadaWebService
                     data.password = stmt.fetch("password");
                     Global.messLog.Flush("GetLoginStatus() HC: {0} Cust: {1} Truck: {2} LoggedIn: {3}", handcode, req.CustCode, data.truck, data.online);
                 }
-
             }
             catch (Exception x)
             {
-
                 Global.messLog.Flush("GetLoginStatus() HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, x.Message);
                 InsertErrorRecord(req.CustCode, string.Format("GetLoginStatus() Failed to send HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, x.Message), req);
             }
@@ -4732,62 +4779,130 @@ namespace RoadaWebService
             return data;
         }
 
+        [WebMethod(Description = "Retrieve vehicle list, optionally filtered by fleetId, as JSON")]
+        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public Vehicle[] GetVehicleListJson(Request req, int? fleetId)
+        {
+            // can't do OUT parameters in JSON, as far as I've been able to find...
+            int vv = 0;
+            return GetVehicleList(req, fleetId, out vv);
+        }
 
         [WebMethod(Description = "Retrieve vehicle listing")]
-        public Vehicle[] GetVehicleList(Request request, int? fleetId, out int VehicleVersion)
+        public Vehicle[] GetVehicleList(Request req, int? fleetId, out int VehicleVersion)
         {
             Vehicle[] Result = null;
             VehicleVersion = 0;
-            if (!LowSecurityCheck(request))
-                return Result;
-
-            string connStr = CustConnectionString(request);
-            SqlStmt stmt = null;
-            try
+            if (LowSecurityCheck(req))
             {
-
-
-                if (GetStmt(connStr, out stmt))
+                string connStr = CustConnectionString(req);
+                SqlStmt stmt = null;
+                try
                 {
-                    if (stmt.DoSQLFormat("SELECT * FROM go_update"))
+                    if (GetStmt(connStr, out stmt))
                     {
-                        VehicleVersion = stmt.ifetch("vehicles");
+                        if (stmt.DoSQL("SELECT TOP 1 vehicles FROM go_update"))
+                            VehicleVersion = stmt.ifetch("vehicles");
+
+                        List<Vehicle> vehicles = new List<Vehicle>();
+                        bool rc;
+                        if (fleetId != null)
+                            rc = stmt.DoSQLFormat("SELECT * FROM vehicles WHERE fleet = {0} ORDER BY unit_num", fleetId);
+                        else
+                            rc = stmt.DoSQL("SELECT * FROM vehicles ORDER BY unit_num");
+                        while (rc)
+                        {
+                            Vehicle v = new Vehicle();
+                            v.fleetID = stmt.ifetch("fleet");
+                            v.DevId = stmt.ifetch("hand_code");
+                            v.UnitNum = stmt.fetch("unit_num");
+                            v.License = stmt.fetch("license");
+                            v.Type = stmt.ifetch("type");
+                            vehicles.Add(v);
+
+                            rc = stmt.dbSkip();
+                        }
+                        Result = vehicles.ToArray();
+                        vehicles.Clear();
                     }
-                    stmt.Clear();
                 }
-
-                if (GetStmt(connStr, out stmt))
+                catch (Exception x)
                 {
-                    List<Vehicle> vehicles = new List<Vehicle>();
-                    bool rc;
-                    if (fleetId != null)
-                        rc = stmt.DoSQLFormat("SELECT * FROM vehicles WHERE fleet = {0} ORDER BY unit_num", fleetId);
-                    else
-                        rc = stmt.DoSQL("SELECT * FROM vehicles ORDER BY unit_num");
-                    while (rc)
+                    Global.messLog.Flush("GetVehicleList() HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, x.Message);
+                    InsertErrorRecord(req.CustCode, string.Format("GetVehicleList() Failed to send HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, x.Message), req);
+                }
+                finally
+                {
+                    if (stmt != null)
                     {
-                        Vehicle v = new Vehicle();
-                        v.fleetID = stmt.ifetch("fleet");
-                        v.DevId = stmt.ifetch("hand_code");
-                        v.UnitNum = stmt.fetch("unit_num");
-                        v.License = stmt.fetch("license");
-                        v.Type = stmt.ifetch("type");
-                        vehicles.Add(v);
-                        rc = stmt.dbSkip();
+                        stmt.Close();
+                        stmt = null;
                     }
-                    Result = vehicles.ToArray();
-                    vehicles.Clear();
                 }
             }
-            catch (Exception x)
+            return Result;
+        }
+
+        [WebMethod(Description = "Retrieve mobile user list as JSON")]
+        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public GoUser[] GetGoUsersJson(Request req)
+        {
+            // can't do OUT parameters in JSON, as far as I've been able to find...
+            int vv = 0;
+            return GetGoUsers(req, out vv);
+        }
+
+        [WebMethod(Description = "Retrieve Mobile Users listing")]
+        public GoUser[] GetGoUsers(Request req, out int userVersion)
+        {
+            GoUser[] Result = null;
+            userVersion = 0;
+
+            if (LowSecurityCheck(req))
             {
-                Global.messLog.Flush("GetVehicleList() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
-                InsertErrorRecord(request.CustCode, string.Format("GetVehicleList() Failed to send HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message), request);
-            }
-            finally
-            {
-                if (stmt != null)
-                    stmt.Close();
+                string connStr = CustConnectionString(req);
+                SqlStmt stmt = null;
+                try
+                {
+                    if (GetStmt(connStr, out stmt))
+                    {
+                        if (stmt.DoSQL("SELECT TOP 1 users FROM go_update"))
+                            userVersion = stmt.ifetch("users");
+
+                        List<GoUser> users = new List<GoUser>();
+
+                        bool rc = stmt.DoSQLFormat("SELECT * FROM users WHERE mobile_user = {0}", 1);
+                        while (rc)
+                        {
+                            GoUser gu = new GoUser();
+                            gu.userRole = stmt.ifetch("mobile_role");
+                            gu.username = stmt.fetch("username");
+                            gu.password = stmt.fetch("password");
+                            gu.email = stmt.fetch("email");
+                            gu.firstname = stmt.fetch("first_name");
+                            gu.lastname = stmt.fetch("last_name");
+                            gu.phonenumber = stmt.fetch("phone_number");
+                            gu.title = stmt.fetch("title");
+                            users.Add(gu);
+
+                            rc = stmt.dbSkip();
+                        }
+                        Result = users.ToArray();
+                    }
+                }
+                catch (Exception x)
+                {
+                    Global.messLog.Flush("GetGouserList() HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, x.Message);
+                    InsertErrorRecord(req.CustCode, string.Format("GetGouserList() Failed to send HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, x.Message), req);
+                }
+                finally
+                {
+                    if (stmt != null)
+                    {
+                        stmt.Close();
+                        stmt = null;
+                    }
+                }
             }
             return Result;
         }
@@ -4887,72 +5002,6 @@ namespace RoadaWebService
             {
                 if (stmt != null)
                     stmt.Close();
-            }
-            return Result;
-        }
-
-
-        [WebMethod(Description = "Retrieve Mobile Users listing")]
-        public GoUser[] GetGoUsers(Request request, out int userVersion)
-        {
-            GoUser[] Result = null;
-            userVersion = 0;
-
-            if (!LowSecurityCheck(request))
-                return Result;
-
-            string connStr = CustConnectionString(request);
-            SqlStmt stmt = null;
-            SqlStmt stmt2 = null;
-            try
-            {
-                if (GetStmt(connStr, out stmt2))
-                {
-                    if (stmt2.DoSQLFormat("SELECT TOP 1 users FROM go_update"))
-                    {
-                        userVersion = stmt2.ifetch("users");
-                    }
-
-                }
-                if (GetStmt(connStr, out stmt))
-                {
-
-
-                    List<GoUser> users = new List<GoUser>();
-                    bool rc;
-
-                    rc = stmt.DoSQLFormat("SELECT * FROM users WHERE mobile_user = {0}", 1);
-
-                    while (rc)
-                    {
-                        GoUser gu = new GoUser();
-                        gu.userRole = stmt.ifetch("mobile_role");
-                        gu.username = stmt.fetch("username");
-                        gu.password = stmt.fetch("password");
-                        gu.email = stmt.fetch("email");
-                        gu.firstname = stmt.fetch("first_name");
-                        gu.lastname = stmt.fetch("last_name");
-                        gu.phonenumber = stmt.fetch("phone_number");
-                        gu.title = stmt.fetch("title");
-                        users.Add(gu);
-                        rc = stmt.dbSkip();
-                    }
-                    Result = users.ToArray();
-                    users.Clear();
-                }
-            }
-            catch (Exception x)
-            {
-                Global.messLog.Flush("GetGouserList() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
-                InsertErrorRecord(request.CustCode, string.Format("GetGouserList() Failed to send HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message), request);
-            }
-            finally
-            {
-                if (stmt != null)
-                    stmt.Close();
-
-                if (stmt2 != null)
-                    stmt2.Close();
             }
             return Result;
         }
@@ -5093,7 +5142,7 @@ indexname varchar(128),
 columnname varchar(128)
 )
 #endif
-        [WebMethod(Description = "Retrieve all create/alter table statements for the RoadaTabPatrol app")]
+        [WebMethod(Description = "Retrieve all create/alter table / index statements for the RoadaTabPatrol app")]
         public tabletTables[] setupTabletDB(Request request)
         {
             tabletTables[] Result = null;
@@ -5121,7 +5170,7 @@ columnname varchar(128)
                 catch (Exception ex)
                 {
                     Global.messLog.Flush("setupTabletDB() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, ex.Message);
-                    InsertErrorRecord(request.CustCode, string.Format("setupTabletDB() Failed to send HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, ex.Message), request);
+                    InsertErrorRecord(request.CustCode, string.Format("setupTabletDB() Failed sending HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, ex.Message), request);
                 }
                 finally
                 {
@@ -5145,14 +5194,14 @@ columnname varchar(128)
         }
 
         [WebMethod(Description = "Retrieve current GPS readings")]
-        public GPSData[] GPSDataRequest(Request request, bool firstFlag, int devId, string unitNum)
+        public GPSData[] GPSDataRequest(Request req, bool firstFlag, int devId, string unitNum)
         {
             GPSData[] Result = null;
 
-            if (!LowSecurityCheck(request))
+            if (!LowSecurityCheck(req))
                 return Result;
 
-            string connStr = CustConnectionString(request);
+            string connStr = CustConnectionString(req);
             SqlStmt stmt = null;
             try
             {
@@ -5189,6 +5238,7 @@ columnname varchar(128)
                                 g.CellStrength = stmt.ifetch("cell_string");
                                 g.IDate = stmt.dtfetch("idate");
                                 gpsdata.Add(g);
+
                                 rc = stmt.dbSkip();
                             }
                             Result = gpsdata.ToArray();
@@ -5199,8 +5249,8 @@ columnname varchar(128)
             }
             catch (Exception x)
             {
-                Global.messLog.Flush("GPSDataRequest() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
-                InsertErrorRecord(request.CustCode, string.Format("GPSDataRequest() Failed to send HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message), request);
+                Global.messLog.Flush("GPSDataRequest() HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, x.Message);
+                InsertErrorRecord(req.CustCode, string.Format("GPSDataRequest() Failed to send HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, x.Message), req);
             }
             finally
             {
@@ -5368,7 +5418,6 @@ columnname varchar(128)
 
             return Result;
         }
-
     }
 
     public class MQueue
@@ -5379,7 +5428,7 @@ columnname varchar(128)
         public string Password;
         public string QName;
         public string Name;
-        public System.Messaging.Message MyMessage;
+        public Message MyMessage;
         public MessageQueueTransaction MessageTx;
         public MessageQueue MessageQ;
     }
