@@ -101,6 +101,17 @@ namespace DMTServices
             return tFilename;
         }
 
+        public static bool Copy(string src, string dest)
+        {
+            bool rc = true;
+            try
+            {
+                File.Copy(src, dest, true);
+            }
+            catch { rc = false; }
+            return rc;
+        }
+
         static public string BackUp(string fFilename)
         {
             string tFilename = fFilename;
