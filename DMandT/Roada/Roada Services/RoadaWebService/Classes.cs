@@ -227,6 +227,7 @@ namespace RoadaWebService
         public int esTimeout;
         public int dmTimeout;
         public bool opps;
+        public bool partolFrq;
     }
 
     public class RoadaDiagConfig
@@ -250,6 +251,7 @@ namespace RoadaWebService
         public string ObjStoreUrl;
         public string AmazonSecretKey;
         public string AmazonAccessKey;
+        public string patrolFrqURL;
     }
 
     public class GoUser
