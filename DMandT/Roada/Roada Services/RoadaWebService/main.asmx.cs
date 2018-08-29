@@ -1468,6 +1468,7 @@ namespace RoadaWebService
                     mdata.goConfig.esTimeout = stmt.ifetch("es_timeout");
                     mdata.goConfig.dmTimeout = stmt.ifetch("dm_timeout");
                     mdata.goConfig.opps = stmt.bfetch("opps");
+                    mdata.goConfig.partolFrq = stmt.bfetch("patrol_frq");
 
                     validConfig = true;
                 }
@@ -1547,6 +1548,7 @@ namespace RoadaWebService
                     ServerInfo.ObjStoreUrl = stmt.fetch("obj_store_url");
                     ServerInfo.AmazonSecretKey = stmt.fetch("amz_secret_key");
                     ServerInfo.AmazonAccessKey = stmt.fetch("amz_access_key");
+                    ServerInfo.patrolFrqURL = stmt.fetch("patrol_frq");
                     validConfig = true;
                 }
                 else
