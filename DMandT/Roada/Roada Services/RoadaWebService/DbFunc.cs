@@ -361,12 +361,13 @@ namespace DMTServices
 
             which adds back in the logon values to the connection string.
 
-            the 'myExtraSettings' is used to define the keys for login (some need 'user ID', some need 'UID' and some 'user', etc)
-            and then the Cypher will go into User ID=xxxx and CypherData will go into  Password=xxxx  after being Decrypted.  The Encrypt
-            and Decrypt functions are at the end of this file.  There is a program; CfgEditor.exe in VSS under 'DMandT\config file Edit' 
-            that will allow entering the password and encrypting it before storing in your .config file.  Just get that .exe and drag and 
-            drop your config file onto it (provided you have the above settings, CypherData <value> can be blank) and you can enter 
-            the password there... 
+            the 'myExtraSettings' is used to define the keys for login (some need 'user ID', some need 'UID' and some 'user', etc). This
+            config setting MUST exist as it tells the program to use this method but it's value can be blank/empty in which case it will
+            default to 'User ID=;Password=' and then the Cypher will go into User ID=xxxx and CypherData will go into  Password=xxxx  after 
+            being Decrypted.  The Encrypt and Decrypt functions are at the end of this file.  There is a program; CfgEditor.exe in VSS 
+            under 'DMandT\config file Edit' that will allow entering the password and encrypting it before storing in your .config file.
+            Just get that .exe and drag and drop your config file onto it (provided you have the above settings, CypherData <value> can be blank)
+            and you can enter the password there... 
         */
 
         public const string USER_PASS_APP_KEY = "myExtraSettings";
@@ -382,6 +383,9 @@ namespace DMTServices
                 if (appSet.ContainsKey(USER_PASS_APP_KEY))
                 {
                     string[] up = appSet[USER_PASS_APP_KEY].Split(';');
+                    if (up.Length < 1)
+                        up = "User ID=;Password=".Split(';');
+
                     if (up.Length > 1)
                     {
                         if (appSet.ContainsKey(USER_APP_KEY) && appSet.ContainsKey(PASS_APP_KEY))
@@ -1434,8 +1438,10 @@ namespace DMTServices
                                 }
                             }
                             cmd.Parameters.Add(new myParameter(paraName, parms.Value));
+#if !ODBC
                             if (paraType != string.Empty)
                                 cmd.Parameters[cmd.Parameters.Count - 1].UdtTypeName = paraType;
+#endif
                         }
 #endif
 
