@@ -1361,7 +1361,7 @@ namespace RoadaWebService
                 stmt.Mess = Global.messLog;
                 Result = new ManagerData();
 
-                Global.messLog.Flush("ManagerCheckin() HC: {0} Version: {1} IMEI: {2}", request.Handcode, request.Version, comInfo.IMEI);
+                Global.messLog.Flush("ManagerCheckin() HC: {0,5:####0} Version: {1} Cust: {2} IMEI: {3}", request.Handcode, request.Version, request.CustCode, comInfo.IMEI);
                 if (!stmt.DoSQL(String.Format("SELECT * FROM soft_activate WHERE client_guid = '{0}'", comInfo.IMEI)))
                 {
                     SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
@@ -2263,7 +2263,7 @@ namespace RoadaWebService
                 }
             if (Result == string.Empty)
             {
-                Global.messLog.Flush("Unknown customer code CustConnectionString() {0}", request.CustCode);
+                Global.messLog.Flush("Unknown customer code CustConnectionString(): {0}  HC: {1}", request.CustCode, request.Handcode);
                 InsertErrorRecord(request.CustCode, "CustConnectionString() " + request.CustCode.ToString(), request);
             }
 
@@ -4815,7 +4815,7 @@ create index unit_start on patrol_log(unit_num,start_patrol);
         {
             Vehicle[] Result = null;
             VehicleVersion = 0;
-            if (LowSecurityCheck(request))
+            if (LowSecurityCheck(request, "GetVehicleList"))
             {
                 string connStr = CustConnectionString(request);
                 SqlStmt stmt = null;
@@ -4880,7 +4880,7 @@ create index unit_start on patrol_log(unit_num,start_patrol);
             GoUser[] Result = null;
             userVersion = 0;
 
-            if (LowSecurityCheck(req))
+            if (LowSecurityCheck(req, "GetGoUsers"))
             {
                 string connStr = CustConnectionString(req);
                 SqlStmt stmt = null;
