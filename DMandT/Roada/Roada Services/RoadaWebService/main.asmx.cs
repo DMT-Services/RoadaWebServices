@@ -732,10 +732,15 @@ namespace RoadaWebService
 
         private bool LowSecurityCheck(Request request)
         {
-            return LowSecurityCheck(request, string.Empty);
+            return LowSecurityCheck(request, string.Empty, false);
         }
 
         private bool LowSecurityCheck(Request request, string function)
+        {
+            return LowSecurityCheck(request, function, false);
+        }
+
+        private bool LowSecurityCheck(Request request, string function, bool onlyNull)
         {
             bool Result = false;
             if (request != null)
@@ -745,13 +750,13 @@ namespace RoadaWebService
                     Global.messLog.Flush("LowSecurityCheck() failed with {0} and {1} {2}", request.UserName, request.Password, function);
                 else
                 {
-                    if (function != string.Empty)
-                        Global.messLog.Flush("{0}() HC: {1}", function, request.Handcode);
+                    if (function != string.Empty && !onlyNull)
+                        Global.messLog.Flush("{0}() HC: {1}  CC: {2}", function, request.Handcode, request.CustCode);
                 }
             }
             else
             {
-                Global.messLog.Flush("Received Null Request");
+                Global.messLog.Flush("Received Null Request" + ((function != string.Empty) ? " - " + function : ""));
             }
 
             return Result;
@@ -815,7 +820,7 @@ namespace RoadaWebService
         public Trip[] RequestTrips(Request request, int handCode, DateTime startDate, int rowCount)
         {
             Trip[] Result = null;
-            if (LowSecurityCheck(request))
+            if (LowSecurityCheck(request, "RequestTrips"))
             {
                 string connStr = CustConnectionString(request);
                 SqlStmt stmt = null;
@@ -860,7 +865,7 @@ namespace RoadaWebService
         {
             GPSData[] Result = null;
 
-            if (!LowSecurityCheck(request))
+            if (!LowSecurityCheck(request, "GPSDataRangeRequest"))
                 return Result;
 
             string connStr = CustConnectionString(request);
@@ -924,7 +929,7 @@ namespace RoadaWebService
         public int SaveRoute(Request request, Route route)
         {
             int Result = -1;
-            if (LowSecurityCheck(request))
+            if (LowSecurityCheck(request, "SaveRoute"))
             {
                 Result = -2;
                 string connStr = CustConnectionString(request);
@@ -1228,7 +1233,7 @@ namespace RoadaWebService
         public WeatherLocation GetWeatherLocation(Request request, int devId, DateTime locationDate)
         {
             WeatherLocation Result = null;
-            if (LowSecurityCheck(request))
+            if (LowSecurityCheck(request, "GetWeatherLocation"))
             {
                 string connStr = CustConnectionString(request);
                 SqlStmt stmt = null;
@@ -1283,7 +1288,7 @@ namespace RoadaWebService
         public Yard[] RequestYards(Request request)
         {
             Yard[] Result = null;
-            if (LowSecurityCheck(request))
+            if (LowSecurityCheck(request, "RequestYards"))
             {
                 string connStr = CustConnectionString(request);
                 SqlStmt stmt = null;
@@ -1334,7 +1339,7 @@ namespace RoadaWebService
         {
             outData = new AppServerInfo();
             // low security check, don't want hackers!
-            if (!LowSecurityCheck(req))
+            if (!LowSecurityCheck(req, "GetServerInfo"))
                 return -1;
             else
             {
@@ -1351,7 +1356,7 @@ namespace RoadaWebService
 
             ManagerData Result = null;
             // low security check, don't want hackers!
-            if (!LowSecurityCheck(request))
+            if (!LowSecurityCheck(request, "ManagerCheckin", true))
                 return null;
 
             SqlStmt stmt = null;
@@ -1616,7 +1621,7 @@ namespace RoadaWebService
             response.CommFlag = false;
             response.Mesg = "Unknown error";
             // added security!!
-            if (LowSecurityCheck(request))
+            if (LowSecurityCheck(request, "CommSoftware"))
             {
                 SqlConn mConn = new SqlConn("MainConn");
                 SqlStmt stmt = null;
@@ -1690,7 +1695,7 @@ namespace RoadaWebService
             response.CommFlag = false;
             response.Mesg = "Unknown error";
             // added security!!
-            if (LowSecurityCheck(request))
+            if (LowSecurityCheck(request, "PhoneSoft"))
             {
                 SqlConn mConn = new SqlConn("MainConn");
                 SqlStmt stmt = null;
@@ -1755,7 +1760,7 @@ namespace RoadaWebService
         public string[] GetObjects(Request request, VersionInfo[] versions)
         {
             string[] Result = new string[0];
-            if (LowSecurityCheck(request))
+            if (LowSecurityCheck(request, "GetObjects"))
             {
                 SqlStmt stmt = new SqlStmt("mainconn");
                 stmt.Mess = Global.messLog;
@@ -1809,7 +1814,7 @@ namespace RoadaWebService
         public bool SetObjects(Request request, string[] objList)
         {
             bool Result = false;
-            if (LowSecurityCheck(request))
+            if (LowSecurityCheck(request, "SetObjects"))
             {
                 SqlStmt stmt = new SqlStmt("MainConn");
                 stmt.Mess = Global.messLog;
@@ -1850,7 +1855,7 @@ namespace RoadaWebService
         {
             byte[] Result = new byte[0];
             count = 0;
-            if (!LowSecurityCheck(request))
+            if (!LowSecurityCheck(request, "GetFileBlock"))
                 block = -2;     // failed security check!
             else
             {
@@ -1885,7 +1890,7 @@ namespace RoadaWebService
         public bool SetFileBlock(Request request, string fileName, byte[] data, int count)
         {
             bool Result = false;
-            if (LowSecurityCheck(request))
+            if (LowSecurityCheck(request, "SetFileBlock"))
             {
                 string destName = MessLog.ApplicationPath() + RECVD_PATH + Path.GetFileName(fileName);
                 Global.messLog.Flush("Path " + destName);
@@ -1913,7 +1918,7 @@ namespace RoadaWebService
         public bool RenameFile(Request request, string oldName, string newName)
         {
             bool Result = false;
-            if (LowSecurityCheck(request))
+            if (LowSecurityCheck(request, "RenameFile"))
             {
                 try
                 {
@@ -1939,7 +1944,7 @@ namespace RoadaWebService
         public Client[] GetClients(Request request)
         {
             Client[] Result = new Client[0];
-            if (LowSecurityCheck(request))
+            if (LowSecurityCheck(request, "GetClients"))
             {
                 SqlConn mConn = new SqlConn("MainConn");
                 SqlStmt stmt = null;
@@ -2055,9 +2060,7 @@ namespace RoadaWebService
         public CustomerSettings GetCustomerSettings(Request request, int currentHandcode, string IMEI)
         {
             CustomerSettings custSet = new CustomerSettings();
-
-
-            if (!LowSecurityCheck(request))
+            if (!LowSecurityCheck(request, "GetCustomerSettings"))
             {
                 custSet.ErrorResp = "Failed to authenticate";
             }
@@ -2199,7 +2202,7 @@ namespace RoadaWebService
         public Client[] GetClientList(Request request)
         {
             Client[] Result = null;
-            if (!LowSecurityCheck(request))
+            if (!LowSecurityCheck(request, "GetClientList"))
                 return Result;
 
             SqlConn mConn = new SqlConn("MainConn");
@@ -2263,7 +2266,7 @@ namespace RoadaWebService
                 }
             if (Result == string.Empty)
             {
-                Global.messLog.Flush("Unknown customer code CustConnectionString(): {0}  HC: {1}", request.CustCode, request.Handcode);
+                Global.messLog.Flush("Unknown customer code CustConnectionString(): {0}  HC: {1}  Ver: {2}", request.CustCode, request.Handcode, request.Version);
                 InsertErrorRecord(request.CustCode, "CustConnectionString() " + request.CustCode.ToString(), request);
             }
 
@@ -2664,7 +2667,7 @@ namespace RoadaWebService
         {
             DeviceInfo dInfo = null;
 
-            if (!LowSecurityCheck(request))
+            if (!LowSecurityCheck(request, "GetDeviceInfo"))
                 return dInfo;
 
             string connStr = CustConnectionString(request);
@@ -2758,7 +2761,7 @@ namespace RoadaWebService
 
             int Result = 0;
             // low security check, don't want hackers!
-            if (!LowSecurityCheck(req))
+            if (!LowSecurityCheck(req, "SendWeatherReport"))
                 return -2;
 
             string connStr = CustConnectionString(req);
@@ -2828,7 +2831,7 @@ namespace RoadaWebService
 
             int Result = 0;
             // low security check, don't want hackers!
-            if (!LowSecurityCheck(req))
+            if (!LowSecurityCheck(req, "SendReportNew"))
                 return -2;
 
             string connStr = CustConnectionString(req);
@@ -2946,13 +2949,14 @@ namespace RoadaWebService
             }
             return Result;
         }
+
         [WebMethod(Description = "Push Collision Report")]
         public int SendReport(Request req, ReportData rdata)
         {
 
             int Result = 0;
             // low security check, don't want hackers!
-            if (!LowSecurityCheck(req))
+            if (!LowSecurityCheck(req, "SendReport"))
                 return -2;
 
             string connStr = CustConnectionString(req);
@@ -3078,7 +3082,7 @@ namespace RoadaWebService
         {
             int Result = 0;
             // low security check, don't want hackers!
-            if (!LowSecurityCheck(req))
+            if (!LowSecurityCheck(req, "SendImage"))
                 return -2;
 
             string connStr = CustConnectionString(req);
@@ -3211,7 +3215,7 @@ namespace RoadaWebService
         {
             int Result = -1;
             // low security check, don't want hackers!
-            if (!LowSecurityCheck(req))
+            if (!LowSecurityCheck(req, "SendPatrolTripData"))
                 return Result;
 
             string connStr = CustConnectionString(req);
@@ -3248,7 +3252,7 @@ namespace RoadaWebService
         {
             int Result = -1;
             // low security check, don't want hackers!
-            if (!LowSecurityCheck(req))
+            if (!LowSecurityCheck(req, "SendPatrolTripXData"))
                 return Result;
 
             string connStr = CustConnectionString(req);
@@ -3290,7 +3294,7 @@ namespace RoadaWebService
         {
             int Result = -1;
             // low security check, don't want hackers!
-            if (!LowSecurityCheck(req))
+            if (!LowSecurityCheck(req, "SendPatrolTripDetailData"))
                 return Result;
 
             string connStr = CustConnectionString(req);
@@ -3326,7 +3330,7 @@ namespace RoadaWebService
         {
             bool Result = false;
             // low security check, don't want hackers!
-            if (LowSecurityCheck(req))
+            if (LowSecurityCheck(req, "ValidateUserList"))
             {
                 string connStr = CustConnectionString(req);
                 SqlStmt stmt = null;
@@ -3360,7 +3364,7 @@ namespace RoadaWebService
         {
             bool Result = false;
             // low security check, don't want hackers!
-            if (LowSecurityCheck(req))
+            if (LowSecurityCheck(req, "ValidateVehicleList"))
             {
                 string connStr = CustConnectionString(req);
                 SqlStmt stmt = null;
@@ -3394,7 +3398,7 @@ namespace RoadaWebService
         {
             int Result = -1;
             // low security check, don't want hackers!
-            if (LowSecurityCheck(req))
+            if (LowSecurityCheck(req, "getUserListVersion"))
             {
                 string connStr = CustConnectionString(req);
                 SqlStmt stmt = null;
@@ -3428,7 +3432,7 @@ namespace RoadaWebService
         {
             int Result = -1;
             // low security check, don't want hackers!
-            if (LowSecurityCheck(req))
+            if (LowSecurityCheck(req, "getVehicleListVersion"))
             {
                 string connStr = CustConnectionString(req);
                 SqlStmt stmt = null;
@@ -3463,30 +3467,32 @@ namespace RoadaWebService
             DateTime lastEvent = new DateTime();
 
             // low security check, don't want hackers!
-            if (!LowSecurityCheck(req))
-                return lastEvent;
-
-            string connStr = CustConnectionString(req);
-            SqlStmt stmt = null;
-            try
+            if (LowSecurityCheck(req, "SupportDashboardCheck"))
             {
-                if (GetStmt(connStr, out stmt))
+
+                string connStr = CustConnectionString(req);
+                SqlStmt stmt = null;
+                try
                 {
-                    if (stmt.DoSQL(String.Format("select top 1 * from go_events order by idate desc")))
+                    if (GetStmt(connStr, out stmt))
                     {
-                        lastEvent = stmt.dtfetch("idate");
+                        if (stmt.DoSQL(String.Format("select top 1 * from go_events order by idate desc")))
+                            lastEvent = stmt.dtfetch("idate");
                     }
                 }
-            }
-            catch (Exception x)
-            {
-                Global.messLog.Flush("SupportDashboardCheck() Failed: " + x.Message);
-                InsertErrorRecord(req.CustCode, "SupportDashboardCheck() " + x.Message, req);
-            }
-            finally
-            {
-                if (stmt != null)
-                    stmt.Close();
+                catch (Exception ex)
+                {
+                    Global.messLog.Flush("SupportDashboardCheck() Failed: " + ex.Message);
+                    InsertErrorRecord(req.CustCode, "SupportDashboardCheck() " + ex.Message, req);
+                }
+                finally
+                {
+                    if (stmt != null)
+                    {
+                        stmt.Close();
+                        stmt = null;
+                    }
+                }
             }
             return lastEvent;
         }
@@ -3567,7 +3573,7 @@ namespace RoadaWebService
         {
             int Result = 0;
             // low security check, don't want hackers!
-            if (!LowSecurityCheck(req))
+            if (!LowSecurityCheck(req, "SendPhotoData"))
                 return -2;
 
             string connStr = CustConnectionString(req);
@@ -3665,7 +3671,7 @@ namespace RoadaWebService
         {
             int Result = 0;
             // low security check, don't want hackers!
-            if (!LowSecurityCheck(req))
+            if (!LowSecurityCheck(req, "SendCommision"))
                 return -2;
 
             SqlStmt stmt = null;
@@ -3744,7 +3750,7 @@ namespace RoadaWebService
         public DispatchStatus UpdateDispatch(Request req, DispatchStatus info)
         {
             // low security check, don't want hackers!
-            if (!LowSecurityCheck(req))
+            if (!LowSecurityCheck(req, "UpdateDispatch"))
                 return null;
 
             string connStr = CustConnectionString(req);
@@ -3786,7 +3792,7 @@ namespace RoadaWebService
         public int GetDispatch(Request req, string truck, int routeId)
         {
             // low security check, don't want hackers!
-            if (!LowSecurityCheck(req))
+            if (!LowSecurityCheck(req, "GetDispatch"))
                 return -1;
             int status = 0;
             string connStr = CustConnectionString(req);
@@ -3822,7 +3828,7 @@ namespace RoadaWebService
         {
             HosEvent[] Result = null;
 
-            if (!LowSecurityCheck(request))
+            if (!LowSecurityCheck(request, "GetHosList"))
                 return Result;
 
             string connStr = CustConnectionString(request);
@@ -3869,7 +3875,7 @@ namespace RoadaWebService
         {
             int Result = -1;
             // low security check, don't want hackers!
-            if (!LowSecurityCheck(req))
+            if (!LowSecurityCheck(req, "SendHosEvent"))
                 return Result;
 
 
@@ -3916,7 +3922,7 @@ namespace RoadaWebService
         {
             int Result = -1;
             // low security check, don't want hackers!
-            if (!LowSecurityCheck(req))
+            if (!LowSecurityCheck(req, "sendInstallerPics"))
                 return Result;
 
             string connStr = CustConnectionString(req);
@@ -3978,7 +3984,7 @@ namespace RoadaWebService
         {
             int Result = -1;
             // low security check, don't want hackers!
-            if (!LowSecurityCheck(req))
+            if (!LowSecurityCheck(req, "SendInstallData"))
                 return Result;
 
             string connStr = CustConnectionString(req);
@@ -4058,7 +4064,7 @@ namespace RoadaWebService
         {
             int Result = -1;
             // low security check, don't want hackers!
-            if (!LowSecurityCheck(req))
+            if (!LowSecurityCheck(req, "sendSidewalkPics"))
                 return Result;
 
             string connStr = CustConnectionString(req);
@@ -4118,7 +4124,7 @@ namespace RoadaWebService
         {
             int Result = -1;
             // low security check, don't want hackers!
-            if (!LowSecurityCheck(req))
+            if (!LowSecurityCheck(req, "SendSidewalkData"))
                 return Result;
 
             string connStr = CustConnectionString(req);
@@ -4381,7 +4387,7 @@ namespace RoadaWebService
             commissioned = false;
             int Result = -1;
             // low security check, don't want hackers!
-            if (!LowSecurityCheck(req))
+            if (!LowSecurityCheck(req, "ComissionInstaller"))
                 return Result;
 
             SqlConn mConn = new SqlConn("MainConn");
@@ -4712,7 +4718,7 @@ create index unit_start on patrol_log(unit_num,start_patrol);
             }
 
             // low security check, don't want hackers!
-            if (!LowSecurityCheck(req))
+            if (!LowSecurityCheck(req, "SendEventRecord"))
                 return Result;
 
             string connStr = CustConnectionString(req);
@@ -4765,7 +4771,7 @@ create index unit_start on patrol_log(unit_num,start_patrol);
             data.online = 0;
 
             // low security check, don't want hackers!
-            if (!LowSecurityCheck(req))
+            if (!LowSecurityCheck(req, "GetLoginStatus"))
                 return data;
 
             string connStr = CustConnectionString(req);
@@ -4934,7 +4940,7 @@ create index unit_start on patrol_log(unit_num,start_patrol);
         {
             MobileRoles[] Result = null;
 
-            if (!LowSecurityCheck(request))
+            if (!LowSecurityCheck(request, "GetMobileRoles"))
                 return Result;
 
             string connStr = CustConnectionString(request);
@@ -4986,7 +4992,7 @@ create index unit_start on patrol_log(unit_num,start_patrol);
         {
             DCenterData[] Result = null;
 
-            if (!LowSecurityCheck(request))
+            if (!LowSecurityCheck(request, "GetDCLatLongs"))
                 return Result;
 
             string connStr = CustConnectionString(request);
@@ -5033,7 +5039,7 @@ create index unit_start on patrol_log(unit_num,start_patrol);
         {
             VehicleType[] Result = null;
 
-            if (!LowSecurityCheck(request))
+            if (!LowSecurityCheck(request, "GetVehicleTypes"))
                 return Result;
 
             string connStr = CustConnectionString(request);
@@ -5073,11 +5079,11 @@ create index unit_start on patrol_log(unit_num,start_patrol);
             return Result;
         }
 
-        [WebMethod(Description = "Retrieve go Alter table statments")]
+        [WebMethod(Description = "Retrieve go Alter table statements")]
         public ColumnCheckData[] GetGoAlters(Request request)
         {
             ColumnCheckData[] Result = null;
-            if (LowSecurityCheck(request))
+            if (LowSecurityCheck(request, "GetGoAlters", true))
             {
                 //SqlConn mConn = new SqlConn("MainConn");
                 SqlStmt stmt = new SqlStmt("MainConn");
@@ -5103,8 +5109,8 @@ create index unit_start on patrol_log(unit_num,start_patrol);
 
                 catch (Exception x)
                 {
-                    Global.messLog.Flush("GetGoTables() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
-                    InsertErrorRecord(request.CustCode, string.Format("GetGoTables() Failed to send HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message), request);
+                    Global.messLog.Flush("GetGoAlters() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
+                    InsertErrorRecord(request.CustCode, string.Format("GetGoAlters() Failed to send HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message), request);
                 }
                 finally
                 {
@@ -5115,11 +5121,11 @@ create index unit_start on patrol_log(unit_num,start_patrol);
             return Result;
         }
 
-        [WebMethod(Description = "Retrieve go create table statments")]
+        [WebMethod(Description = "Retrieve go create table statements")]
         public goTables[] GetGoTables(Request request)
         {
             goTables[] Result = null;
-            if (LowSecurityCheck(request))
+            if (LowSecurityCheck(request, "GetGoTables", true))
             {
                 SqlStmt stmt = new SqlStmt("MainConn");
                 try
@@ -5153,6 +5159,82 @@ create index unit_start on patrol_log(unit_num,start_patrol);
             return Result;
         }
 
+        // defines the relationship between LoginData class and patrol_log fields
+        // first string is name in class, second is name in database
+        string[,] loginLayout = { { "HandCode", "hand_code" },
+                                  { "UnitNum", "unit_num" },
+                                  { "UserName", "user_name" },
+                                  { "StartTime", "start_patrol" },
+                                  { "StartLatitude", "start_latitude" },
+                                  { "StartLongitude", "start_longitude" },
+                                  { "EndTime", "end_patrol" },
+                                  { "EndLatitude", "end_latitude" },
+                                  { "EndLongitude", "end_longitude" } };
+
+        [WebMethod(Description = "Receive Login Data as JSON")]
+        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public int SendTabletLoginJson(Request req, LoginData data)
+        {
+            return SendTabletLogin(req, data);
+        }
+
+        [WebMethod(Description = "Receive Login Data from Tablet")]
+        public int SendTabletLogin(Request req, LoginData data)
+        {
+            int rc = 0;
+
+            // low security check, don't want hackers!
+            if (LowSecurityCheck(req, "SendTabletLogin"))
+            {
+                string connStr = CustConnectionString(req);
+
+                SqlStmt stmt = null;
+                try
+                {
+                    rc = -2;
+                    if (GetStmt(connStr, out stmt))
+                    {
+                        SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
+                        procData.fillQuery(data, loginLayout, sql);
+
+                        string where = string.Format("WHERE hand_code={0} and start_patrol={1}", data.HandCode, SqlHelper.timeStamp(data.StartTime));
+
+                        if (stmt.DoSQL("SELECT id FROM patrol_log " + where))
+                        {
+                            rc = stmt.ifetch("id");     // return the ID of the existing record...
+                            stmt.DoSQL(sql.BuildCmd("patrol_log", false, where));
+                        }
+                        else
+                        {
+                            //Global.messLog.Flush("SendLoginData WHERE: " + where);
+                            //if (stmt.LastError != string.Empty)
+                            //    Global.messLog.Flush("SendLoginData ERROR: " + stmt.LastError);
+
+                            // MUST set second param of DoSQL() to true as this makes it run the insert 
+                            // as an ExecuteReader instead of ExecuteNonQuery so we can get back the inserted id
+                            stmt.DoSQL(sql.BuildInsert("INSERT INTO patrol_log", " output inserted.id VALUES "), true);
+                            rc = stmt.ifetch("id");     // return the ID of the new record...
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    rc = -3;
+                    Global.messLog.Flush("SendTabletLogin() data failed to receive: " + ex.Message);
+                    InsertErrorRecord(req.CustCode, string.Format("SendTabletLogin() data failed to receive HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, ex.Message), req);
+                }
+                finally
+                {
+                    if(stmt != null)
+                    {
+                        stmt.Close();
+                        stmt = null;
+                    }
+                }
+
+            }
+            return rc;
+        }
 
 #if SQL
 create table tablet_sql
@@ -5168,7 +5250,7 @@ columnname varchar(128)
         public tabletTables[] setupTabletDB(Request request)
         {
             tabletTables[] Result = null;
-            if (LowSecurityCheck(request))
+            if (LowSecurityCheck(request, "setupTabletDB", true))
             {
                 SqlStmt stmt = new SqlStmt("MainConn");
                 try
@@ -5220,7 +5302,7 @@ columnname varchar(128)
         {
             GPSData[] Result = null;
 
-            if (!LowSecurityCheck(request))
+            if (!LowSecurityCheck(request, "GPSDataRequest"))
                 return Result;
 
             string connStr = CustConnectionString(request);
@@ -5283,7 +5365,6 @@ columnname varchar(128)
             return Result;
         }
 
-
         [WebMethod(Description = "Retrieves replication data from the server")]
         public ReplicationData[] GetReplicationDataX(Request request,
                                                       string dbCode, string region, int histMax, int startRecord)
@@ -5301,7 +5382,7 @@ columnname varchar(128)
              *          months maximum (in "histMax") we want (value of -1 will have this parameter ignored).
              */
             ReplicationData[] Result = new ReplicationData[0];
-            if (LowSecurityCheck(request))
+            if (LowSecurityCheck(request, "GetReplicationDataY"))
             {
                 SqlStmt rstmt = new SqlStmt("MainConn");
                 rstmt.Mess = Global.messLog;

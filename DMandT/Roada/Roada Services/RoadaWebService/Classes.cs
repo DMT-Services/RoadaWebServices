@@ -154,6 +154,20 @@ namespace RoadaWebService
         public string Location { get; set; }
     }
 
+    [DataContract]
+    public class LoginData
+    {
+        public int HandCode { get; set; }
+        public string UnitNum { get; set; }
+        public string UserName { get; set; }
+        public DateTime StartTime { get; set; }
+        public double StartLatitude { get; set; }
+        public double StartLongitude { get; set; }
+        public DateTime EndTime { get; set; }
+        public double EndLatitude { get; set; }
+        public double EndLongitude { get; set; }
+    }
+
     public class ColumnCheckData
     {
         public int idField;
