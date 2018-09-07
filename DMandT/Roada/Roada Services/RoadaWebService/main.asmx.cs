@@ -1,20 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Web;
 using System.Web.Services;
 using System.Messaging;
 using System.Runtime.InteropServices;
 using System.IO;
 using System.Xml.Serialization;
-using System.Collections;
-using System.Reflection;
-using DMTServices;
 using System.Diagnostics;
 using System.Xml;
 using System.Web.Configuration;
 using System.Web.Script.Services;
-using System.ComponentModel;
+
+using DMTServices;
 
 namespace RoadaWebService
 {
@@ -750,7 +747,7 @@ namespace RoadaWebService
                 else
                 {
                     if (function != string.Empty && !onlyNull)
-                        Global.messLog.Flush("{0}() HC: {1}  CC: {2}", function, request.Handcode, request.CustCode);
+                        Global.messLog.Flush("{0}() HC: {1}  CC: {2} - {3}", function, request.Handcode, request.CustCode, request.Version);
                 }
             }
             else
@@ -2261,8 +2258,8 @@ namespace RoadaWebService
                 {
                     Result = mq.ConnectionString;
                     break;
-
                 }
+
             if (Result == string.Empty)
             {
                 Global.messLog.Flush("Unknown customer code CustConnectionString(): {0}  HC: {1}  Ver: {2}", request.CustCode, request.Handcode, request.Version);
