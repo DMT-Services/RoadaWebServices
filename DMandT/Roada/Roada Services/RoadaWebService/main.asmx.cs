@@ -718,7 +718,6 @@ namespace RoadaWebService
             catch (Exception ex)
             {
                 Global.messLog.Flush(string.Format("InsertErrorRecord Excp: {0}", ex.Message));
-
             }
             finally
             {
@@ -2267,7 +2266,10 @@ namespace RoadaWebService
             if (Result == string.Empty)
             {
                 Global.messLog.Flush("Unknown customer code CustConnectionString(): {0}  HC: {1}  Ver: {2}", request.CustCode, request.Handcode, request.Version);
-                InsertErrorRecord(request.CustCode, "CustConnectionString() " + request.CustCode.ToString(), request);
+
+                // SORRY, CANNOT CALL THIS FUNCTION FROM HERE
+                // THE FIRST THING InsertErrorRecord DOES IS CALL CustConnectionString TO WRITE ERROR TO TABLE ... RECURSION!!!!
+                // InsertErrorRecord(request.CustCode, "CustConnectionString() " + request.CustCode.ToString(), request);
             }
 
             return Result;
