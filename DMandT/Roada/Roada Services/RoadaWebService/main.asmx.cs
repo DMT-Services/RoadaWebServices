@@ -5317,6 +5317,44 @@ columnname varchar(128)
             return Result;
         }
 
+        [WebMethod(Description = "Prepare Frequency Page")]
+        public string setupFreqPage(Request req, string data)
+        {
+            string Result = string.Empty;
+            if (LowSecurityCheck(req, "setupFreqPage"))
+            {
+                string connStr = CustConnectionString(req);
+
+                SqlStmt stmt = null;
+                try
+                {
+                    if (GetStmt(connStr, out stmt))
+                    {
+                        Result = Guid.NewGuid().ToString();
+                        SqlHelper query = new SqlHelper();
+                        query.Add("lookup", Result);
+                        string[] d = data.Split('|');
+                        if(d.Length>1)
+                        {
+                            query.Add("name", d[0]);
+                            query.Add("dkey", d[1]);
+                        }
+                        query.AddNow("start");
+                        stmt.DoSQL(query.BuildCmd("loguser", true));
+                    }
+                }
+                finally
+                {
+                    if (stmt != null)
+                    {
+                        stmt.Close();
+                        stmt = null;
+                    }
+                }
+            }
+            return Result;
+        }
+
         private bool GetStmt(string connStr, out SqlStmt stmt)
         {
             stmt = new SqlStmt();
