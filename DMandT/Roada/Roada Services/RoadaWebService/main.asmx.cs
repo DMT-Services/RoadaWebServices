@@ -3518,7 +3518,7 @@ namespace RoadaWebService
             pData.latitude = (decimal)picturedata.lat;
             pData.longitude = (decimal)picturedata.lon;
             pData.username = picturedata.username;
-            pData.installKey = picturedata.InstallKey;
+            pData.repkey  = picturedata.InstallKey;
             pData.handcode = picturedata.handcode;
             pData.unitnum = picturedata.unitNum;
             pData.objKey = picturedata.objKey;
@@ -3564,7 +3564,36 @@ namespace RoadaWebService
             sql.Add("signal_str", pdata.SignalStr);
             sql.Add("net_type", pdata.NetworkType);
 
-            stmt.DoSQL(sql.BuildCmd("img_events", true));
+            string msg = string.Empty;
+            string inner = string.Empty;
+            bool excp = false;
+            try
+            {
+                if (!stmt.DoSQLFormat("SELECT id FROM img_events WHERE obj_key='{0}'", pdata.objKey))
+                    stmt.DoSQL(sql.BuildCmd("img_events", true));
+            }
+            catch(Exception ex)
+            {
+                // some versions of the tablet program take multiple pictures with the same rdate which will cause this error
+                excp = (stmt.LastError.Contains("duplicate key") && stmt.LastError.Contains("unique_rdatehc"));
+                if(!excp)
+                    throw new System.Exception(ex.Message, ex.InnerException);
+            }
+            if (excp)
+            {
+                int max = 15;
+                do
+                {
+                    pdata.rdate = pdata.rdate.AddSeconds(1);
+                    if (max-- <= 0)
+                        break;
+                }
+                while (stmt.DoSQLFormat("select id from img_events where hand_code={0} and rdate={1}", pdata.handcode, SqlHelper.timeStamp(pdata.rdate)));
+
+                sql.Remove("rdate");
+                sql.Add("rdate", pdata.rdate);
+                stmt.DoSQL(sql.BuildCmd("img_events", true));
+            }
         }
 
         [WebMethod(Description = "Push Camera Image")]
@@ -3935,6 +3964,8 @@ namespace RoadaWebService
                     foreach (var data in picturedata)
                     {
                         PhotoData pData = convertInstallPic(data);
+                        pData.installKey = data.InstallKey;     // convertInstallPic puts it in repkey
+                        pData.repkey = null;
                         pData.custCode = req.CustCode;
                         pData.intall = true;
 
@@ -4315,6 +4346,7 @@ namespace RoadaWebService
                         stmt.DoSQL(sql.BuildInsert("INSERT INTO deficiencies", " output inserted.id VALUES "), true);
                         Result = stmt.ifetch("id");     // return the ID of the new record...
                     }
+                    // OLD TABLETS EXPECT THIS:  Result = 1;
                 }
             }
             catch (Exception ex)
