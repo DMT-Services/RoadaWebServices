@@ -4149,7 +4149,7 @@ namespace RoadaWebService
             return Result;
         }
 
-        [WebMethod(Description = "Puts installed Data Away")]
+        [WebMethod(Description = "Puts sidewalk inspection Data Away")]
         public int SendSidewalkData(Request req, SideWalkData data)
         {
             int Result = -1;
@@ -5318,7 +5318,7 @@ columnname varchar(128)
         }
 
         [WebMethod(Description = "Prepare Frequency Page")]
-        public string setupFreqPage(Request req, string data)
+        public string setupFreqPage(Request req, string data, string mdata)
         {
             string Result = string.Empty;
             if (LowSecurityCheck(req, "setupFreqPage"))
@@ -5331,15 +5331,13 @@ columnname varchar(128)
                     if (GetStmt(connStr, out stmt))
                     {
                         Result = Guid.NewGuid().ToString();
+
                         SqlHelper query = new SqlHelper();
                         query.Add("lookup", Result);
-                        string[] d = data.Split('|');
-                        if(d.Length>1)
-                        {
-                            query.Add("name", d[0]);
-                            query.Add("dkey", d[1]);
-                        }
+                        query.Add("name", data);
+                        query.Add("dkey", mdata);
                         query.AddNow("start");
+
                         stmt.DoSQL(query.BuildCmd("loguser", true));
                     }
                 }
