@@ -10,13 +10,14 @@ public static class DateTimeJSON
 
 public static class procData
 {
-    public static void fillQuery(object cl, string[,] layout, SqlHelper query)
+    public static SqlHelper fillQuery(object cl, string[,] layout)
     {
-        fillQuery(cl, layout, query, false);
+        return fillQuery(cl, layout, false);
     }
 
-    public static void fillQuery(object cl, string[,] layout, SqlHelper query, bool allowBlanks)
+    public static SqlHelper fillQuery(object cl, string[,] layout, bool allowBlanks)
     {
+        SqlHelper query = new SqlHelper();
         try
         {
             PropertyDescriptorCollection ordersProps = TypeDescriptor.GetProperties(cl);
@@ -48,6 +49,7 @@ public static class procData
         {
             throw;
         }
+        return query;
     }
 
     public static void fillClass(object cl, string[,] layout, SqlStmt stmt)

@@ -376,7 +376,7 @@ namespace RoadaWebService
                 Result = GetResponse(0);    // default to success
                 GPSData g = new GPSData();
                 g.COG = data.Direction;
-                g.DevId = Convert.ToInt32(data.UnitID);
+                g.DevId = myConvert.ToInt(data.UnitID);
                 g.Latitude = data.Lat;
                 g.Longitude = data.Lon;
                 g.MetersTravelled = 0;
@@ -3739,6 +3739,7 @@ namespace RoadaWebService
             }
             return Result;
         }
+
         public static DateTime fromUTC(DateTime date)
         {
             // Retrieve the time zone for Eastern Standard Time (U.S. and Canada).
@@ -4165,7 +4166,6 @@ namespace RoadaWebService
                 Result = -2;
                 if (GetStmt(connStr, out stmt))
                 {
-
                     SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
                     DateTime now = DateTime.Now.ToLocalTime();
 
@@ -4184,18 +4184,14 @@ namespace RoadaWebService
                     sql.Add("latitude", data.lat);
                     sql.Add("longitude", data.lon);
 
-
                     if (stmt.DoSQL(String.Format("SELECT * FROM sidewalk_report WHERE report_id = '{0}'", data.reportId)))
                     {
-
                         stmt.DoSQL(sql.BuildUpdate("UPDATE sidewalk_report", String.Format("WHERE report_id = '{0}'", data.reportId)));
 
                         Result = 1;
-
                     }
                     else
                     {
-
                         stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO sidewalk_report"));
 
                         Result = 2;
@@ -4325,8 +4321,7 @@ namespace RoadaWebService
                 Result = -2;
                 if (GetStmt(connStr, out stmt))
                 {
-                    SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
-                    procData.fillQuery(data, deficiencyLayout, sql);
+                    SqlHelper sql = procData.fillQuery(data, deficiencyLayout);
                     
                     // these are only used when sending data TO tablets and MUST be removed...
                     sql.Remove("id");
@@ -5225,8 +5220,7 @@ create index unit_start on patrol_log(unit_num,start_patrol);
                     rc = -2;
                     if (GetStmt(connStr, out stmt))
                     {
-                        SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
-                        procData.fillQuery(data, loginLayout, sql);
+                        SqlHelper sql = procData.fillQuery(data, loginLayout);
 
                         string where = string.Format("WHERE hand_code={0} and start_patrol={1}", data.HandCode, SqlHelper.timeStamp(data.StartTime));
 
@@ -5237,12 +5231,11 @@ create index unit_start on patrol_log(unit_num,start_patrol);
                         }
                         else
                         {
-                            //Global.messLog.Flush("SendLoginData WHERE: " + where);
-                            //if (stmt.LastError != string.Empty)
-                            //    Global.messLog.Flush("SendLoginData ERROR: " + stmt.LastError);
+                            // close off 'open' login for same handcode/user
+                            stmt.DoSQLFormat("update patrol_log set end_patrol={0} where hand_code={1} and user_name='{2}' and end_patrol is null", SqlHelper.timeStamp(data.StartTime), data.HandCode, data.UserName);
 
                             // MUST set second param of DoSQL() to true as this makes it run the insert 
-                            // as an ExecuteReader instead of ExecuteNonQuery so we can get back the inserted id
+                            // as an ExecuteReader instead of ExecuteNonQuery so we can get back the inserted.id
                             stmt.DoSQL(sql.BuildInsert("INSERT INTO patrol_log", " output inserted.id VALUES "), true);
                             rc = stmt.ifetch("id");     // return the ID of the new record...
                         }
