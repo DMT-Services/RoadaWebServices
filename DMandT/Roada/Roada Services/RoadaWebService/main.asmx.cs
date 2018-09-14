@@ -4341,7 +4341,9 @@ namespace RoadaWebService
                         stmt.DoSQL(sql.BuildInsert("INSERT INTO deficiencies", " output inserted.id VALUES "), true);
                         Result = stmt.ifetch("id");     // return the ID of the new record...
                     }
-                    // OLD TABLETS EXPECT THIS:  Result = 1;
+
+                    if (req.Handcode == 0 && req.Version == string.Empty)
+                        Result = 1;  // OLD TABLETS EXPECT THIS, remove once all RHILL tablets updated...
                 }
             }
             catch (Exception ex)
@@ -4907,14 +4909,14 @@ create index unit_start on patrol_log(unit_num,start_patrol);
         }
 
         [WebMethod(Description = "Retrieve Mobile Users listing")]
-        public GoUser[] GetGoUsers(Request req, out int userVersion)
+        public GoUser[] GetGoUsers(Request request, out int userVersion)
         {
             GoUser[] Result = null;
             userVersion = 0;
 
-            if (LowSecurityCheck(req, "GetGoUsers"))
+            if (LowSecurityCheck(request, "GetGoUsers"))
             {
-                string connStr = CustConnectionString(req);
+                string connStr = CustConnectionString(request);
                 SqlStmt stmt = null;
                 try
                 {
@@ -4946,8 +4948,8 @@ create index unit_start on patrol_log(unit_num,start_patrol);
                 }
                 catch (Exception x)
                 {
-                    Global.messLog.Flush("GetGouserList() HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, x.Message);
-                    InsertErrorRecord(req.CustCode, string.Format("GetGouserList() Failed to send HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, x.Message), req);
+                    Global.messLog.Flush("GetGouserList() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
+                    InsertErrorRecord(request.CustCode, string.Format("GetGouserList() Failed to send HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message), request);
                 }
                 finally
                 {
