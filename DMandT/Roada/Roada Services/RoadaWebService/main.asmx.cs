@@ -4909,14 +4909,14 @@ create index unit_start on patrol_log(unit_num,start_patrol);
         }
 
         [WebMethod(Description = "Retrieve Mobile Users listing")]
-        public GoUser[] GetGoUsers(Request request, out int userVersion)
+        public GoUser[] GetGoUsers(Request req, out int userVersion)
         {
             GoUser[] Result = null;
             userVersion = 0;
 
-            if (LowSecurityCheck(request, "GetGoUsers"))
+            if (LowSecurityCheck(req, "GetGoUsers"))
             {
-                string connStr = CustConnectionString(request);
+                string connStr = CustConnectionString(req);
                 SqlStmt stmt = null;
                 try
                 {
@@ -4948,8 +4948,8 @@ create index unit_start on patrol_log(unit_num,start_patrol);
                 }
                 catch (Exception x)
                 {
-                    Global.messLog.Flush("GetGouserList() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
-                    InsertErrorRecord(request.CustCode, string.Format("GetGouserList() Failed to send HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message), request);
+                    Global.messLog.Flush("GetGouserList() HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, x.Message);
+                    InsertErrorRecord(req.CustCode, string.Format("GetGouserList() Failed to send HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, x.Message), req);
                 }
                 finally
                 {
