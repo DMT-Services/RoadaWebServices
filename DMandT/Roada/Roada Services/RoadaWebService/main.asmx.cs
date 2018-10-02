@@ -4342,7 +4342,7 @@ namespace RoadaWebService
                         Result = stmt.ifetch("id");     // return the ID of the new record...
                     }
 
-                    if (req.Handcode == 0 && req.Version == string.Empty)
+                    if (req.Handcode == 0 && string.IsNullOrEmpty(req.Version))
                         Result = 1;  // OLD TABLETS EXPECT THIS, remove once all RHILL tablets updated...
                 }
             }
