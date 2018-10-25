@@ -4296,6 +4296,7 @@ namespace RoadaWebService
                                        { "Note", "notes" },
                                        { "Lat", "latitude" },
                                        { "Lon", "longitude" },
+                                       { "District", "wo_district" },
                                        { "Location", "location_desc"} };
 
         [WebMethod(Description = "Receive Deficiency Data as JSON")]

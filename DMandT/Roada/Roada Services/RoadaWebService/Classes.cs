@@ -149,6 +149,7 @@ namespace RoadaWebService
         public string Note { get; set; }
         public double Lon { get; set; }
         public double Lat { get; set; }
+        public string District { get; set; }
 
         [DataMember(IsRequired = false, EmitDefaultValue = false)]
         public string Location { get; set; }
