@@ -4521,6 +4521,7 @@ namespace RoadaWebService
             }
 
         }
+
         private void InsertgoEvent(evntRecord evnt, Request req)
         {
             SqlStmt stmt = null;
@@ -4599,6 +4600,10 @@ create index unit_start on patrol_log(unit_num,start_patrol);
 
         private void UpdateMessageIn(evntRecord evnt, Request req)
         {
+            // low security check, don't want hackers!
+            if (!LowSecurityCheck(req, "UpdateMessageIn"))
+                return;
+
             SqlStmt stmt = null;
             try
             {
@@ -4663,8 +4668,12 @@ create index unit_start on patrol_log(unit_num,start_patrol);
         public evntOut GetEventOps(Request req, string driver, string truck, int DCDHc)
         {
             evntOut result = null;
-            SqlStmt stmt = null;
 
+            // low security check, don't want hackers!
+            if (!LowSecurityCheck(req, "GetEventOps"))
+                return result;
+
+            SqlStmt stmt = null;
             try
             {
                 string connStr = CustConnectionString(req);
@@ -4672,12 +4681,10 @@ create index unit_start on patrol_log(unit_num,start_patrol);
                 {
                     SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
 
-
                     if (!string.IsNullOrEmpty(truck) && !string.IsNullOrEmpty(driver))
                     {
                         result = new evntOut();
-                        DateTime eventthres = new DateTime();
-                        eventthres = DateTime.Now.AddDays(-3);
+                        DateTime eventthres = DateTime.Now.AddDays(-3);
                         //Global.messLog.Flush("event3 date range: {0}", SqlHelper.timeStamp(eventthres));
                         bool rc = stmt.DoSQLFormat("SELECT event_type FROM vehicle_events with (nolock) WHERE driver = '{0}' AND s_date >= {1}", SqlHelper.FixUp(driver), SqlHelper.timeStamp(eventthres));
                         while (rc)
@@ -4698,27 +4705,20 @@ create index unit_start on patrol_log(unit_num,start_patrol);
                             }
                             rc = stmt.dbSkip();
                         }
-                        stmt.Clear();
+
+                        string where;
                         if (DCDHc > 0)
-                        {
-                            if (stmt.DoSQLFormat("SELECT op_code , route_name FROM dash with (nolock) WHERE hand_code = {0}", DCDHc))
-                            {
-                                result.plan = stmt.ifetch("op_code");
-                                result.routeName = stmt.fetch("route_name");
-                            }
-                        }
+                            where = string.Format("hand_code={0}", DCDHc);
                         else
+                            where = string.Format("unit_num='{0}'", truck);
+
+                        if (stmt.DoSQL("SELECT op_code,route_name FROM dash with (nolock) WHERE " + where))
                         {
-                            if (stmt.DoSQLFormat("SELECT op_code , route_name FROM dash with (nolock) WHERE unit_num = '{0}'", DCDHc))
-                            {
-                                result.plan = stmt.ifetch("op_code");
-                                result.routeName = stmt.fetch("route_name");
-                            }
+                            result.plan = stmt.ifetch("op_code");
+                            result.routeName = stmt.fetch("route_name");
                         }
-                        stmt.Clear();
                     }
                 }
-
             }
             catch (Exception ex)
             {
@@ -4729,26 +4729,25 @@ create index unit_start on patrol_log(unit_num,start_patrol);
             finally
             {
                 if (stmt != null)
+                {
                     stmt.Close();
+                    stmt = null;
+                }
             }
 
             return result;
-
         }
 
         [WebMethod(Description = "Consumes Event records send from Roada Go")]
         public int SendEventRecord(Request req, evntRecord evnt)
         {
             int Result = -1;
-
-            if (evnt == null)
-            {
-                return -2;
-            }
-
             // low security check, don't want hackers!
             if (!LowSecurityCheck(req, "SendEventRecord"))
                 return Result;
+
+            if (evnt == null)
+                return -2;
 
             string connStr = CustConnectionString(req);
 
@@ -4756,7 +4755,6 @@ create index unit_start on patrol_log(unit_num,start_patrol);
 
             try
             {
-
                 if (GetStmt(connStr, out stmt))
                 {
                     SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
@@ -4774,7 +4772,6 @@ create index unit_start on patrol_log(unit_num,start_patrol);
                     {
                         UpdateMessageIn(evnt, req); //only does this if phone is acting as DCD (configureable on the DMT manager)
                     }
-
                 }
             }
             catch (Exception x)
