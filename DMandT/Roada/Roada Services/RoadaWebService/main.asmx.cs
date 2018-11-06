@@ -4708,14 +4708,16 @@ create index unit_start on patrol_log(unit_num,start_patrol);
 
                         string where;
                         if (DCDHc > 0)
-                            where = string.Format("hand_code={0}", DCDHc);
+                            where = string.Format("dash.hand_code={0}", DCDHc);
                         else
-                            where = string.Format("unit_num='{0}'", truck);
+                            where = string.Format("dash.unit_num='{0}'", truck);
 
-                        if (stmt.DoSQL("SELECT op_code,route_name FROM dash with (nolock) WHERE " + where))
+                        if (stmt.DoSQL("SELECT dash.op_code, dash.route_id, dash.route_name, routes.name FROM dash with (nolock) left join routes on routes.id = dash.route_id WHERE " + where))
                         {
                             result.plan = stmt.ifetch("op_code");
-                            result.routeName = stmt.fetch("route_name");
+                            result.routeName = stmt.fetch("name"); 
+                            result.routeID = stmt.ifetch("route_id"); 
+                            result.routeNameYork = stmt.fetch("route_name");//adjusted for MTO pilot 11/06/2018 -jl
                         }
                     }
                 }
