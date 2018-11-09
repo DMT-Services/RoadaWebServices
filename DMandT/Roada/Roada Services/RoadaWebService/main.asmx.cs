@@ -4280,7 +4280,7 @@ namespace RoadaWebService
         // first string is name in class, second is name in database
         string[,] deficiencyLayout = { { "ServerId", "id"},
                                        { "ReportId", "report_id"},
-                                       { "RequestId", "RequestId"},
+                                       { "RequestId", "requestid"},
                                        { "HandCode", "hand_code"},
                                        { "UnitNum", "unit_num"},
                                        { "UserName", "user_name"},
@@ -4297,7 +4297,10 @@ namespace RoadaWebService
                                        { "Lat", "latitude" },
                                        { "Lon", "longitude" },
                                        { "District", "wo_district" },
-                                       { "Location", "location_desc"} };
+                                       { "Location", "location_desc"},
+                                       { "Closed", "closed" },
+                                       { "WO_Id", "workorderid" },
+                                       { "WO_No", "workorderno" } };
 
         [WebMethod(Description = "Receive Deficiency Data as JSON")]
         [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
@@ -4324,9 +4327,12 @@ namespace RoadaWebService
                 {
                     SqlHelper sql = procData.fillQuery(data, deficiencyLayout);
                     
-                    // these are only used when sending data TO tablets and MUST be removed...
+                    // these are only used when sending data TO tablets and MUST be removed here...
                     sql.Remove("id");
                     sql.Remove("requestid");
+                    sql.Remove("closed");
+                    sql.Remove("workorderid");
+                    sql.Remove("workorderno");
 
                     string where = string.Format("WHERE report_id='{0}'", data.ReportId);
 
@@ -4344,7 +4350,7 @@ namespace RoadaWebService
                     }
 
                     if (req.Handcode == 0 && string.IsNullOrEmpty(req.Version))
-                        Result = 1;  // OLD TABLETS EXPECT THIS, remove once all RHILL tablets updated...
+                        Result = 1;  // OLD TABLETS EXPECT THIS, can remove once all RHILL tablets updated...
                 }
             }
             catch (Exception ex)

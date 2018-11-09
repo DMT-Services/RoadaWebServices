@@ -153,6 +153,9 @@ namespace RoadaWebService
 
         [DataMember(IsRequired = false, EmitDefaultValue = false)]
         public string Location { get; set; }
+        public bool Closed { get; set; }
+        public string WO_Id { get; set; }
+        public string WO_No { get; set; }
     }
 
     [DataContract]
