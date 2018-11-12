@@ -4301,6 +4301,10 @@ namespace RoadaWebService
                                        { "Closed", "closed" },
                                        { "WO_Id", "workorderid" },
                                        { "WO_No", "workorderno" } };
+        
+        // these are only used when sending data TO tablets and MUST be removed when receiving...
+        string[] defSendOnly = new string[] { "id", "requestid", "closed", "workorderid", "workorderno" };
+
 
         [WebMethod(Description = "Receive Deficiency Data as JSON")]
         [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
@@ -4328,11 +4332,8 @@ namespace RoadaWebService
                     SqlHelper sql = procData.fillQuery(data, deficiencyLayout);
                     
                     // these are only used when sending data TO tablets and MUST be removed here...
-                    sql.Remove("id");
-                    sql.Remove("requestid");
-                    sql.Remove("closed");
-                    sql.Remove("workorderid");
-                    sql.Remove("workorderno");
+                    foreach(string fld in defSendOnly)
+                        sql.Remove(fld);
 
                     string where = string.Format("WHERE report_id='{0}'", data.ReportId);
 
