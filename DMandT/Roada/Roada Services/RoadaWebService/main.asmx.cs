@@ -4500,6 +4500,7 @@ namespace RoadaWebService
                     sql.Add("net_type", evnt.net_type_GS);
                     sql.Add("event_q_count", evnt.EventQCount_GS);
                     sql.Add("last_checkin", DateTime.UtcNow);
+                    sql.Add("in_yard", evnt.inYard);
 
                     if (stmt.DoSQLFormat("SELECT top 1 idate FROM Img_Events WHERE phand_code = {0} order by idate desc", evnt.handcode)) //gets the last image time that was sent
                     {

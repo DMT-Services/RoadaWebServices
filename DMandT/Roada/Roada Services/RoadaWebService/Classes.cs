@@ -375,6 +375,7 @@ namespace RoadaWebService
         public int PicQCount_GS;
         public int EventQCount_GS;
         public int qCount_GS;
+        public bool inYard;
     }
 
     public class DispatchStatus
