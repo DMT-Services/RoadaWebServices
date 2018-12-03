@@ -3658,7 +3658,6 @@ namespace RoadaWebService
 
                     SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
 
-                    sql.Add("hand_code", pdata.phandcode);
                     sql.Add("truck_id", pdata.unitnum);
                     sql.Add("user_id", pdata.username);
                     sql.Add("signal_str", pdata.SignalStr);
@@ -3668,14 +3667,14 @@ namespace RoadaWebService
                     sql.Add("pic_q_count", pdata.picQCount);
                     sql.Add("event_q_count", pdata.eventQCount);
 
-                    if (!stmt.DoSQLFormat("SELECT * FROM go_status WHERE hand_code = {0}", pdata.phandcode))
-                    {
-                        stmt.DoSQL(sql.BuildInsert("INSERT INTO go_status"));
-                    }
-                    else
-                    {
-                        stmt.DoSQLFormat(sql.BuildUpdate("UPDATE go_status with (rowlock)", "WHERE hand_code = {0}"), pdata.phandcode);
-                    }
+                    // this should be changed to phandcode_GS (same as in SendEventRecord)
+                    int hc = pdata.phandcode;
+
+                    string wh = string.Format("WHERE hand_code={0}", hc);
+                    bool ins = !stmt.DoSQL("SELECT * FROM go_status " + wh);
+                    if(ins)
+                        sql.Add("hand_code", hc);
+                    stmt.DoSQL(sql.BuildCmd("go_status", ins, wh, true));
 
                     Result = 1;
                 }
@@ -4340,7 +4339,7 @@ namespace RoadaWebService
                     if (stmt.DoSQL("SELECT id FROM deficiencies " + where))
                     {
                         Result = stmt.ifetch("id");     // return the ID of the existing record...
-                        stmt.DoSQL(sql.BuildCmd("deficiencies", false, where));
+                        stmt.DoSQL(sql.BuildCmd("deficiencies", false, where, true));
                     }
                     else
                     {
@@ -4488,7 +4487,6 @@ namespace RoadaWebService
                     sql.Add("battery_level", evnt.BatteryLevel);
                     sql.Add("charging", evnt.Chargeing);
                     sql.Add("logged_in", evnt.LoggedIn_GS);
-                    sql.Add("hand_code", evnt.handcode_GS);
                     sql.Add("truck_id", evnt.truck_GS);
                     sql.Add("version", evnt.version_GS);
                     sql.Add("user_id", evnt.driver_GS);
@@ -4499,22 +4497,21 @@ namespace RoadaWebService
                     sql.Add("signal_str", evnt.SignalStr);
                     sql.Add("net_type", evnt.net_type_GS);
                     sql.Add("event_q_count", evnt.EventQCount_GS);
-                    sql.Add("last_checkin", DateTime.UtcNow);
+                    sql.AddNow("last_checkin");
                     sql.Add("in_yard", evnt.inYard);
 
-                    if (stmt.DoSQLFormat("SELECT top 1 idate FROM Img_Events WHERE phand_code = {0} order by idate desc", evnt.handcode)) //gets the last image time that was sent
-                    {
-                        DateTime lastImg = stmt.dtfetch("idate");
-                        sql.Add("last_sent", lastImg);
-                    }
-                    if (stmt.DoSQLFormat("SELECT * FROM go_status with (rowlock) WHERE hand_code = {0}", evnt.handcode)) //checks to see if there is a record to update
-                    {
-                        stmt.DoSQLFormat(sql.BuildUpdate("UPDATE go_status with (rowlock)", "WHERE hand_code = {0}"), evnt.handcode);
-                    }
-                    else
-                    {
-                        stmt.DoSQL(sql.BuildInsert("INSERT INTO go_status"));
-                    }
+                    int hc = evnt.handcode_GS;      // some older phones may not send this, so have to use evnt.handcode
+                    if (hc == 0)
+                        hc = evnt.handcode;
+
+                    if (stmt.DoSQLFormat("SELECT top 1 idate FROM Img_Events WHERE phand_code = {0} order by idate desc", hc)) //gets the last image time that was sent
+                        sql.Add("last_sent", stmt.dtfetch("idate"));
+
+                    string wh = string.Format("WHERE hand_code={0}", hc);
+                    bool ins = !stmt.DoSQL("SELECT * FROM go_status " + wh);
+                    if (ins)
+                        sql.Add("hand_code", hc);
+                    stmt.DoSQL(sql.BuildCmd("go_status", ins, wh, true));
                 }
 
             }
@@ -4771,7 +4768,12 @@ create index unit_start on patrol_log(unit_num,start_patrol);
 
                     InsertgoEvent(evnt, req); //inserts the Recored to go events and updates the vehicle table if needed
                     Result = 1;
-                    if (stmt.DoSQLFormat("SELECT * FROM go_status with (rowlock) WHERE hand_code = {0}", evnt.handcode)) //checks to see if there is a record to update
+
+                    int hc = evnt.handcode_GS;
+                    if (hc == 0)
+                        hc = evnt.handcode;
+
+                    if (stmt.DoSQLFormat("SELECT * FROM go_status with (rowlock) WHERE hand_code = {0}", hc)) //checks to see if there is a record to update
                     {
                         if (stmt.dtfetch("last_checkin") < evnt.rdate)
                         {
@@ -5237,7 +5239,7 @@ create index unit_start on patrol_log(unit_num,start_patrol);
                         if (stmt.DoSQL("SELECT id FROM patrol_log " + where))
                         {
                             rc = stmt.ifetch("id");     // return the ID of the existing record...
-                            stmt.DoSQL(sql.BuildCmd("patrol_log", false, where));
+                            stmt.DoSQL(sql.BuildCmd("patrol_log", false, where, true));
                         }
                         else
                         {
