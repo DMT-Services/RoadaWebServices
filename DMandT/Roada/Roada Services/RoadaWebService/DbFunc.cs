@@ -808,10 +808,16 @@ namespace DMTServices
             int rc = 0;
             if (nFields.Count > 0)
             {
+                bool order = true;
+                int nFound = 0;
                 bool ok = true;
                 foreach (string field in fields)
                     if (nFields.Contains(field.ToLower()))
-                        nFields.Remove(field.ToLower());
+                    {
+                        if (nFields.Count() <= nFound || nFields[nFound] != field)
+                            order = false;
+                        nFound++;
+                    }
                     else
                     {
                         ok = false;
@@ -820,12 +826,14 @@ namespace DMTServices
 
 
                 if (ok)
-                    if (nFields.Count == 0)
-                        rc = 1;
+                    if (nFound == nFields.Count())
+                        rc = (order) ? 1 : 3;
                     else
+                    {
                         // if there is one 'extra' field and it's 'id', allow that as a match (but return 2 to indicate this)
-                        if (nFields.Count == 1 && nFields[0] == "id")
+                        if (nFound == nFields.Count() - 1 && (nFields.Contains("id") && !fields.Contains("id")))
                             rc = 2;
+                    }
             }
 
             return rc;
@@ -834,10 +842,15 @@ namespace DMTServices
         public string checkIndex(string tableName, string[] fields)
         {
             int dummy;
-            return checkIndex(tableName, fields, out dummy);
+            return checkIndex(tableName, fields, out dummy, string.Empty);
         }
 
         public string checkIndex(string tableName, string[] fields, out int idInc)
+        {
+            return checkIndex(tableName, fields, out idInc, string.Empty);
+        }
+
+        public string checkIndex(string tableName, string[] fields, out int idInc, string excludeName)
         {
             idInc = 0;
             string rc = string.Empty;
@@ -852,16 +865,23 @@ namespace DMTServices
                     string indxName = dr["index_name"].ToString().ToLower();
                     if (indxName != ndxName)
                     {
-                        ok = checkFields(nFields, fields);
-                        nFields.Clear();
-                        if (ok > 0)
+                        if (ndxName != "-=-=-" && ndxName != excludeName.ToLower())
                         {
-                            idInc = ok;
-                            rc = ndxName;
-                            if (ok == 1)    // if ok == 2, then match found but had 3rd column; id so keep looking for exact match
-                                break;
+                            ok = checkFields(nFields, fields);
+                            if (ok > 0)
+                            {
+                                idInc = ok;
+                                rc = ndxName;
+
+                                // if ok == 2, then match found but had 3rd column; id
+                                // if ok == 3, then match found but not same order
+                                // so keep looking...
+                                if (ok == 1)
+                                    break;
+                            }
                         }
                         ndxName = indxName;
+                        nFields.Clear();
                     }
 
                     string col = dr["column_name"].ToString().ToLower();
@@ -870,12 +890,15 @@ namespace DMTServices
 
                 if (idInc != 1)     // if we haven't found an 'exact' match, we need to check the final group
                 {
-                    ok = checkFields(nFields, fields);
-                    if (ok > 0)
+                    if (ndxName != excludeName.ToLower())
                     {
-                        idInc = ok;
-                        if (ok == 1 || rc == string.Empty)
-                            rc = ndxName;
+                        ok = checkFields(nFields, fields);
+                        if (ok > 0)
+                        {
+                            idInc = ok;
+                            if (ok == 1 || rc == string.Empty)
+                                rc = ndxName;
+                        }
                     }
                 }
             }
