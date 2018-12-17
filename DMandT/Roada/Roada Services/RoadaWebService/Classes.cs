@@ -130,45 +130,74 @@ namespace RoadaWebService
         [DataMember(IsRequired = false, EmitDefaultValue = false)]
         public int ServerId { get; set; }
 
+        [DataMember]
         public string ReportId { get; set; }
 
         [DataMember(IsRequired = false, EmitDefaultValue = false)]
         public int RequestId { get; set; }
+        [DataMember]
         public int HandCode { get; set; }
+        [DataMember]
         public string UnitNum { get; set; }
+        [DataMember]
         public string UserName { get; set; }
+        [DataMember]
         public DateTime ReportTime { get; set; }
+        [DataMember]
         public int Type { get; set; }
+        [DataMember]
         public int Item { get; set; }
+        [DataMember]
         public int Issue { get; set; }
+        [DataMember]
         public int Status { get; set; }
+        [DataMember]
         public int Length { get; set; }
+        [DataMember]
         public int Width { get; set; }
+        [DataMember]
         public int Depth { get; set; }
+        [DataMember]
         public int Option { get; set; }
+        [DataMember]
         public string Note { get; set; }
+        [DataMember]
         public double Lon { get; set; }
+        [DataMember]
         public double Lat { get; set; }
+        [DataMember]
         public string District { get; set; }
 
         [DataMember(IsRequired = false, EmitDefaultValue = false)]
         public string Location { get; set; }
+        [DataMember]
         public bool Closed { get; set; }
+        [DataMember]
         public string WO_Id { get; set; }
+        [DataMember]
         public string WO_No { get; set; }
     }
 
     [DataContract]
     public class LoginData
     {
+        [DataMember]
         public int HandCode { get; set; }
+        [DataMember]
         public string UnitNum { get; set; }
+        [DataMember]
         public string UserName { get; set; }
+        [DataMember]
         public DateTime StartTime { get; set; }
+        [DataMember]
         public double StartLatitude { get; set; }
+        [DataMember]
         public double StartLongitude { get; set; }
+        [DataMember]
         public DateTime EndTime { get; set; }
+        [DataMember]
         public double EndLatitude { get; set; }
+        [DataMember]
         public double EndLongitude { get; set; }
     }
 
@@ -272,16 +301,25 @@ namespace RoadaWebService
         public string patrolFrqURL;
     }
 
+    [DataContract]
     public class GoUser
     {
-        public int userRole;
-        public string username;
-        public string password;
-        public string email;
-        public string firstname;
-        public string lastname;
-        public string phonenumber;
-        public string title;
+        [DataMember]
+        public int userRole { get; set; }
+        [DataMember]
+        public string username { get; set; }
+        [DataMember]
+        public string password { get; set; }
+        [DataMember]
+        public string email { get; set; }
+        [DataMember]
+        public string firstname { get; set; }
+        [DataMember]
+        public string lastname { get; set; }
+        [DataMember]
+        public string phonenumber { get; set; }
+        [DataMember]
+        public string title { get; set; }
     }
 
     public class Request
@@ -318,63 +356,119 @@ namespace RoadaWebService
         public int outOfOpp;
     }
 
+    [DataContract]
     public class evntRecord
     {
+        [DataMember]
         public double last_lat;
+        [DataMember]
         public double last_lon;
+        [DataMember]
         public UInt32 memory_remaining;
+        [DataMember]
         public int BatteryLevel;
+        [DataMember]
         public bool Chargeing;
+        [DataMember]
         public bool LoggedIn;
+        [DataMember]
         public bool driving;
+        [DataMember]
         public bool sent;
+        [DataMember]
         public bool hosEvent;
+        [DataMember]
         public static string licence;
+        [DataMember]
         public int dcdHC;
+        [DataMember]
         public int EventType;
+        [DataMember]
         public DateTime eventTime;
+        [DataMember]
         public string Ops;
+        [DataMember]
         public int ech;
+        [DataMember]
         public double version;
+        [DataMember]
         public double lon;
+        [DataMember]
         public double lat;
+        [DataMember]
         public int heading;
+        [DataMember]
         public int speed;
+        [DataMember]
         public double mdistance;
+        [DataMember]
         public DateTime routeTime;
+        [DataMember]
         public string eventMessage;
+        [DataMember]
         public string driver;
+        [DataMember]
         public string truck;
+        [DataMember]
         public int handcode;
+        [DataMember]
         public string route;
+        [DataMember]
         public int routeId;
+        [DataMember]
         public double mRouteDistance;
+        [DataMember]
         public int wType;
+        [DataMember]
         public int waypoint;
+        [DataMember]
         public int processed;
+        [DataMember]
         public int comm;
+        [DataMember]
         public int CStr;
+        [DataMember]
         public string net_type;
+        [DataMember]
         public int plan;
+        [DataMember]
         public string routeName;
+        [DataMember]
         public byte[] signature;
+        [DataMember]
         public int SignalStr;
+        [DataMember]
         public int EventQCount;
+        [DataMember]
         public int qCount;
+        [DataMember]
         public int PicQCount;
+        [DataMember]
         public DateTime rdate;
+        [DataMember]
         public DateTime idate;
         // USED only for updateing most current Go_Status
+        [DataMember]
         public bool LoggedIn_GS;
+        [DataMember]
         public string driver_GS;
+        [DataMember]
         public int handcode_GS;
+        [DataMember]
         public string truck_GS;
+        [DataMember]
         public double version_GS;
+        [DataMember]
         public int CStr_GS;
+        [DataMember]
         public string net_type_GS;
+        [DataMember]
         public int PicQCount_GS;
+        [DataMember]
         public int EventQCount_GS;
+        [DataMember]
         public int qCount_GS;
+        [DataMember]
         public bool inYard;
     }
 
@@ -861,13 +955,19 @@ namespace RoadaWebService
         public bool SaveData;
     }
 
+    [DataContract]
     public class Vehicle
     {
-        public int fleetID;
-        public int DevId;
-        public string UnitNum;
-        public string License;
-        public int Type;
+        [DataMember]
+        public int fleetID { get; set; }
+        [DataMember]
+        public int DevId { get; set; }
+        [DataMember]
+        public string UnitNum { get; set; }
+        [DataMember]
+        public string License { get; set; }
+        [DataMember]
+        public int Type { get; set; }
     }
 
     public class VehicleType
