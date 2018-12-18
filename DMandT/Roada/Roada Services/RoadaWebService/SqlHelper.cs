@@ -898,7 +898,7 @@ namespace DMTServices
 
         public static string CurrentSequence(string seqName)
         {
-            return string.Format("SELECT current_value FROM sys.sequences WHERE name = '{0}' AS {0}", seqName);
+            return string.Format("SELECT current_value AS {0} FROM sys.sequences WHERE name = '{0}'", seqName);
         }
 
         /// <summary>
