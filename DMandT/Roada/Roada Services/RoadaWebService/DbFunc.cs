@@ -1520,7 +1520,8 @@ namespace DMTServices
                 LastError = e.Message;
                 rdrClose();
 #if THROW_SQL_EXCP
-                throw new System.Exception(e.Message, e.InnerException);
+                if (!fParent.ignoreDupErr || !e.Message.StartsWith("Cannot insert duplicate key row"))
+                    throw new System.Exception(e.Message, e.InnerException);
 #endif
             }
 
