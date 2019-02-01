@@ -4305,6 +4305,65 @@ namespace RoadaWebService
         string[] defSendOnly = new string[] { "id", "requestid", "closed", "workorderid", "workorderno" };
 
 
+        [WebMethod(Description = "Receive Deficiency Additional Note as JSON")]
+        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public int SendDefAddNoteJson(Request req, int id, string addNote)
+        {
+            return SendDefAddNote(req, id, addNote);
+        }
+
+        [WebMethod(Description = "Receive Deficiency Additional Note")]
+        public int SendDefAddNote(Request req, int id, string addNote)
+        {
+            int Result = -1;
+            // low security check, don't want hackers!
+            if (LowSecurityCheck(req, "SendDefAddNote"))
+            {
+                string connStr = CustConnectionString(req);
+                SqlStmt stmt = null;
+                try
+                {
+                    Result = -2;
+                    if (GetStmt(connStr, out stmt))
+                    {
+                        string where = string.Format(" WHERE id={0}", id);
+                        if (stmt.DoSQL("SELECT * FROM deficiencies" + where))
+                        {
+                            Result = 0;
+                            string note = stmt.fetch("add_notes");
+                            if (note != string.Empty)
+                            {
+                                if (!(note.EndsWith("|") || addNote.StartsWith("|")))
+                                    note += "|";
+                                addNote = note + addNote;
+                            }
+
+                            stmt.DoSQLFormat("update deficiencies set add_notes='{0}'" + where, addNote);
+                        }
+                        else
+                            Global.messLog.Flush("LastError - " + stmt.LastError);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Result = -3;
+                    Global.messLog.Flush("SendDefAddNote() data failed to receive: " + ex.Message);
+                    InsertErrorRecord(req.CustCode, string.Format("SendDefAddNote() data failed to receive HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, ex.Message), req);
+                }
+                finally
+                {
+                    if (stmt != null)
+                    {
+                        stmt.Close();
+                        stmt = null;
+                    }
+                }
+            }
+
+            return Result;
+        }
+
+
         [WebMethod(Description = "Receive Deficiency Data as JSON")]
         [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
         public int SendDeficiencyJson(Request req, DeficiencyData data)
@@ -4394,6 +4453,21 @@ namespace RoadaWebService
                         {
                             DeficiencyData defData = new DeficiencyData();
                             procData.fillClass(defData, deficiencyLayout, stmt);
+                            
+                            // if there is still something in add_notes, add it to .Note
+                            string aNote = stmt.fetch("add_notes");
+                            if (aNote != string.Empty)
+                            {
+                                if (string.IsNullOrEmpty(defData.Note))
+                                    defData.Note = string.Empty;
+                                else
+                                {
+                                    if (!(aNote.StartsWith("|") || defData.Note.EndsWith("|")))
+                                        aNote = "|" + aNote;
+                                }
+                                defData.Note += aNote;
+                            }
+
                             result.Add(defData);
 
                             rc = stmt.dbSkip();
