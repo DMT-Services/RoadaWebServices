@@ -173,6 +173,8 @@ namespace RoadaWebService
         [DataMember]
         public bool Closed { get; set; }
         [DataMember]
+        public bool Finished { get; set; }
+        [DataMember]
         public string WO_Id { get; set; }
         [DataMember]
         public string WO_No { get; set; }

@@ -4312,6 +4312,7 @@ namespace RoadaWebService
                                        { "District", "wo_district" },
                                        { "Location", "location_desc"},
                                        { "Closed", "closed" },
+                                       { "Finished", "finished" },
                                        { "WO_Id", "workorderid" },
                                        { "WO_No", "workorderno" } };
         
@@ -4462,7 +4463,13 @@ namespace RoadaWebService
                 {
                     if (GetStmt(connStr, out stmt))
                     {
-                        bool rc = stmt.DoSQLFormat("select * from deficiencies where report_time>getdate()-{0}", daysBack);
+                        string exWh = string.Empty;
+                        if (daysBack < 0)
+                        {
+                            exWh = " and isnull(closed,0)=0";
+                            daysBack = -daysBack;
+                        }
+                        bool rc = stmt.DoSQLFormat("select * from deficiencies where report_time>getdate()-{0}" + exWh, daysBack);
                         while (rc)
                         {
                             DeficiencyData defData = new DeficiencyData();
