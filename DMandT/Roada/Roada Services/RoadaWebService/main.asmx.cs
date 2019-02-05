@@ -3564,6 +3564,20 @@ namespace RoadaWebService
             sql.Add("signal_str", pdata.SignalStr);
             sql.Add("net_type", pdata.NetworkType);
 
+            // for York, we need to update the trip's uDate if the trip has been completed so the API's will know to send the img_event data!
+            if (stmt.DoSQLFormat("SELECT TOP 1 id, end_trip FROM trip WHERE start_trip < {0} and hand_code = {1} ORDER BY start_trip DESC", SqlHelper.timeStamp(pdata.rdate), pdata.handcode))
+            {
+                int tripId = stmt.ifetch("id");
+                // Drew wants trip id for the service that monitors conditions
+                sql.Add("trip_id", tripId);
+                // if the end_trip is populated, the trip is complete and we need to update uDate
+                if (!stmt.IsNull("end_trip"))
+                {
+                    // must be in range of the trip
+                    if (pdata.rdate <= stmt.dtfetch("end_trip"))
+                        stmt.DoSQLFormat("UPDATE trip with (rowlock) SET uDate = GetDate() WHERE id = {0}", tripId);
+                }
+            }
             string msg = string.Empty;
             string inner = string.Empty;
             bool excp = false;
