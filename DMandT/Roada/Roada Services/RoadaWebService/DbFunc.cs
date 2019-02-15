@@ -1161,8 +1161,9 @@ namespace DMTServices
         /// <param name="param">passed parameters to the SQL string</param>
         public delegate void ReplicationEventHandler(object sender, myDbCommand cmd);
         static public event ReplicationEventHandler ReplicationEvent;
-        public bool IgnoreReplicate = true;
 #endif
+        public bool IgnoreReplicate = true;
+
         /// <summary>
         /// this event is called provided it's not null
         /// it's called for every DoSQL as well as dbSkip method call
