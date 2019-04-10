@@ -3680,6 +3680,9 @@ namespace RoadaWebService
                     sql.Add("q_count", pdata.qCount); // pic WEbService Q count
                     sql.Add("pic_q_count", pdata.picQCount);
                     sql.Add("event_q_count", pdata.eventQCount);
+                    sql.Add("imei", pdata.imei);
+                    sql.Add("in_yard", pdata.inyard);
+                    sql.AddNow("last_checkin");
 
                     // this should be changed to phandcode_GS (same as in SendEventRecord)
                     int hc = pdata.phandcode;
@@ -4594,6 +4597,7 @@ namespace RoadaWebService
                     sql.Add("event_q_count", evnt.EventQCount_GS);
                     sql.AddNow("last_checkin");
                     sql.Add("in_yard", evnt.inYard);
+                    sql.Add("imei", evnt.imei);
 
                     int hc = evnt.handcode_GS;      // some older phones may not send this, so have to use evnt.handcode
                     if (hc == 0)

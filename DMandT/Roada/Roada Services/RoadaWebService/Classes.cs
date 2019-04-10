@@ -472,6 +472,8 @@ namespace RoadaWebService
         public int qCount_GS;
         [DataMember]
         public bool inYard;
+        [DataMember]
+        public string imei;
     }
 
     public class DispatchStatus
@@ -898,6 +900,8 @@ namespace RoadaWebService
         public int qCount;
         public int picQCount;
         public int eventQCount;
+        public string imei;
+        public bool inyard;
     }
 
     public class ConfigData
