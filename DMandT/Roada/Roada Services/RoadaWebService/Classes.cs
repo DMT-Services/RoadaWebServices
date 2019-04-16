@@ -22,18 +22,29 @@ namespace RoadaWebService
         public int TripNumber;
     }
 
+    [DataContract]
     public class Yard
     {
-        public string Name;
-        public string Address;
-        public string Province;
-        public string Postal;
-        public string Phone;
-        public string GEOFence;
-        public double BrineDensity;
-        public double PerSodium;
-        public int FleetId;
-        public bool Visible;
+        [DataMember]
+        public string Name { get; set; }
+        [DataMember]
+        public string Address { get; set; }
+        [DataMember]
+        public string Province { get; set; }
+        [DataMember]
+        public string Postal { get; set; }
+        [DataMember]
+        public string Phone { get; set; }
+        [DataMember]
+        public string GEOFence { get; set; }
+        [DataMember]
+        public double BrineDensity { get; set; }
+        [DataMember]
+        public double PerSodium { get; set; }
+        [DataMember]
+        public int FleetId { get; set; }
+        [DataMember]
+        public bool Visible { get; set; }
     }
 
     public class PatrolTripData
@@ -86,14 +97,19 @@ namespace RoadaWebService
         public double Odometer;
     }
 
+    [DataContract]
     public class Comissioninfo
     {
-        public string IMEI;
-        public bool ForceUpdate;
-        public string Owner;
-        public string desc;
-        public string hardware;
-
+        [DataMember]
+        public string IMEI { get; set; }
+        [DataMember]
+        public bool ForceUpdate { get; set; }
+        [DataMember]
+        public string Owner { get; set; }
+        [DataMember]
+        public string desc { get; set; }
+        [DataMember]
+        public string hardware { get; set; }
     }
 
     public class DCenterData
@@ -290,17 +306,27 @@ namespace RoadaWebService
         public List<AppServerInfo> CustomerInfo;
     }
 
+    [DataContract]
     public class AppServerInfo
     {
-        public string customerCode;
-        public string WebServiceUrl;
-        public string PhotoBucket;
-        public string PickupBucket;
-        public string ReportBucket;
-        public string ObjStoreUrl;
-        public string AmazonSecretKey;
-        public string AmazonAccessKey;
-        public string patrolFrqURL;
+        [DataMember]
+        public string customerCode { get; set; }
+        [DataMember]
+        public string WebServiceUrl { get; set; }
+        [DataMember]
+        public string PhotoBucket { get; set; }
+        [DataMember]
+        public string PickupBucket { get; set; }
+        [DataMember]
+        public string ReportBucket { get; set; }
+        [DataMember]
+        public string ObjStoreUrl { get; set; }
+        [DataMember]
+        public string AmazonSecretKey { get; set; }
+        [DataMember]
+        public string AmazonAccessKey { get; set; }
+        [DataMember]
+        public string patrolFrqURL { get; set; }
     }
 
     [DataContract]
@@ -324,16 +350,25 @@ namespace RoadaWebService
         public string title { get; set; }
     }
 
+    [DataContract]
     public class Request
     {
-        public string CustCode;
-        public string UserName;
-        public string Password;
-        public string Version;
-        public int Handcode;
-        public string BinPassword;
-        public int CustId;
-        public DateTime ReqDate;
+        [DataMember]
+        public string CustCode { get; set; }
+        [DataMember]
+        public string UserName { get; set; }
+        [DataMember]
+        public string Password { get; set; }
+        [DataMember]
+        public string Version { get; set; }
+        [DataMember]
+        public int Handcode { get; set; }
+        [DataMember]
+        public string BinPassword { get; set; }
+        [DataMember]
+        public int CustId { get; set; }
+        [DataMember]
+        public DateTime ReqDate { get; set; }
     }
 
     public class HosEvent
@@ -537,17 +572,27 @@ namespace RoadaWebService
         public string ErrorResp;
     }
 
+    [DataContract]
     public class CommResponse
     {
-        public bool CommFlag;
-        public string Mesg;
-        public int Mode;
-        public int Id;
-        public int handcode;
-        public string dbCodes;
-        public string desc;
-        public string pcCode;
-        public int UniqueId;
+        [DataMember]
+        public bool CommFlag { get; set; }
+        [DataMember]
+        public string Mesg { get; set; }
+        [DataMember]
+        public int Mode { get; set; }
+        [DataMember]
+        public int Id { get; set; }
+        [DataMember]
+        public int handcode { get; set; }
+        [DataMember]
+        public string dbCodes { get; set; }
+        [DataMember]
+        public string desc { get; set; }
+        [DataMember]
+        public string pcCode { get; set; }
+        [DataMember]
+        public int UniqueId { get; set; }
     }
 
     public class XBeeCommResponse
@@ -974,16 +1019,25 @@ namespace RoadaWebService
         public string License { get; set; }
         [DataMember]
         public int Type { get; set; }
+        [DataMember(IsRequired = false, EmitDefaultValue = false)]
+        public double Odom { get; set; }
     }
 
+    [DataContract]
     public class VehicleType
     {
-        public int Type;
-        public string TypeDesc;
-        public bool HasPlow;
-        public bool HasWing;
-        public bool HasTow;
-        public bool HasSpreader;
+        [DataMember]
+        public int Type { get; set; }
+        [DataMember]
+        public string TypeDesc { get; set; }
+        [DataMember]
+        public bool HasPlow { get; set; }
+        [DataMember]
+        public bool HasWing { get; set; }
+        [DataMember]
+        public bool HasTow { get; set; }
+        [DataMember]
+        public bool HasSpreader { get; set; }
     }
 
     public class DeviceInfo

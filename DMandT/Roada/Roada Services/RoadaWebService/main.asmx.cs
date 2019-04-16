@@ -1280,6 +1280,13 @@ namespace RoadaWebService
             return Result;
         }
 
+        [WebMethod(Description = "Retrieve list of yards as JSON")]
+        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public Yard[] RequestYardsJson(Request request, int crap)
+        {
+            return RequestYards(request);
+        }
+
         [WebMethod(Description = "Request list of Yards")]
         public Yard[] RequestYards(Request request)
         {
@@ -1327,6 +1334,18 @@ namespace RoadaWebService
                 }
             }
             return Result;
+        }
+
+
+        [WebMethod(Description = "Get server info JSON")]
+        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public AppServerInfo GetServerInfoJson(Request req)
+        {
+            AppServerInfo Result = null;
+            if (GetServerInfo(req, out Result) == 1)
+                return Result;
+            else
+                return null;
         }
 
 
@@ -1682,6 +1701,13 @@ namespace RoadaWebService
                 }
             }
             return response;
+        }
+
+        [WebMethod(Description = "Check for activation for React App JSON")]
+        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public CommResponse PhoneLoginJson(Request req, string imei)
+        {
+            return PhoneSoft(req, imei);
         }
 
         [WebMethod(Description = "Soft activate for phone app")]
@@ -3710,10 +3736,17 @@ namespace RoadaWebService
             return Result;
         }
 
+        [WebMethod(Description = "Send Request to Commision React Phone App JSON")]
+        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public int SendCommissionJson(Request req, Comissioninfo comInfo)
+        {
+            return SendCommision(req, comInfo);
+        }
+
         [WebMethod(Description = "Send Request to Commision Phone for roada App")]
         public int SendCommision(Request req, Comissioninfo comInfo)
         {
-            int Result = 0;
+            int Result = -5;
             // low security check, don't want hackers!
             if (!LowSecurityCheck(req, "SendCommision"))
                 return -2;
@@ -3727,7 +3760,7 @@ namespace RoadaWebService
                 Global.messLog.Flush("Send comssison At select");
 
                 Global.messLog.Flush("SendCommission() Guid {0}", comInfo.IMEI);
-                if (!stmt.DoSQL(String.Format("SELECT * FROM soft_activate WHERE client_guid = '{0}'", comInfo.IMEI)))
+                if (!stmt.DoSQL(String.Format("SELECT id FROM soft_activate WHERE client_guid = '{0}'", comInfo.IMEI)))
                 {
                     SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
                     sql.Add("pc_code", comInfo.Owner);
@@ -3735,12 +3768,16 @@ namespace RoadaWebService
                     sql.Add("description", comInfo.desc);
                     sql.Add("device_hardware", comInfo.hardware);
                     stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO soft_activate"));
-
+                    if (stmt.LastError != string.Empty)
+                        Result = -6;
+                    else
+                    {
+                        stmt.DoSQLFormat("SELECT id FROM soft_activate WHERE client_guid = '{0}'", comInfo.IMEI);
+                        Result = stmt.ifetch("id"); //returns the newly created ID for the phones Confiuration  
+                    }
                 }
-
-                stmt.DoSQLFormat("SELECT id FROM soft_activate WHERE client_guid = '{0}'", comInfo.IMEI);
-
-                Result = stmt.ifetch("id"); //returns the newly created ID for the phones Confiuration  
+                else
+                    Result = stmt.ifetch("id");
             }
             catch (Exception x)
             {
@@ -4983,6 +5020,8 @@ create index unit_start on patrol_log(unit_num,start_patrol);
                             v.UnitNum = stmt.fetch("unit_num");
                             v.License = stmt.fetch("license");
                             v.Type = stmt.ifetch("type");
+                            v.Odom = stmt.dfetch("gps_odom");
+
                             vehicles.Add(v);
 
                             rc = stmt.dbSkip();
@@ -5169,6 +5208,13 @@ create index unit_start on patrol_log(unit_num,start_patrol);
                     stmt.Close();
             }
             return Result;
+        }
+
+        [WebMethod(Description = "Retrieve vehicle types list as JSON")]
+        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public VehicleType[] GetVehicleTypesJson(Request request)
+        {
+            return GetVehicleTypes(request);
         }
 
         [WebMethod(Description = "Retrieve vehicle types listing")]
@@ -5381,6 +5427,66 @@ indexname varchar(128),
 columnname varchar(128)
 )
 #endif
+        // defines the relationship between VehicleData class and vehicle table fields
+        // first string is name in class, second is name in database
+        string[,] vehilceLayout = { { "DevId", "hand_code" },
+                                  { "UnitNum", "unit_num" },
+                                  { "License", "license" },
+                                  { "Type", "type" },
+                                  { "Odom", "gps_odom" } };
+
+
+        [WebMethod(Description = "Update vehicle data from Phone App as JSON")]
+        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public int UpdateVehicleDataJson(Request req, Vehicle data)
+        {
+            return UpdateVehicleData(req, data);
+        }
+
+        [WebMethod(Description = "Update vehicle data from phone App")]
+        public int UpdateVehicleData(Request req, Vehicle data)
+        {
+            int rc = 0;
+
+            // low security check, don't want hackers!
+            if (LowSecurityCheck(req, "UpdateVehicleData"))
+            {
+                string connStr = CustConnectionString(req);
+
+                SqlStmt stmt = null;
+                try
+                {
+                    rc = -2;
+                    if (GetStmt(connStr, out stmt))
+                    {
+                        SqlHelper sql = procData.fillQuery(data, loginLayout);
+
+                        string where = string.Format("WHERE hand_code={0}", data.DevId);
+
+                        stmt.DoSQL(sql.BuildUpdate("UPDATE vehicles with (rowlock)", where));
+                    }
+                }
+                catch (Exception ex)
+                {
+                    rc = -3;
+                    Global.messLog.Flush("UpdateVehicleData() data failed to receive: " + ex.Message);
+                    InsertErrorRecord(req.CustCode, string.Format("UpdateVehicleData() data failed to receive HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, ex.Message), req);
+                }
+                finally
+                {
+                    if (stmt != null)
+                    {
+                        stmt.Close();
+                        stmt = null;
+                    }
+                }
+
+            }
+            return rc;
+        }
+
+        
+        
         [WebMethod(Description = "Retrieve all create/alter table / index statements for the RoadaTabPatrol app")]
         public tabletTables[] setupTabletDB(Request request)
         {
