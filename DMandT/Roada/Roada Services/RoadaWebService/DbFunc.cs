@@ -1645,7 +1645,8 @@ namespace DMTServices
 
         public string fetch(string field)
         {
-            return myConvert.ToString(ofetch(field)).TrimEnd(null);
+            object o = ofetch(field);
+            return myConvert.ToString(o).TrimEnd(null);
         }
 
         public bool bfetch(string field)
@@ -1656,6 +1657,11 @@ namespace DMTServices
         public double dfetch(string field)
         {
             return myConvert.ToDouble(ofetch(field));
+        }
+
+        public decimal cfetch(string field)
+        {
+            return myConvert.ToDecimal(ofetch(field));
         }
 
         public bool tfetch(string field)
@@ -2486,6 +2492,39 @@ namespace DMTServices
                             return def;
                         else
                             return Convert.ToBoolean(o);
+                }
+            }
+            catch
+            {
+                return def;
+            }
+        }
+
+        public static decimal ToDecimal(object o)
+        {
+            return ToDecimal(o, 0.0m);
+        }
+
+        public static decimal ToDecimal(object o, decimal def)
+        {
+            try
+            {
+                if (o == null || o is System.DBNull)
+                    return def;
+                else
+                {
+                    if (o is string || o is char)
+                    {
+                        decimal d;
+                        if (!decimal.TryParse((o is char) ? ((char)o).ToString() : (string)o, out d))
+                            d = def;
+                        return d;
+                    }
+                    else
+                        if (o is DateTime)
+                            return ((DateTime)o).Ticks / 10000;     // milliseconds since DateTime.MinValue
+                        else
+                            return Convert.ToDecimal(o);
                 }
             }
             catch
