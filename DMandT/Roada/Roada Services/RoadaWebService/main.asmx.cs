@@ -1282,9 +1282,9 @@ namespace RoadaWebService
 
         [WebMethod(Description = "Retrieve list of yards as JSON")]
         [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
-        public Yard[] RequestYardsJson(Request request, int crap)
+        public Yard[] RequestYardsJson(Request req)
         {
-            return RequestYards(request);
+            return RequestYards(req);
         }
 
         [WebMethod(Description = "Request list of Yards")]
@@ -2685,6 +2685,13 @@ namespace RoadaWebService
             }
 
             return Result;
+        }
+
+        [WebMethod(Description = "Retrieve DCD device info for a specific devId")]
+        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public DeviceInfo GetDeviceInfoJson(Request req, int devId)
+        {
+            return GetDeviceInfo(req, devId);
         }
 
         [WebMethod(Description = "Retrieve DCD device info for a specific devId")]
@@ -5015,6 +5022,7 @@ create index unit_start on patrol_log(unit_num,start_patrol);
                         while (rc)
                         {
                             Vehicle v = new Vehicle();
+                            v.Id = stmt.ifetch("id");
                             v.fleetID = stmt.ifetch("fleet");
                             v.DevId = stmt.ifetch("hand_code");
                             v.UnitNum = stmt.fetch("unit_num");
@@ -5212,9 +5220,9 @@ create index unit_start on patrol_log(unit_num,start_patrol);
 
         [WebMethod(Description = "Retrieve vehicle types list as JSON")]
         [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
-        public VehicleType[] GetVehicleTypesJson(Request request)
+        public VehicleType[] GetVehicleTypesJson(Request req)
         {
-            return GetVehicleTypes(request);
+            return GetVehicleTypes(req);
         }
 
         [WebMethod(Description = "Retrieve vehicle types listing")]
@@ -5429,7 +5437,7 @@ columnname varchar(128)
 #endif
         // defines the relationship between VehicleData class and vehicle table fields
         // first string is name in class, second is name in database
-        string[,] vehilceLayout = { { "DevId", "hand_code" },
+        string[,] vehicleLayout = { { "DevId", "hand_code" },
                                   { "UnitNum", "unit_num" },
                                   { "License", "license" },
                                   { "Type", "type" },
@@ -5446,10 +5454,10 @@ columnname varchar(128)
         [WebMethod(Description = "Update vehicle data from phone App")]
         public int UpdateVehicleData(Request req, Vehicle data)
         {
-            int rc = 0;
+            int rc = -4;
 
             // low security check, don't want hackers!
-            if (LowSecurityCheck(req, "UpdateVehicleData"))
+            if (LowSecurityCheck(req, "UpdateVehicle"))
             {
                 string connStr = CustConnectionString(req);
 
@@ -5459,11 +5467,12 @@ columnname varchar(128)
                     rc = -2;
                     if (GetStmt(connStr, out stmt))
                     {
-                        SqlHelper sql = procData.fillQuery(data, loginLayout);
-
-                        string where = string.Format("WHERE hand_code={0}", data.DevId);
+                        SqlHelper sql = procData.fillQuery(data, vehicleLayout);
+                        
+                        string where = string.Format("WHERE id={0}", data.Id);
 
                         stmt.DoSQL(sql.BuildUpdate("UPDATE vehicles with (rowlock)", where));
+                        rc = 1;
                     }
                 }
                 catch (Exception ex)

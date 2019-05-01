@@ -1010,6 +1010,8 @@ namespace RoadaWebService
     public class Vehicle
     {
         [DataMember]
+        public int Id { get; set; }
+        [DataMember]
         public int fleetID { get; set; }
         [DataMember]
         public int DevId { get; set; }
@@ -1040,41 +1042,73 @@ namespace RoadaWebService
         public bool HasSpreader { get; set; }
     }
 
+    [DataContract]
     public class DeviceInfo
     {
-        public int IOstatus;
-        public string Comments;
-        public string installkey;
-        public int DevId;
-        public DateTime ServerDate;
-        public DateTime WriteDate;
-        public DateTime LoginDate;
-        public DateTime GPSDate;
-        public DateTime SpreadDate;
-        public DateTime ECMDate;
-        public double Latitude;
-        public double Longitude;
-        public int Degrees;
-        public int Speed;
-        public string FirmVers;
-        public string ModemVers;
-        public int CellStrength;
-        public bool Plow;
-        public bool Wing;
-        public bool Tow;
-        public double RoadTemp;
-        public double AirTemp;
-        public bool SpreadDry;
-        public bool SpreadWet;
-        public double DryRate;
-        public double WetRate;
-        public double RPM;
-        public double CoolTemp;
-        public double OilPress;
-
-        public string driver;
-        public string truck;
-        public bool online;
+        [DataMember]
+        public int IOstatus { get; set; }
+        [DataMember]
+        public string Comments { get; set; }
+        [DataMember]
+        public string installkey { get; set; }
+        [DataMember]
+        public int DevId { get; set; }
+        [DataMember]
+        public DateTime ServerDate { get; set; }
+        [DataMember]
+        public DateTime WriteDate { get; set; }
+        [DataMember]
+        public DateTime LoginDate { get; set; }
+        [DataMember]
+        public DateTime GPSDate { get; set; }
+        [DataMember]
+        public DateTime SpreadDate { get; set; }
+        [DataMember]
+        public DateTime ECMDate { get; set; }
+        [DataMember]
+        public double Latitude { get; set; }
+        [DataMember]
+        public double Longitude { get; set; }
+        [DataMember]
+        public int Degrees { get; set; }
+        [DataMember]
+        public int Speed { get; set; }
+        [DataMember]
+        public string FirmVers { get; set; }
+        [DataMember]
+        public string ModemVers { get; set; }
+        [DataMember]
+        public int CellStrength { get; set; }
+        [DataMember]
+        public bool Plow { get; set; }
+        [DataMember]
+        public bool Wing { get; set; }
+        [DataMember]
+        public bool Tow { get; set; }
+        [DataMember]
+        public double RoadTemp { get; set; }
+        [DataMember]
+        public double AirTemp { get; set; }
+        [DataMember]
+        public bool SpreadDry { get; set; }
+        [DataMember]
+        public bool SpreadWet { get; set; }
+        [DataMember]
+        public double DryRate { get; set; }
+        [DataMember]
+        public double WetRate { get; set; }
+        [DataMember]
+        public double RPM { get; set; }
+        [DataMember]
+        public double CoolTemp { get; set; }
+        [DataMember]
+        public double OilPress { get; set; }
+        [DataMember]
+        public string driver { get; set; }
+        [DataMember]
+        public string truck { get; set; }
+        [DataMember]
+        public bool online { get; set; }
     }
 
     public class TPatrol511
