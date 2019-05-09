@@ -5022,7 +5022,7 @@ create index unit_start on patrol_log(unit_num,start_patrol);
                         while (rc)
                         {
                             Vehicle v = new Vehicle();
-                            v.Id = stmt.ifetch("id");
+                            v.Id = stmt.ifetch("vehicle");
                             v.fleetID = stmt.ifetch("fleet");
                             v.DevId = stmt.ifetch("hand_code");
                             v.UnitNum = stmt.fetch("unit_num");
