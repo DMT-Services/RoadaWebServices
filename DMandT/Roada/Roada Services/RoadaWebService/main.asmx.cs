@@ -5469,7 +5469,7 @@ columnname varchar(128)
                     {
                         SqlHelper sql = procData.fillQuery(data, vehicleLayout);
                         
-                        string where = string.Format("WHERE id={0}", data.Id);
+                        string where = string.Format("WHERE vehicle={0}", data.Id);
 
                         stmt.DoSQL(sql.BuildUpdate("UPDATE vehicles with (rowlock)", where));
                         rc = 1;
