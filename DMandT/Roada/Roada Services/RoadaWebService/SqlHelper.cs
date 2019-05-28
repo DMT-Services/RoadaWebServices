@@ -1292,7 +1292,7 @@ namespace DMTServices
     // beats me how!?  Anyway, it allows us to get at the stmt.Add()
     // function in dbfunc.cs without messing up any others that use the
     // SqlStmt class....
-    public static class SqlStmtExt
+    public static partial class SqlStmtExt
     {
         // if you are getting "Cannot define a new extension method because the compiler required type..." error
         // you need to add NET20 to the project's 'Conditional compilation symbols' under the Build tab in project properties...
