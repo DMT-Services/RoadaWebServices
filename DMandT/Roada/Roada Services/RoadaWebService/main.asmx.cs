@@ -3622,7 +3622,8 @@ namespace RoadaWebService
             catch (Exception ex)
             {
                 // some versions of the tablet program take multiple pictures with the same rdate which will cause this error
-                excp = (stmt.LastError.Contains("duplicate key") && stmt.LastError.Contains("unique_rdatehc"));
+                //                                                                                     changed the order of the fields and thus the index name
+                excp = (stmt.LastError.Contains("duplicate key") && (stmt.LastError.Contains("unique_rdatehc") || stmt.LastError.Contains("unique_hcrdate")));
                 if (!excp)
                     throw new System.Exception(ex.Message, ex.InnerException);
             }
