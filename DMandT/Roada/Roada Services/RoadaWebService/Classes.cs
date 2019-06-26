@@ -21,6 +21,16 @@ namespace RoadaWebService
         public DateTime EndDate;
         public int TripNumber;
     }
+    [DataContract]
+    public class AmazonURL
+    {
+        [DataMember]
+        public string urlString { get; set; }
+        [DataMember]
+        public int Id { get; set; }
+        [DataMember]
+        public string ReportID { get; set; }
+    }
 
     [DataContract]
     public class Yard
@@ -181,6 +191,11 @@ namespace RoadaWebService
         public double Lon { get; set; }
         [DataMember]
         public double Lat { get; set; }
+        [DataMember]
+        public bool Ready { get; set; }
+        [DataMember]
+        public bool Sent { get; set; }
+
         [DataMember]
         public string District { get; set; }
 

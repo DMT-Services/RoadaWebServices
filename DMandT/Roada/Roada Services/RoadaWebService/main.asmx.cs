@@ -3551,7 +3551,7 @@ namespace RoadaWebService
             pData.latitude = (decimal)picturedata.lat;
             pData.longitude = (decimal)picturedata.lon;
             pData.username = picturedata.username;
-            pData.repkey  = picturedata.InstallKey;
+            pData.repkey = picturedata.InstallKey;
             pData.handcode = picturedata.handcode;
             pData.unitnum = picturedata.unitNum;
             pData.objKey = picturedata.objKey;
@@ -3619,11 +3619,11 @@ namespace RoadaWebService
                 if (!stmt.DoSQLFormat("SELECT id FROM img_events WHERE obj_key='{0}'", pdata.objKey))
                     stmt.DoSQL(sql.BuildCmd("img_events", true));
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 // some versions of the tablet program take multiple pictures with the same rdate which will cause this error
                 excp = (stmt.LastError.Contains("duplicate key") && stmt.LastError.Contains("unique_rdatehc"));
-                if(!excp)
+                if (!excp)
                     throw new System.Exception(ex.Message, ex.InnerException);
             }
             if (excp)
@@ -3722,7 +3722,7 @@ namespace RoadaWebService
 
                     string wh = string.Format("WHERE hand_code={0}", hc);
                     bool ins = !stmt.DoSQL("SELECT * FROM go_status " + wh);
-                    if(ins)
+                    if (ins)
                         sql.Add("hand_code", hc);
                     stmt.DoSQL(sql.BuildCmd("go_status", ins, wh, true));
 
@@ -4362,7 +4362,7 @@ namespace RoadaWebService
                                        { "Finished", "finished" },
                                        { "WO_Id", "workorderid" },
                                        { "WO_No", "workorderno" } };
-        
+
         // these are only used when sending data TO tablets and MUST be removed when receiving...
         string[] defSendOnly = new string[] { "id", "requestid", "closed", "workorderid", "workorderno" };
 
@@ -4450,9 +4450,9 @@ namespace RoadaWebService
                 if (GetStmt(connStr, out stmt))
                 {
                     SqlHelper sql = procData.fillQuery(data, deficiencyLayout);
-                    
+
                     // these are only used when sending data TO tablets and MUST be removed here...
-                    foreach(string fld in defSendOnly)
+                    foreach (string fld in defSendOnly)
                         sql.Remove(fld);
 
                     string where = string.Format("WHERE report_id='{0}'", data.ReportId);
@@ -4521,7 +4521,7 @@ namespace RoadaWebService
                         {
                             DeficiencyData defData = new DeficiencyData();
                             procData.fillClass(defData, deficiencyLayout, stmt);
-                            
+
                             // if there is still something in add_notes, add it to .Note
                             string aNote = stmt.fetch("add_notes");
                             if (aNote != string.Empty)
@@ -4863,8 +4863,8 @@ create index unit_start on patrol_log(unit_num,start_patrol);
                         if (stmt.DoSQL("SELECT dash.op_code, dash.route_id, dash.route_name, routes.name FROM dash with (nolock) left join routes on routes.id = dash.route_id WHERE " + where))
                         {
                             result.plan = stmt.ifetch("op_code");
-                            result.routeName = stmt.fetch("name"); 
-                            result.routeID = stmt.ifetch("route_id"); 
+                            result.routeName = stmt.fetch("name");
+                            result.routeID = stmt.ifetch("route_id");
                             result.routeNameYork = stmt.fetch("route_name");//adjusted for MTO pilot 11/06/2018 -jl
                         }
                     }
@@ -4987,6 +4987,57 @@ create index unit_start on patrol_log(unit_num,start_patrol);
             }
             return data;
         }
+
+
+        [WebMethod(Description = "returns list of amazon urls")]
+        public AmazonURL[] GetAmazonUrls(Request req, string RepKey)
+        {
+            List<AmazonURL> urls = new List<AmazonURL>();
+            AmazonURL[] result = null;
+            // low security check, don't want hackers!
+            if (!LowSecurityCheck(req, "GetLoginStatus"))
+                return null;
+
+            string connStr = CustConnectionString(req);
+            SqlStmt stmt = null;
+            try
+            {
+                if (GetStmt(connStr, out stmt))
+                {
+                    bool rc = stmt.DoSQLFormat("SELECT * FROM Img_Events WHERE RepKey = '{0}' order by id desc", RepKey);
+
+                    while (rc)
+                    {
+                        AmazonURL url = new AmazonURL();
+
+                        url.Id = stmt.ifetch("id");
+                        url.ReportID = RepKey;
+                        url.urlString = stmt.fetch("img_url");
+
+                        urls.Add(url);
+                        rc = stmt.dbSkip();
+                    }
+
+                    result = urls.ToArray();
+                }
+
+            }
+            catch (Exception x)
+            {
+                Global.messLog.Flush("GetAmazonUrls() HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, x.Message);
+                InsertErrorRecord(req.CustCode, string.Format("GetAmazonUrls() Failed to send HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, x.Message), req);
+            }
+            finally
+            {
+                if (stmt != null)
+                    stmt.Close();
+
+            }
+            return result;
+        }
+           
+        
+
 
         [WebMethod(Description = "Retrieve vehicle list, optionally filtered by fleetId, as JSON")]
         [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
