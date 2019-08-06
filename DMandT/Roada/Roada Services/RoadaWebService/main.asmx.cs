@@ -1702,6 +1702,126 @@ namespace RoadaWebService
             }
             return response;
         }
+        /*
+        [DataContract]
+        public class DVIRHeader
+        {
+            [DataMember]
+            public string imei { get; set; }        // value must be same as used during commissioning
+            [DataMember]
+            public string Company { get; set; }
+            [DataMember]
+            public int TractorId { get; set; }      // from vehicles table
+            [DataMember]
+            public string TrackPlate { get; set; }
+            [DataMember]
+            public double Odom { get; set; }
+            [DataMember]
+            public DateTime rdate { get; set; }
+            [DataMember]
+            public double lat { get; set; }
+            [DataMember]
+            public double lon { get; set; }
+            [DataMember]
+            public string Inspector { get; set; }
+            [DataMember]
+            public string Comments { get; set; }
+            [DataMember]
+            public byte[] Signature { get; set; }
+
+            [DataMember]
+            public DVIRDetail[] Details { get; set; }
+        }
+
+        [DataContract]
+        public class DVIRDetail
+        {
+            [DataMember]
+            public int CategoryId { get; set; }
+            [DataMember]
+            public int[] MinorDefects { get; set; }
+            [DataMember]
+            public int[] MajorDefects { get; set; }
+        } */
+
+        [WebMethod(Description = "Save DVIR Data from React App JSON")]
+        [ScriptMethod(UseHttpGet = false, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public int TestJson(int i)
+        {
+            Global.messLog.Flush("TestJson() i is {0}", i);
+
+            return 5;
+        }
+
+        [WebMethod(Description = "Save DVIR Data from React App JSON")]
+        [ScriptMethod(UseHttpGet = false, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public int SaveDVIRJson(Request req, DVIRHeader hdr)
+        {
+            int rc = -4;
+
+            // low security check, don't want hackers!
+            if (LowSecurityCheck(req, "SaveDVIRJson"))
+            {
+                string connStr = CustConnectionString(req);
+
+                SqlStmt stmt = null;
+                try
+                {
+                    rc = -2;
+                    if (GetStmt(connStr, out stmt))
+                    {
+                        SqlHelper sql = procData.fillQuery(hdr, dvirHeaderLayout);
+                        sql.AddNow("idate");
+                        stmt.DoSQL(sql.BuildInsert("INSERT INTO DVIRHeader", " output inserted.id VALUES "), true);
+                        int id = stmt.ifetch("id");
+                        if (hdr.Details != null)
+                        {
+                            foreach (DVIRDetail det in hdr.Details)
+                            {
+                                sql.Clear();
+                                sql.Add("category_id", det.CategoryId);
+                                sql.Add("header_id", id);
+                                List<string> defects = new List<string>();
+                                if (det.MajorDefects != null)
+                                {
+                                    foreach (int majd in det.MajorDefects)
+                                        defects.Add(majd.ToString());
+                                    if (defects.Count > 0)
+                                        sql.Add("major_defects", string.Join(",", defects.ToArray()));
+                                    defects.Clear();
+                                }
+                                if (det.MinorDefects != null)
+                                {
+                                    foreach (int mind in det.MinorDefects)
+                                        defects.Add(mind.ToString());
+                                    if (defects.Count > 0)
+                                        sql.Add("minor_defects", string.Join(",", defects.ToArray()));
+                                    defects.Clear();
+                                }
+                            }
+                        }
+                        rc = 1;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    rc = -3;
+                    Global.messLog.Flush("SaveDVIRJson() data failed to receive: " + ex.Message);
+                    InsertErrorRecord(req.CustCode, string.Format("SaveDVIRJson() data failed to receive HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, ex.Message), req);
+                }
+                finally
+                {
+                    if (stmt != null)
+                    {
+                        stmt.Close();
+                        stmt = null;
+                    }
+                }
+
+            }
+            return rc;
+        }
+
 
         [WebMethod(Description = "Check for activation for React App JSON")]
         [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
@@ -5495,7 +5615,18 @@ columnname varchar(128)
                                   { "Type", "type" },
                                   { "Odom", "gps_odom" } };
 
-
+        string[,] dvirHeaderLayout = { { "CommId", "comm_id" },
+                                  { "Company", "company" },
+                                  { "TractorId", "vehicle_id" },
+                                  { "TractorPlate", "tractor_plate" },
+                                  { "Odom", "odom" },
+                                  { "lat", "lat" },
+                                  { "lon", "lon" },
+                                  { "Inspector", "inspector" },
+                                  { "Comments", "comments" },
+                                  { "Signature", "signature" },
+                                  { "rdate", "rdate" } };
+                                    
         [WebMethod(Description = "Update vehicle data from Phone App as JSON")]
         [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
         public int UpdateVehicleDataJson(Request req, Vehicle data)

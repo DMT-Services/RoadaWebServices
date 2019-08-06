@@ -1022,6 +1022,47 @@ namespace RoadaWebService
     }
 
     [DataContract]
+    public class DVIRHeader
+    {
+        [DataMember]
+        public int CommId { get; set; }         // Id from CommResponse of PhoneLoginJson
+        [DataMember]
+        public string Company { get; set; }
+        [DataMember]
+        public int TractorId { get; set; }      // from vehicles table
+        [DataMember]
+        public string TractorPlate { get; set; }
+        [DataMember]
+        public double Odom { get; set; }
+        [DataMember]
+        public DateTime rdate { get; set; }
+        [DataMember]
+        public double lat { get; set; }
+        [DataMember]
+        public double lon { get; set; }
+        [DataMember]
+        public string Inspector { get; set; }
+        [DataMember]
+        public string Comments { get; set; }
+        [DataMember]
+        public byte[] Signature { get; set; }
+
+        [DataMember]
+        public DVIRDetail[] Details { get; set; }
+    }
+
+    [DataContract]
+    public class DVIRDetail
+    {
+        [DataMember]
+        public int CategoryId { get; set; }
+        [DataMember]
+        public int[] MinorDefects { get; set; }
+        [DataMember]
+        public int[] MajorDefects { get; set; }
+    }
+
+    [DataContract]
     public class Vehicle
     {
         [DataMember]
