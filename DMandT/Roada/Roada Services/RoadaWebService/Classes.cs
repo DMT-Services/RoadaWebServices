@@ -622,35 +622,63 @@ namespace RoadaWebService
         public int UnixTim;
     }
 
+    [DataContract]
     public class WeatherData
     {
-        public string reportId;
-        public DateTime fromTime;
-        public int commId;
-        public int handCode;
-        public string unitNum;
-        public string driver;
-        public int percipitationType;
-        public int percipitationLvl;
-        public int windStrength;
-        public int windDirection;
-        public int visibility;
-        public int cloudCondition;
-        public int fogLvl;
-        public int drifting;
-        public int roadCondition;
-        public int road2ndCondition;
-        public decimal CurrentLat;
-        public decimal CurrentLong;
-        public double calcLat;
-        public double calcLong;
-        public string address;
-        public double tempAir;
-        public double tempRoad;
-        public bool validLoc;
-        public string comment;
-        public string action;
-        public string workOrder;
+        [DataMember]
+        public string reportId { get; set; }
+        [DataMember]
+        public DateTime fromTime { get; set; }
+        [DataMember]
+        public int commId { get; set; }
+        [DataMember]
+        public int handCode { get; set; }
+        [DataMember]
+        public string unitNum { get; set; }
+        [DataMember]
+        public string driver { get; set; }
+        [DataMember]
+        public int percipitationType { get; set; }
+        [DataMember]
+        public int percipitationLvl { get; set; }
+        [DataMember]
+        public int windStrength { get; set; }
+        [DataMember]
+        public int windDirection { get; set; }
+        [DataMember]
+        public int visibility { get; set; }
+        [DataMember]
+        public int cloudCondition { get; set; }
+        [DataMember]
+        public int fogLvl { get; set; }
+        [DataMember]
+        public int drifting { get; set; }
+        [DataMember]
+        public int roadCondition { get; set; }
+        [DataMember]
+        public int road2ndCondition { get; set; }
+        [DataMember]
+        public decimal CurrentLat { get; set; }
+        [DataMember]
+        public decimal CurrentLong { get; set; }
+        [DataMember]
+        public double calcLat { get; set; }
+        [DataMember]
+        public double calcLong { get; set; }
+        [DataMember]
+        public string address { get; set; }
+        [DataMember]
+        public double tempAir { get; set; }
+        [DataMember]
+        public double tempRoad { get; set; }
+        [DataMember]
+        public bool validLoc { get; set; }
+        [DataMember]
+        public string comment { get; set; }
+        [DataMember]
+        public string action { get; set; }
+        [DataMember]
+        public string workOrder { get; set; }
     }
 
     public class WeatherLocation

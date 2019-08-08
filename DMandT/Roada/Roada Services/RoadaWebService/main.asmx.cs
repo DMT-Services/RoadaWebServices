@@ -1746,15 +1746,6 @@ namespace RoadaWebService
 
         [WebMethod(Description = "Save DVIR Data from React App JSON")]
         [ScriptMethod(UseHttpGet = false, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
-        public int TestJson(int i)
-        {
-            Global.messLog.Flush("TestJson() i is {0}", i);
-
-            return 5;
-        }
-
-        [WebMethod(Description = "Save DVIR Data from React App JSON")]
-        [ScriptMethod(UseHttpGet = false, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
         public int SaveDVIRJson(Request req, DVIRHeader hdr)
         {
             int rc = -4;
@@ -1798,6 +1789,7 @@ namespace RoadaWebService
                                         sql.Add("minor_defects", string.Join(",", defects.ToArray()));
                                     defects.Clear();
                                 }
+                                stmt.DoSQL(sql.BuildInsert("INSERT INTO dvirdetail"));
                             }
                         }
                         rc = 1;
@@ -1863,7 +1855,7 @@ namespace RoadaWebService
                             string pcCode = stmt.fetch("pc_code");
                             string dbCodes = stmt.fetch("db_codes");
                             string desc = stmt.fetch("description");
-                            int HandCode = stmt.ifetch("handcode");
+                            int HandCode = stmt.ifetch("hand_code");
 
                             stmt.DoSQL(sql.BuildUpdate("UPDATE soft_activate", string.Format("WHERE client_guid = '{0}'", guid)));
 
@@ -2907,8 +2899,20 @@ namespace RoadaWebService
             return dInfo;
         }
 
+        [WebMethod(Description = "Push Weather Report Data Json")]
+        [ScriptMethod(UseHttpGet = false, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public int SendWeatherReportJson(Request req, WeatherData wdata)
+        {
+            return SendWeather(req, wdata);
+        }
+
         [WebMethod(Description = "Push Weather Report")]
         public int SendWeatherReport(Request req, WeatherData wdata)
+        {
+            return SendWeather(req, wdata);
+        }
+
+        private int SendWeather(Request req, WeatherData wdata)
         {
 
             int Result = 0;
@@ -5616,6 +5620,7 @@ columnname varchar(128)
                                   { "Odom", "gps_odom" } };
 
         string[,] dvirHeaderLayout = { { "CommId", "comm_id" },
+                                  { "handcode", "phone_code" },
                                   { "Company", "company" },
                                   { "TractorId", "vehicle_id" },
                                   { "TractorPlate", "tractor_plate" },
