@@ -386,15 +386,23 @@ namespace RoadaWebService
         public DateTime ReqDate { get; set; }
     }
 
+    [DataContract]
     public class HosEvent
     {
+        [DataMember]
         public int code;
+        [DataMember]
         public DateTime eventTime;
+        [DataMember]
         public string user_name;
+        [DataMember]
         public int handcode;
+        [DataMember]
         public bool duty;
+        [DataMember]
         public bool driving;
-
+        [DataMember]
+        public int phandcode;
     }
 
     public class evntOut
@@ -951,44 +959,82 @@ namespace RoadaWebService
         public DateTime changeTime { get; set; }
     }
 
+    [DataContract]
     public class PhotoData
     {
+        [DataMember]
         public bool dash;
+        [DataMember]
         public bool collision;
+        [DataMember]
         public bool done;
+        [DataMember]
         public bool ready;
+        [DataMember]
         public int handcode;
+        [DataMember]
         public int phandcode;
+        [DataMember]
         public string unitnum;
+        [DataMember]
         public int evtType;
+        [DataMember]
         public decimal latitude;
+        [DataMember]
         public decimal longitude;
+        [DataMember]
         public int degrees;
+        [DataMember]
         public int speed;
+        [DataMember]
         public string repkey;
+        [DataMember]
         public string username;
+        [DataMember]
         public string imgUrl;
+        [DataMember]
         public string custCode;
+        [DataMember]
         public string objKey;
+        [DataMember]
         public string bucket;
+        [DataMember]
         public DateTime rdate;
+        [DataMember]
         public decimal gpsAccuracy;
+        [DataMember]
         public bool priv;
+        [DataMember]
         public bool intall;
+        [DataMember]
         public string installKey;
+        [DataMember]
         public DateTime imgcreated;
+        [DataMember]
         public bool sent;
+        [DataMember]
         public bool sidewalk;
+        [DataMember]
         public bool deficiency;
+        [DataMember]
         public string imgPath;
+        [DataMember]
         public bool photoSent;
+        [DataMember]
         public DateTime sentTime;
+        [DataMember]
         public string NetworkType;
+        [DataMember]
         public int SignalStr;
+        [DataMember]
         public int qCount;
+        [DataMember]
         public int picQCount;
+        [DataMember]
         public int eventQCount;
+        [DataMember]
         public string imei;
+        [DataMember]
         public bool inyard;
     }
 

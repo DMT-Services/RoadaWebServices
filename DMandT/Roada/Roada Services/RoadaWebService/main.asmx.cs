@@ -3771,6 +3771,18 @@ namespace RoadaWebService
         [WebMethod(Description = "Push Camera Image")]
         public int SendPhotoData(Request req, PhotoData pdata)
         {
+            return SendPhotoData2(req, pdata);
+        }
+
+        [WebMethod(Description = "Push Camera Image Data JSON")]
+        [ScriptMethod(UseHttpGet = false, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public int SendPhotoDataJson(Request req, PhotoData pdata)
+        {
+            return SendPhotoData2(req, pdata);
+        }
+
+        private int SendPhotoData2(Request req, PhotoData pdata)
+        {
             int Result = 0;
             // low security check, don't want hackers!
             if (!LowSecurityCheck(req, "SendPhotoData"))
@@ -4037,8 +4049,21 @@ namespace RoadaWebService
             }
             return status;
         }
+
         [WebMethod(Description = "Retrieve Hos Events")]
         public HosEvent[] GetHosList(Request request, string user_name, DateTime currentDate)
+        {
+            return RetrieveHOS(request, user_name, currentDate);
+        }
+
+        [WebMethod(Description = "Retrieve Hos Events JSON (PUSH)")]
+        [ScriptMethod(UseHttpGet = false, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public HosEvent[] GetHosListJson(Request request, string user_name, DateTime currentDate)
+        {
+            return RetrieveHOS(request, user_name, currentDate);
+        }
+
+        private HosEvent[] RetrieveHOS(Request request, string user_name, DateTime currentDate)
         {
             HosEvent[] Result = null;
 
@@ -4060,11 +4085,12 @@ namespace RoadaWebService
                     while (rc)
                     {
                         HosEvent Hev = new HosEvent();
-                        Hev.eventTime = stmt.dtfetch("time_event");
+                        Hev.eventTime = stmt.dtfetch("rdate");
                         Hev.code = stmt.ifetch("event_code");
                         Hev.user_name = stmt.fetch("user_name");
                         Hev.duty = stmt.bfetch("duty");
                         Hev.driving = stmt.bfetch("driving");
+                        Hev.phandcode = stmt.ifetch("phand_code");
                         hosevnts.Add(Hev);
                         rc = stmt.dbSkip();
                     }
@@ -4084,8 +4110,21 @@ namespace RoadaWebService
             }
             return Result;
         }
+
         [WebMethod(Description = "Hos Events For go app")]
         public int SendHosEvent(Request req, HosEvent evnt)
+        {
+            return SaveHosEvent(req, evnt);
+        }
+
+        [WebMethod(Description = "Hos Events For go app Json (PUSH)")]
+        [ScriptMethod(UseHttpGet = false, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public int SendHosEventJson(Request req, HosEvent evnt)
+        {
+            return SaveHosEvent(req, evnt);
+        }
+
+        private int SaveHosEvent(Request req, HosEvent evnt)
         {
             int Result = -1;
             // low security check, don't want hackers!
@@ -4104,13 +4143,14 @@ namespace RoadaWebService
                     SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
                     DateTime now = DateTime.Now.ToLocalTime();
 
-                    sql.Add("r_date", now);
+                    sql.Add("idate", now);
                     sql.Add("user_name", evnt.user_name);
-                    sql.Add("time_event", evnt.eventTime);
+                    sql.Add("rdate", evnt.eventTime);
                     sql.Add("event_code", evnt.code);
                     sql.Add("handcode", evnt.handcode);
                     sql.Add("duty", evnt.duty);
                     sql.Add("driving", evnt.driving);
+                    sql.Add("phand_code", evnt.phandcode);
                     stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO go_hos"));
 
                     Result = 1;
