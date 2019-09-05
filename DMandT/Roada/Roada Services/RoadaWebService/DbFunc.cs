@@ -493,6 +493,29 @@ namespace DMTServices
                 return false;
         }
 
+        public bool reOpen(string connData)
+        {
+            if (connDb != null)
+            {
+                try
+                {
+                    connDb.Close();
+                    if (connData != string.Empty)
+                    {
+                        connDb.ConnectionString = connData;
+                        connData = string.Empty;
+                    }
+                    else
+                    {
+                        connDb.Dispose();
+                        connDb = null;
+                    }
+                }
+                catch { }
+            }
+            return dbConnect(connData);
+        }
+
         public void Close()
         {
             EndTransaction();
