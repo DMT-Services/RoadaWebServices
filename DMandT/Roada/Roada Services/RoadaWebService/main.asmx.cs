@@ -2981,6 +2981,14 @@ namespace RoadaWebService
             }
             return Result;
         }
+
+        [WebMethod(Description = "Send Collision Data as JSON")]
+        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public int SendCollisionDataJson(Request req, ReportData data)
+        {
+            return SendReportNew(req, data);
+        }
+
         [WebMethod(Description = "Push Collision Report")]
         public int SendReportNew(Request req, ReportData rdata)
         {
