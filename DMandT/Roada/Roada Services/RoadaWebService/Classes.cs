@@ -212,6 +212,35 @@ namespace RoadaWebService
     }
 
     [DataContract]
+    public class ForecastData
+    {
+        [DataMember]
+        public string Source { get; set; }
+        [DataMember]
+        public DateTime TimeOfForecast { get; set; }
+        [DataMember]
+        public DateTime RecordedAt { get; set; }
+        [DataMember]
+        public double AirTemperature { get; set; }
+        [DataMember]
+        public double WindSpeed { get; set; }
+        [DataMember]
+        public string WindDirection { get; set; }
+        [DataMember]
+        public string PrecipCode { get; set; }
+        [DataMember]
+        public DateTime PrecipTime { get; set; }
+        [DataMember]
+        public string Action { get; set; }
+        [DataMember]
+        public int HandCode { get; set; }
+        [DataMember]
+        public string UnitNum { get; set; }
+        [DataMember]
+        public string Driver { get; set; }
+    }
+
+    [DataContract]
     public class LoginData
     {
         [DataMember]
@@ -227,11 +256,15 @@ namespace RoadaWebService
         [DataMember]
         public double StartLongitude { get; set; }
         [DataMember]
+        public double StartOdometer { get; set; }
+        [DataMember]
         public DateTime EndTime { get; set; }
         [DataMember]
         public double EndLatitude { get; set; }
         [DataMember]
         public double EndLongitude { get; set; }
+        [DataMember]
+        public double EndOdometer { get; set; }
     }
 
     public class ColumnCheckData

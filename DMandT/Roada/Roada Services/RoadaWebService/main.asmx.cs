@@ -3804,49 +3804,7 @@ namespace RoadaWebService
                 Result = -3;
                 if (GetStmt(connStr, out stmt))
                 {
-#if OLDWAY
-                    SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
-                    bool reeady = pdata.ready;
-                    bool done = pdata.done;
-           
-                    sql.Add("rdate", pdata.rdate);
-                    // sql.Add("rdate", pdata.imgcreated); // remeber to remove if we turn on collision utc
-                    sql.Add("idate", DateTime.UtcNow);
-                    sql.Add("hand_code", pdata.handcode);
-                    sql.Add("unit_num", pdata.unitnum);
-                    sql.Add("latitude", pdata.latitude);
-                    sql.Add("longitude", pdata.longitude);
-                    sql.Add("degrees", pdata.degrees);
-                    sql.Add("speed", pdata.speed);
-                    sql.Add("RepKey", pdata.repkey);
-                    sql.Add("username", pdata.username);
-                    sql.Add("img_url", pdata.imgUrl);
-                    sql.Add("cust_code", pdata.custCode);
-                    sql.Add("obj_key", pdata.objKey);
-                    sql.Add("bucket", pdata.bucket);
-                    sql.Add("gps_accuracy", pdata.gpsAccuracy);
-                    sql.Add("private", pdata.priv);
-                    sql.Add("install", pdata.intall);
-                    sql.Add("installkey", pdata.installKey);
-                    sql.Add("img_created", pdata.imgcreated); //Now is the image sent field
-                    sql.Add("sent", pdata.sent);
-                    sql.Add("sidewalk", pdata.sidewalk);
-                    sql.Add("deficiency", pdata.deficiency);
-                    sql.Add("phand_code", pdata.phandcode);
-                    sql.Add("evt_type", pdata.evtType);
-                    sql.Add("dash", pdata.dash);                 
-                    sql.Add("collision", pdata.collision);
-                    sql.Add("q_count", pdata.qCount);
-                    sql.Add("pic_q_count", pdata.picQCount);
-                    sql.Add("signal_str", pdata.SignalStr);
-                    sql.Add("net_type", pdata.NetworkType);
-              
-                    stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO img_Events"));
-
-                    sql.Clear();
-#else
                     storePicData(pdata, stmt);
-#endif
 
                     SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
 
@@ -4204,25 +4162,6 @@ namespace RoadaWebService
                         pData.intall = true;
 
                         storePicData(pData, stmt);
-#if OLDWAY
-                        SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
-                        DateTime now = DateTime.Now.ToLocalTime();
-
-                        sql.Add("install", 1);
-                        sql.Add("hand_code", data.handcode);
-                        sql.Add("unit_num", data.unitNum);
-                        sql.Add("obj_key", data.objKey);
-                        sql.Add("rdate", data.pictureSent);
-                        sql.Add("idate", now);
-                        sql.Add("installkey", data.InstallKey);
-                        sql.Add("img_url", data.imgUrl);
-
-
-                        if (!stmt.DoSQLFormat("SELECT id FROM Img_Events WHERE obj_key = '{0}'", data.objKey))
-                            stmt.DoSQL(sql.BuildInsert("INSERT INTO Img_Events"));
-
-                        sql.Clear();
-#endif
                     }
 
                     Result = 1;
@@ -4344,27 +4283,7 @@ namespace RoadaWebService
                     pData.sidewalk = true;
 
                     storePicData(pData, stmt);
-#if OLDWAY
-                    SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
-                    DateTime now = DateTime.Now.ToLocalTime();
 
-                    sql.Add("sidewalk", 1);
-                    sql.Add("latitude", picturedata.lat);
-                    sql.Add("longitude", picturedata.lon);
-                    sql.Add("username", picturedata.username);
-                    sql.Add("RepKey", picturedata.InstallKey);
-                    sql.Add("hand_code", picturedata.handcode);
-                    sql.Add("unit_num", picturedata.unitNum);
-                    sql.Add("obj_key", picturedata.objKey);
-                    sql.Add("rdate", picturedata.pictureSent);
-                    sql.Add("idate", now);
-                    sql.Add("img_url", picturedata.imgUrl);
-
-                    if (!stmt.DoSQLFormat("SELECT id FROM Img_Events WHERE obj_key = '{0}'", picturedata.objKey))
-                        stmt.DoSQL(sql.BuildInsert("INSERT INTO Img_Events"));
-
-                    sql.Clear();
-#endif
                     Result = 1;
                 }
             }
@@ -4470,28 +4389,7 @@ namespace RoadaWebService
                     pData.deficiency = true;
 
                     storePicData(pData, stmt);
-#if OLDWAY
 
-                    SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
-                    DateTime now = DateTime.Now.ToLocalTime();
-
-                    sql.Add("deficiency", 1);
-                    sql.Add("latitude", picturedata.lat);
-                    sql.Add("longitude", picturedata.lon);
-                    sql.Add("username", picturedata.username);
-                    sql.Add("RepKey", picturedata.InstallKey);
-                    sql.Add("hand_code", picturedata.handcode);
-                    sql.Add("unit_num", picturedata.unitNum);
-                    sql.Add("obj_key", picturedata.objKey);
-                    sql.Add("rdate", picturedata.pictureSent);
-                    sql.Add("idate", now);
-                    sql.Add("img_url", picturedata.imgUrl);
-
-                    if (!stmt.DoSQLFormat("SELECT id FROM Img_Events WHERE obj_key = '{0}'", picturedata.objKey))
-                        stmt.DoSQL(sql.BuildInsert("INSERT INTO Img_Events"));
-
-                    sql.Clear();
-#endif
                     Result = 1;
                 }
             }
@@ -4900,24 +4798,6 @@ namespace RoadaWebService
                     stmt.Close();
             }
         }
-
-#if SQL
-create table patrol_log
-(
-id int identity(1,1) primary key,
-hand_code int,
-unit_num varchar(16),
-user_name VARCHAR(32),
-start_patrol DATETIME,
-start_latitude DECIMAL(10,6),
-start_longitude DECIMAL(10,6),
-end_patrol DATETIME,
-end_latitude DECIMAL(10,6),
-end_longitude DECIMAL(10,6)
-);
-create index unit_num on patrol_log(unit_num);
-create index unit_start on patrol_log(unit_num,start_patrol);
-#endif
 
         private void UpdateMessageIn(evntRecord evnt, Request req)
         {
@@ -5574,6 +5454,102 @@ create index unit_start on patrol_log(unit_num,start_patrol);
             return Result;
         }
 
+        /*
+        create table weather_forecast
+        (
+        id int identity(1,1) primary key,
+        source varchar(64),
+        forecast_time datetime,
+        rdate datetime,
+        temp_air decimal(5,1),
+        wind_speed decimal(5,1),
+        wind_direction varchar(2),
+        precip_code varchar(4),
+        precip_time datetime,
+        action varchar(128),
+        unit_num varchar(32),
+        hand_code int,
+        driver varchar(64),
+        idate datetime
+        );
+        */
+        // defines the relationship between WeatherForecast class and weather_forecast fields
+        // first string is name in class, second is name in database
+        string[,] forecastLayout = { { "Source", "source" },
+                                     { "TimeOfForecast", "forecast_time" },
+                                     { "RecordedAt", "rdate" },
+                                     { "AirTemperature", "temp_air" },
+                                     { "WindSpeed", "wind_speed" },
+                                     { "WindDirection", "wind_direction" },
+                                     { "PrecipCode", "precip_code" },
+                                     { "PrecipTime", "precip_time" },
+                                     { "Action", "action" },
+                                     { "HandCode", "hand_code" },
+                                     { "UnitNum", "unit_num" },
+                                     { "Driver", "driver" }};
+
+        [WebMethod(Description = "Receive Weather Forecast Data as JSON")]
+        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public int SendForecastJson(Request req, ForecastData data)
+        {
+            return SendForecast(req, data);
+        }
+
+        [WebMethod(Description = "Receive Weather Forecast Data from Tablet")]
+        public int SendForecast(Request req, ForecastData data)
+        {
+            int rc = 0;
+
+            // low security check, don't want hackers!
+            if (LowSecurityCheck(req, "SendForecast"))
+            {
+                string connStr = CustConnectionString(req);
+
+                SqlStmt stmt = null;
+                try
+                {
+                    rc = -2;
+                    if (GetStmt(connStr, out stmt))
+                    {
+                        SqlHelper sql = procData.fillQuery(data, forecastLayout);
+                        sql.AddNow("idate");
+
+                        string where = string.Format("WHERE forecast_time={0} and driver='{1}'", SqlHelper.timeStamp(data.TimeOfForecast), data.Driver);
+
+                        if (stmt.DoSQL("SELECT id FROM weather_forecast " + where))
+                        {
+                            rc = stmt.ifetch("id");     // return the ID of the existing record...
+                            stmt.DoSQL(sql.BuildCmd("weather_forecast", false, where, true));
+                        }
+                        else
+                        {
+                            // MUST set second param of DoSQL() to true as this makes it run the insert 
+                            // as an ExecuteReader instead of ExecuteNonQuery so we can get back the inserted.id
+                            stmt.DoSQL(sql.BuildInsert("INSERT INTO weather_forecast", " output inserted.id VALUES "), true);
+                            rc = stmt.ifetch("id");     // return the ID of the new record...
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    rc = -3;
+                    Global.messLog.Flush("SendForecast() data failed to receive: " + ex.Message);
+                    InsertErrorRecord(req.CustCode, string.Format("SendForecast() data failed to receive HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, ex.Message), req);
+                }
+                finally
+                {
+                    if (stmt != null)
+                    {
+                        stmt.Close();
+                        stmt = null;
+                    }
+                }
+
+            }
+            return rc;
+        }
+
+
         // defines the relationship between LoginData class and patrol_log fields
         // first string is name in class, second is name in database
         string[,] loginLayout = { { "HandCode", "hand_code" },
@@ -5582,9 +5558,11 @@ create index unit_start on patrol_log(unit_num,start_patrol);
                                   { "StartTime", "start_patrol" },
                                   { "StartLatitude", "start_latitude" },
                                   { "StartLongitude", "start_longitude" },
+                                  { "StartOdometer", "start_odo" },
                                   { "EndTime", "end_patrol" },
                                   { "EndLatitude", "end_latitude" },
-                                  { "EndLongitude", "end_longitude" } };
+                                  { "EndLongitude", "end_longitude" },
+                                  { "EndOdometer", "end_odo" } };
 
         [WebMethod(Description = "Receive Login Data as JSON")]
         [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
@@ -5649,16 +5627,6 @@ create index unit_start on patrol_log(unit_num,start_patrol);
             return rc;
         }
 
-#if SQL
-create table tablet_sql
-(
-id int identity(1,1) primary key,
-sqlstring varchar(max),
-tablename varchar(128),
-indexname varchar(128),
-columnname varchar(128)
-)
-#endif
         // defines the relationship between VehicleData class and vehicle table fields
         // first string is name in class, second is name in database
         string[,] vehicleLayout = { { "DevId", "hand_code" },
@@ -5730,8 +5698,49 @@ columnname varchar(128)
             return rc;
         }
 
-        
-        
+#if SQL
+        create table tablet_sql
+        (
+        id int identity(1,1) primary key,
+        sqlstring varchar(max),
+        tablename varchar(128),
+        indexname varchar(128),
+        columnname varchar(128)
+        )
+
+        create table patrol_log
+        (
+        id int identity(1,1) primary key,
+        hand_code int,
+        unit_num varchar(16),
+        user_name VARCHAR(32),
+        start_patrol DATETIME,
+        start_latitude DECIMAL(10,6),
+        start_longitude DECIMAL(10,6),
+        start_odo decimal(10,1),
+        end_patrol DATETIME,
+        end_latitude DECIMAL(10,6),
+        end_longitude DECIMAL(10,6),
+        end_odo decimal(10,1)
+        );
+        create index unit_num on patrol_log(unit_num);
+        create index unit_start on patrol_log(unit_num,start_patrol);
+
+        create table weather_forecast
+        (
+        id int identity(1,1) primary key,
+        source varchar(64),
+        forecast_time datetime,
+        rdate datetime,
+        temp_air decimal(5,1),
+        wind_speed decimal(5,1),
+        wind_direction varchar(2),
+        precip_code varchar(4),
+        precip_time datetime,
+        action varchar(128)
+        );
+#endif
+
         [WebMethod(Description = "Retrieve all create/alter table / index statements for the RoadaTabPatrol app")]
         public tabletTables[] setupTabletDB(Request request)
         {
