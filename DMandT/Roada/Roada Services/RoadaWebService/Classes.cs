@@ -266,7 +266,9 @@ namespace RoadaWebService
         [DataMember]
         public double EndOdometer { get; set; }
         [DataMember]
-        public string Signature { get; set; }
+        public byte[] Signature { get; set; }
+        [DataMember]
+        public string strSignature { get; set; }
     }
 
     public class ColumnCheckData

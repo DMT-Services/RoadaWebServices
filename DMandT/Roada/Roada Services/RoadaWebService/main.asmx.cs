@@ -5570,6 +5570,10 @@ namespace RoadaWebService
         [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
         public int SendTabletLoginJson(Request req, LoginData data)
         {
+            // couldn't seem to pass byte[] array with JSON?
+            // so converted it to Base64 string and put into LoginData.strSignature
+            if (data.strSignature != null)
+                data.Signature = Convert.FromBase64String(data.strSignature);
             return SendTabletLogin(req, data);
         }
 
@@ -5590,10 +5594,6 @@ namespace RoadaWebService
                     if (GetStmt(connStr, out stmt))
                     {
                         SqlHelper sql = procData.fillQuery(data, loginLayout);
-                        // the byte[] signature is sent as Base64
-                        sql.Remove("signature");
-                        if (data.Signature != null)
-                            sql.Add("signature", Convert.FromBase64String(data.Signature));
 
                         string where = string.Format("WHERE hand_code={0} and start_patrol={1}", data.HandCode, SqlHelper.timeStamp(data.StartTime));
 
