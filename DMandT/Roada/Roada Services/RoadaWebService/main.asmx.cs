@@ -4766,6 +4766,7 @@ namespace RoadaWebService
                     sql.Add("waypoint", evnt.waypoint);
                     sql.Add("processed", 0);
                     sql.Add("comm_type", 0);
+                    sql.Add("signature", evnt.signature);
                     sql.Add("q_count", evnt.qCount);
                     sql.Add("signal_str", evnt.SignalStr);
                     sql.Add("net_type", evnt.net_type);
@@ -5562,7 +5563,8 @@ namespace RoadaWebService
                                   { "EndTime", "end_patrol" },
                                   { "EndLatitude", "end_latitude" },
                                   { "EndLongitude", "end_longitude" },
-                                  { "EndOdometer", "end_odo" } };
+                                  { "EndOdometer", "end_odo" },
+                                  { "Signature", "signature" } };
 
         [WebMethod(Description = "Receive Login Data as JSON")]
         [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
@@ -5588,6 +5590,10 @@ namespace RoadaWebService
                     if (GetStmt(connStr, out stmt))
                     {
                         SqlHelper sql = procData.fillQuery(data, loginLayout);
+                        // the byte[] signature is sent as Base64
+                        sql.Remove("signature");
+                        if (data.Signature != null)
+                            sql.Add("signature", Convert.FromBase64String(data.Signature));
 
                         string where = string.Format("WHERE hand_code={0} and start_patrol={1}", data.HandCode, SqlHelper.timeStamp(data.StartTime));
 
