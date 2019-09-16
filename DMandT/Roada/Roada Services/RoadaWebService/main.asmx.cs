@@ -5556,6 +5556,7 @@ namespace RoadaWebService
         string[,] loginLayout = { { "HandCode", "hand_code" },
                                   { "UnitNum", "unit_num" },
                                   { "UserName", "user_name" },
+                                  { "District", "district" },
                                   { "StartTime", "start_patrol" },
                                   { "StartLatitude", "start_latitude" },
                                   { "StartLongitude", "start_longitude" },
