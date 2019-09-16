@@ -2961,6 +2961,7 @@ namespace RoadaWebService
                         sql.Add("action_taken", wdata.action);
                         sql.Add("work_order", wdata.workOrder);
                         sql.AddNow("idate");
+                        sql.Add("vehicle_id", getVehicleId(stmt, wdata.handCode, wdata.unitNum));
 
                         stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO weather_condition"));
 
@@ -3261,8 +3262,11 @@ namespace RoadaWebService
                     sql.Add("idate", DateTime.UtcNow);
                     sql.Add("rdate", imgRec.rDate);
                     sql.Add("hand_code", imgRec.HC);
-                    if (stmt.DoSQL(String.Format("SELECT unit_num FROM vehicles with (nolock) WHERE hand_code = {0}", imgRec.HC)))
+                    if (stmt.DoSQL(String.Format("SELECT unit_num,vehicle FROM vehicles with (nolock) WHERE hand_code = {0}", imgRec.HC)))
+                    {
                         sql.Add("unit_num", stmt.fetch("unit_num"));
+                        sql.Add("vehicle_id", stmt.ifetch("vehicle"));
+                    }
                     sql.Add("evt_type", imgRec.EType);
                     sql.Add("latitude", imgRec.Lat);
                     sql.Add("longitude", imgRec.Lon);
@@ -3728,6 +3732,7 @@ namespace RoadaWebService
             sql.Add("pic_q_count", pdata.picQCount);
             sql.Add("signal_str", pdata.SignalStr);
             sql.Add("net_type", pdata.NetworkType);
+            sql.Add("vehicle_id", getVehicleId(stmt, pdata.handcode, pdata.unitnum));
 
             // for York, we need to update the trip's uDate if the trip has been completed so the API's will know to send the img_event data!
             if (stmt.DoSQLFormat("SELECT TOP 1 id, end_trip FROM trip WHERE start_trip < {0} and hand_code = {1} ORDER BY start_trip DESC", SqlHelper.timeStamp(pdata.rdate), pdata.handcode))
@@ -3743,8 +3748,7 @@ namespace RoadaWebService
                         stmt.DoSQLFormat("UPDATE trip with (rowlock) SET uDate = GetDate() WHERE id = {0}", tripId);
                 }
             }
-            string msg = string.Empty;
-            string inner = string.Empty;
+
             bool excp = false;
             try
             {
@@ -4535,6 +4539,7 @@ namespace RoadaWebService
                     }
                     else
                     {
+                        sql.Add("vehicle_id", getVehicleId(stmt, data.HandCode, data.UnitNum));
                         // MUST set second param of DoSQL() to true as this makes it run the insert 
                         // as an ExecuteReader instead of ExecuteNonQuery so we can get back the inserted id
                         stmt.DoSQL(sql.BuildInsert("INSERT INTO deficiencies", " output inserted.id VALUES "), true);
@@ -4773,6 +4778,8 @@ namespace RoadaWebService
                     sql.Add("pic_q_count", evnt.PicQCount);
                     sql.Add("rdate", evnt.rdate);
                     sql.Add("idate", DateTime.UtcNow);
+                    sql.Add("vehicle_id", getVehicleId(stmt, evnt.handcode, evnt.truck));
+
                     stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO go_events"));
 
                     if (stmt.DoSQLFormat("SELECT * FROM vehicles with (rowlock) WHERE hand_code = {0}", evnt.dcdHC))
@@ -5524,6 +5531,7 @@ namespace RoadaWebService
                         }
                         else
                         {
+                            sql.Add("vehicle_id", getVehicleId(stmt, data.HandCode, data.UnitNum));
                             // MUST set second param of DoSQL() to true as this makes it run the insert 
                             // as an ExecuteReader instead of ExecuteNonQuery so we can get back the inserted.id
                             stmt.DoSQL(sql.BuildInsert("INSERT INTO weather_forecast", " output inserted.id VALUES "), true);
@@ -5607,6 +5615,8 @@ namespace RoadaWebService
                         {
                             // close off 'open' login for same handcode/user
                             stmt.DoSQLFormat("update patrol_log set end_patrol={0} where hand_code={1} and user_name='{2}' and end_patrol is null", SqlHelper.timeStamp(data.StartTime), data.HandCode, data.UserName);
+
+                            sql.Add("vehicle_id", getVehicleId(stmt, data.HandCode, data.UnitNum));
 
                             // MUST set second param of DoSQL() to true as this makes it run the insert 
                             // as an ExecuteReader instead of ExecuteNonQuery so we can get back the inserted.id
@@ -5833,6 +5843,19 @@ namespace RoadaWebService
             if (!Result)
                 Global.messLog.Flush("Failed to connect to {0}", connStr);
             return Result;
+        }
+
+        private int getVehicleId(SqlStmt stmt, int hand_code, string unit_num)
+        {
+            int rc = 0;
+            string wh;
+            if (unit_num != string.Empty)
+                wh = string.Format("unit_num='{0}'", unit_num);
+            else
+                wh = string.Format("hand_code={0}", hand_code);
+            if (stmt.DoSQL("select vehicle from vehicles with (nolock) where " + wh))
+                rc = stmt.ifetch("vehicle");
+            return rc;
         }
 
         [WebMethod(Description = "Retrieve current GPS readings")]
