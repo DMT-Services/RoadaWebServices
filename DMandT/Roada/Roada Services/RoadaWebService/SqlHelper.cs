@@ -1047,12 +1047,12 @@ namespace DMTServices
 
         public string BuildCmd(string table, string suffix)
         {
-            return BuildCmd(table, false, suffix, false);
+            return BuildCmd(table, false, string.Empty, suffix, false);
         }
 
         public string BuildCmd(string table, bool insert, string suffix)
         {
-            return BuildCmd(table, insert, suffix, false);
+            return BuildCmd(table, insert, string.Empty, suffix, false);
         }
 
         /// <summary>
@@ -1060,10 +1060,20 @@ namespace DMTServices
         /// </summary>
         public string BuildCmd(string table, bool insert, string suffix, bool rowLock)
         {
+            return BuildCmd(table, insert, string.Empty, suffix, rowLock);
+        }
+
+        public string BuildCmd(string table, bool insert, string output, string suffix, bool rowLock)
+        {
             string Result;
 
             if (insert)
-                Result = BuildInsert("INSERT INTO " + table);
+            {
+                string mid = "VALUES";
+                if (output != string.Empty)
+                    mid = "output inserted." + output + " " + mid;
+                Result = BuildInsert("INSERT INTO " + table, mid);
+            }
             else
                 Result = BuildUpdate("UPDATE " + table + ((rowLock) ? " with (rowlock)" : ""), suffix);
 
