@@ -554,7 +554,7 @@ namespace DMTServices
         // used for SchemaGet.Find()
         static Predicate<schemaLayout> ByName(string name)
         {
-            return delegate(schemaLayout sl)
+            return delegate (schemaLayout sl)
             {
                 return (string.Compare(sl.schemaName, name, true) == 0);
             };
@@ -1294,7 +1294,7 @@ namespace DMTServices
         {
             bool rc = false;
             myDataReader dr = DoSQLnr(selectStr);
-            if (dr != null && dr.HasRows)
+            if (dr != null && (dr.HasRows || dt.Columns.Count == 0))    // if the passed in DataTable has no columns, .load() to get the structure even if no Rows
             {
                 int st = dt.Rows.Count;
                 dt.BeginLoadData();
@@ -1369,9 +1369,9 @@ namespace DMTServices
                 return dbSkip();
             else
                 if (!select)
-                    return RowsAffected > 0;
-                else
-                    return false;
+                return RowsAffected > 0;
+            else
+                return false;
         }
 
         public bool DoSQL(string selectStr)
@@ -2355,10 +2355,10 @@ namespace DMTServices
                 else
                     //  Note: this ONLY works if the AM/PM is the last thing in the data string...
                     if (AMPM)
-                    {
-                        fmt += " tt";
-                        fmt = fmt.Replace("H:", "h:");                  // capitol H for 24 hour time, small h for 12
-                    }
+                {
+                    fmt += " tt";
+                    fmt = fmt.Replace("H:", "h:");                  // capitol H for 24 hour time, small h for 12
+                }
 
                 // if the data has seconds and the format doesn't (or vise versa)
                 //   Note: this expects time to be at the end of the string and that
@@ -2512,9 +2512,9 @@ namespace DMTServices
                     }
                     else
                         if (o is DateTime)
-                            return def;
-                        else
-                            return Convert.ToBoolean(o);
+                        return def;
+                    else
+                        return Convert.ToBoolean(o);
                 }
             }
             catch
@@ -2545,9 +2545,9 @@ namespace DMTServices
                     }
                     else
                         if (o is DateTime)
-                            return ((DateTime)o).Ticks / 10000;     // milliseconds since DateTime.MinValue
-                        else
-                            return Convert.ToDecimal(o);
+                        return ((DateTime)o).Ticks / 10000;     // milliseconds since DateTime.MinValue
+                    else
+                        return Convert.ToDecimal(o);
                 }
             }
             catch
@@ -2578,9 +2578,9 @@ namespace DMTServices
                     }
                     else
                         if (o is DateTime)
-                            return ((DateTime)o).Ticks / 10000;     // milliseconds since DateTime.MinValue
-                        else
-                            return Convert.ToDouble(o);
+                        return ((DateTime)o).Ticks / 10000;     // milliseconds since DateTime.MinValue
+                    else
+                        return Convert.ToDouble(o);
                 }
             }
             catch
@@ -2623,24 +2623,24 @@ namespace DMTServices
                     }
                     else
                         if (o is bool)
-                            return ((bool)o) ? 1 : 0;
-                        else
+                        return ((bool)o) ? 1 : 0;
+                    else
                             // again, anything to avoid an exception,
                             // if someone asks for the int value of a DateTime
                             // what do they expect to get?
                             if (o is DateTime)
-                                return (int)(((DateTime)o).Ticks / 600000000);      // minutes since DateTime.MinValue
+                        return (int)(((DateTime)o).Ticks / 600000000);      // minutes since DateTime.MinValue
+                    else
+                    {
+                        // try to stop numbers too big or too small from causing Exceptions...
+                        if (o is double)
+                            if ((double)o >= Int32.MaxValue)
+                                return Int32.MaxValue;
                             else
-                            {
-                                // try to stop numbers too big or too small from causing Exceptions...
-                                if (o is double)
-                                    if ((double)o >= Int32.MaxValue)
-                                        return Int32.MaxValue;
-                                    else
-                                        if ((double)o <= Int32.MinValue)
-                                            return Int32.MinValue;
-                                return Convert.ToInt32(o);
-                            }
+                                if ((double)o <= Int32.MinValue)
+                                return Int32.MinValue;
+                        return Convert.ToInt32(o);
+                    }
                 }
             }
             catch
@@ -2715,24 +2715,24 @@ namespace DMTServices
                     }
                     else
                         if (o is bool)
-                            return ((bool)o) ? 1 : 0;
-                        else
+                        return ((bool)o) ? 1 : 0;
+                    else
                             // again, anything to avoid an exception,
                             // if someone asks for the int value of a DateTime
                             // what do they expect to get?
                             if (o is DateTime)
-                                return (Int64)(((DateTime)o).Ticks / 600000000);      // minutes since DateTime.MinValue
+                        return (Int64)(((DateTime)o).Ticks / 600000000);      // minutes since DateTime.MinValue
+                    else
+                    {
+                        // try to stop numbers too big or too small from causing Exceptions...
+                        if (o is double)
+                            if ((double)o >= Int64.MaxValue)
+                                return Int64.MaxValue;
                             else
-                            {
-                                // try to stop numbers too big or too small from causing Exceptions...
-                                if (o is double)
-                                    if ((double)o >= Int64.MaxValue)
-                                        return Int64.MaxValue;
-                                    else
-                                        if ((double)o <= Int64.MinValue)
-                                            return Int64.MinValue;
-                                return Convert.ToInt64(o);
-                            }
+                                if ((double)o <= Int64.MinValue)
+                                return Int64.MinValue;
+                        return Convert.ToInt64(o);
+                    }
                 }
             }
             catch
@@ -2770,20 +2770,20 @@ namespace DMTServices
                         }
                         else
                             if (!DateTime.TryParse((string)o, out dt))
-                                dt = def;
+                            dt = def;
                         return dt;
                     }
                     else
                         if (o is double)
-                            return DateTime.MinValue.AddMilliseconds((double)o);
-                        else
+                        return DateTime.MinValue.AddMilliseconds((double)o);
+                    else
                             if (o is int)
-                                return DateTime.MinValue.AddMinutes((double)((int)o));
-                            else
+                        return DateTime.MinValue.AddMinutes((double)((int)o));
+                    else
                                 if (o is DateTime)
-                                    return (DateTime)o;
-                                else
-                                    return def;
+                        return (DateTime)o;
+                    else
+                        return def;
                 }
             }
             catch
