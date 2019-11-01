@@ -361,7 +361,7 @@ namespace RoadaWebService
     }
 
     [DataContract]
-    public class AppServerInfo
+    public class  AppServerInfo
     {
         [DataMember]
         public string customerCode { get; set; }
@@ -743,6 +743,112 @@ namespace RoadaWebService
         public int vechileId;
         public string comments;
         public byte[] image;
+    }
+
+    [DataContract]
+    public class BridgeInspectionData 
+    {
+
+        public BridgeInspectionData()
+        {
+            this.bridgeItems = new List<BridgeItem>();
+            this.photos = new List<PhotoData>();
+        }
+        [DataMember]
+        public DateTime date { get; set; }
+        [DataMember]
+        public string road { get; set; }
+        [DataMember]
+        public string location { get; set; }
+        [DataMember]
+        public string inspector { get; set; }
+        [DataMember]
+        public string bridge { get; set; }
+        [DataMember]
+        public string structure { get; set; }
+        [DataMember]
+        public string name { get; set; }
+        [DataMember]
+        public string site { get; set; }
+        [DataMember]
+        public string type { get; set; }
+        [DataMember]
+        public int spans { get; set; }
+        [DataMember]
+        public double length { get; set; }
+        [DataMember]
+        public double width { get; set; }
+        [DataMember]
+        public double latitude { get; set; }
+        [DataMember]
+        public double longitude { get; set; }
+        [DataMember]
+        public string other { get; set; }
+        [DataMember]
+        public string reco { get; set; }
+        [DataMember]
+        public List<byte> sigData { get; set; }
+        [DataMember]
+        public List<BridgeItem> bridgeItems { get; set; }
+        [DataMember]
+        public string repKey { get; set; }
+        [DataMember]
+        public List<PhotoData> photos { get; set; }
+
+    }
+    
+    [DataContract]
+    public class BridgeItem 
+    {
+        [DataMember]
+        public DateTime date { get; set; }
+        [DataMember]
+        public int issue { get; set; }
+        [DataMember]
+        public bool defect { get; set; }
+        [DataMember]
+        public string note { get; set; }
+        [DataMember]
+        public int tstate { get; set; }
+        [DataMember]
+        public bool groupEnabled { get; set; }
+        [DataMember]
+        public int severity { get; set; }
+        [DataMember]
+        public string bridge { get; set; }
+    } 
+
+    [DataContract]
+    public class Bridge 
+    {
+        [DataMember]
+        public string bridge { get; set; }
+        [DataMember]
+        public string structure { get; set; }
+        [DataMember]
+        public string road { get; set; }
+        [DataMember]
+        public string location { get; set; }
+        [DataMember]
+        public string name { get; set; }
+        [DataMember]
+        public string site { get; set; }
+        [DataMember]
+        public string type { get; set; }
+        [DataMember]
+        public int spans { get; set; }
+        [DataMember]
+        public double length { get; set; }
+        [DataMember]
+        public double width { get; set; }
+        [DataMember]
+        public double latitude { get; set; }
+        [DataMember]
+        public double longitude { get; set; }
+        [DataMember]
+        public string notes { get; set; }
+        [DataMember]
+        public DateTime date { get; set; }
     }
       [DataContract]
     public class ReportData
