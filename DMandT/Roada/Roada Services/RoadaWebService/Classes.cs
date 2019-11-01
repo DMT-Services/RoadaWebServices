@@ -132,22 +132,37 @@ namespace RoadaWebService
 
     }
 
+    [DataContract]
     public class SideWalkData
     {
-        public string address;
-        public string reportId;
-        public int handCode;
-        public string UnitNum;
-        public string userName;
-        public int Colour;
-        public DateTime reportTime;
-        public int blocks;
-        public int bays;
-        public int def1;
-        public int def2;
-        public string notes;
-        public double lon;
-        public double lat;
+        [DataMember]
+        public string address { get; set; }
+        [DataMember]
+        public string reportId { get; set; }
+        [DataMember]
+        public int handCode { get; set; }
+        [DataMember]
+        public string UnitNum { get; set; }
+        [DataMember]
+        public string userName { get; set; }
+        [DataMember]
+        public int Colour { get; set; }
+        [DataMember]
+        public DateTime reportTime { get; set; }
+        [DataMember]
+        public int blocks { get; set; }
+        [DataMember]
+        public int bays { get; set; }
+        [DataMember]
+        public int def1 { get; set; }
+        [DataMember]
+        public int def2 { get; set; }
+        [DataMember]
+        public string notes { get; set; }
+        [DataMember]
+        public double lon { get; set; }
+        [DataMember]
+        public double lat { get; set; }
     }
 
     [DataContract]
@@ -361,7 +376,7 @@ namespace RoadaWebService
     }
 
     [DataContract]
-    public class  AppServerInfo
+    public class AppServerInfo
     {
         [DataMember]
         public string customerCode { get; set; }
@@ -746,7 +761,14 @@ namespace RoadaWebService
     }
 
     [DataContract]
-    public class BridgeInspectionData 
+    public class TestData
+    {
+        [DataMember]
+        public List<byte> Signature { get; set; }
+    }
+
+    [DataContract]
+    public class BridgeInspectionData
     {
 
         public BridgeInspectionData()
@@ -796,9 +818,9 @@ namespace RoadaWebService
         public List<PhotoData> photos { get; set; }
 
     }
-    
+
     [DataContract]
-    public class BridgeItem 
+    public class BridgeItem
     {
         [DataMember]
         public DateTime date { get; set; }
@@ -816,10 +838,10 @@ namespace RoadaWebService
         public int severity { get; set; }
         [DataMember]
         public string bridge { get; set; }
-    } 
+    }
 
     [DataContract]
-    public class Bridge 
+    public class Bridge
     {
         [DataMember]
         public string bridge { get; set; }
@@ -850,7 +872,8 @@ namespace RoadaWebService
         [DataMember]
         public DateTime date { get; set; }
     }
-      [DataContract]
+    
+    [DataContract]
     public class ReportData
     {
         [DataMember]
@@ -871,6 +894,8 @@ namespace RoadaWebService
           public string phoneID { get; set; }           // Id of phone
         [DataMember]
           public byte[] Signiture { get; set; }         // stores the Signiture Array
+        [DataMember]
+        public List<float> Signature { get; set; }
         [DataMember]
           public bool Sent { get; set; } 
 
@@ -1030,17 +1055,27 @@ namespace RoadaWebService
         public string Ver;  // software version
     }
 
+    [DataContract]
     public class InstalledPictures
     {
-        public double lat;
-        public double lon;
-        public string username;
-        public string objKey;
-        public string unitNum;
-        public int handcode;
-        public string imgUrl;
-        public string InstallKey;
-        public DateTime pictureSent;
+        [DataMember]
+        public double lat { get; set; }
+        [DataMember]
+        public double lon { get; set; }
+        [DataMember]
+        public string username { get; set; }
+        [DataMember]
+        public string objKey { get; set; }
+        [DataMember]
+        public string unitNum { get; set; }
+        [DataMember]
+        public int handcode { get; set; }
+        [DataMember]
+        public string imgUrl { get; set; }
+        [DataMember]
+        public string InstallKey { get; set; }
+        [DataMember]
+        public DateTime pictureSent { get; set; }
     }
 
     public class goTables

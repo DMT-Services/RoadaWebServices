@@ -2983,12 +2983,44 @@ namespace RoadaWebService
             return Result;
         }
 
+        [WebMethod(Description = "Send Test Signature as JSON")]
+        [ScriptMethod(UseHttpGet = false, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public int SendTestDataJson(Request req, TestData data)
+        {
+            int len = -1;
+            if (data != null)
+                if (data.Signature != null)
+                    len = data.Signature.Count;
+            Global.messLog.Flush("SendTestData() HandCode:{0} Version:{1} Length:{2}", req.Handcode, req.Version, len);
+            return 0;
+        }
+
+
         [WebMethod(Description = "Send Collision Data as JSON")]
-        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        [ScriptMethod(UseHttpGet = false, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
         public int SendCollisionDataJson(Request req, ReportData data)
         {
             return SendReportNew(req, data);
         }
+
+        private UInt32 GetUInt32BigEndian(byte[] buf)
+        {
+            UInt32 Result = 0;
+            try
+            {
+                byte b = buf[0];
+                buf[0] = buf[3];
+                buf[3] = b;
+                b = buf[1];
+                buf[1] = buf[2];
+                buf[2] = b;
+                Result = BitConverter.ToUInt32(buf, 0);
+            }
+            catch { }
+
+            return Result;
+        }
+
 
         [WebMethod(Description = "Push Collision Report")]
         public int SendReportNew(Request req, ReportData rdata)
@@ -3009,7 +3041,10 @@ namespace RoadaWebService
                     SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
                     //DateTime now = DateTime.Now.ToLocalTime();
 
-                    sql.Add("sig_data", rdata.Signiture);
+                    if (rdata.Signature != null && rdata.Signature.Count > 0)
+                        sql.Add("sig_data", rdata.Signature.SelectMany(BitConverter.GetBytes).ToArray());
+                    else
+                        sql.Add("sig_data", rdata.Signiture);
                     sql.Add("ci_date", rdata.DateCol);
                     sql.Add("hwy", rdata.hwy);
                     sql.Add("loc_direction", rdata.locDirection);
@@ -3114,8 +3149,6 @@ namespace RoadaWebService
             }
             return Result;
         }
-
-
 
         [WebMethod(Description = "Push Collision Report")]
         public int SendReport(Request req, ReportData rdata)
@@ -3696,6 +3729,8 @@ namespace RoadaWebService
             pData.rdate = picturedata.pictureSent;
             pData.imgUrl = picturedata.imgUrl;
             pData.bucket = getBucket(picturedata.imgUrl);
+            pData.imgcreated = picturedata.pictureSent;
+
             return pData;
         }
 
@@ -4266,7 +4301,12 @@ namespace RoadaWebService
         }
 
 
-
+        [WebMethod(Description = "Save Sidewalk Pics from React App JSON")]
+        [ScriptMethod(UseHttpGet = false, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public int sendSidewalkPicsJson(Request req, InstalledPictures picturedata)
+        {
+            return sendSidewalkPics(req, picturedata);
+        }
 
         [WebMethod(Description = "Puts sidewalk pictures away")]
         public int sendSidewalkPics(Request req, InstalledPictures picturedata)
@@ -4308,6 +4348,13 @@ namespace RoadaWebService
             return Result;
         }
 
+        [WebMethod(Description = "Save Sidewalk Data from React App JSON")]
+        [ScriptMethod(UseHttpGet = false, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public int SendSidewalkDataJSon(Request req, SideWalkData data)
+        {
+            return SendSidewalkData(req, data);
+        }
+
         [WebMethod(Description = "Puts sidewalk inspection Data Away")]
         public int SendSidewalkData(Request req, SideWalkData data)
         {
@@ -4338,7 +4385,10 @@ namespace RoadaWebService
                     sql.Add("blocks", data.blocks);
                     sql.Add("notes", data.notes);
                     sql.Add("def1", data.def1);
-                    sql.Add("def2", data.def2);
+                    if (data.def2 == -1)
+                        sql.Add("def2", "null", false);
+                    else
+                        sql.Add("def2", data.def2);
                     sql.Add("latitude", data.lat);
                     sql.Add("longitude", data.lon);
 
@@ -4594,7 +4644,7 @@ namespace RoadaWebService
                             exWh = " and isnull(closed,0)=0";
                             daysBack = -daysBack;
                         }
-                        bool rc = stmt.DoSQLFormat("select * from deficiencies where report_time>getdate()-{0} " + exWh, daysBack);
+                        bool rc = stmt.DoSQLFormat("select * from deficiencies where report_time>getdate()-{0}" + exWh, daysBack);
                         while (rc)
                         {
                             DeficiencyData defData = new DeficiencyData();
@@ -4713,7 +4763,7 @@ namespace RoadaWebService
                     sql.Add("last_log", evnt.eventTime);
                     sql.Add("route", evnt.route);
                     sql.Add("pic_q_count", evnt.PicQCount_GS);
-                    sql.Add("q_count", evnt.PicQCount_GS);
+                    sql.Add("q_count", evnt.qCount_GS);
                     sql.Add("signal_str", evnt.SignalStr);
                     sql.Add("net_type", evnt.net_type_GS);
                     sql.Add("event_q_count", evnt.EventQCount_GS);
@@ -5187,7 +5237,7 @@ namespace RoadaWebService
 
                         List<Bridge> Bridges = new List<Bridge>();
                         bool rc;
-                       
+
                         rc = stmt.DoSQL("SELECT * FROM asset_bridge ORDER BY bridge");
                         while (rc)
                         {
@@ -5205,7 +5255,7 @@ namespace RoadaWebService
                             b.longitude = stmt.dfetch("longitude");
                             b.notes = stmt.fetch("notes");
                             b.date = stmt.dtfetch("date");
-                           
+
                             Bridges.Add(b);
 
                             rc = stmt.dbSkip();
@@ -5276,7 +5326,7 @@ namespace RoadaWebService
                     {
                         sql.Clear();
 
-                        sql.Add("bridge",item.bridge);
+                        sql.Add("bridge", item.bridge);
                         sql.Add("date", item.date);
                         sql.Add("issue", item.issue);
                         sql.Add("defect", item.defect);
@@ -5291,7 +5341,7 @@ namespace RoadaWebService
                     }
 
                     Result = 1;
-                   
+
                 }
             }
             catch (Exception x)
@@ -5307,7 +5357,7 @@ namespace RoadaWebService
             }
             return Result;
         }
-       
+
 
         [WebMethod(Description = "Retrieve Bridges inspections")]
         public BridgeInspectionData[] GetBridgeInsectionList(Request request, Bridge[] bridges)
@@ -5355,7 +5405,7 @@ namespace RoadaWebService
 
                                     if (b.repKey.Length > 0)
                                     {
-                                        bool rc = stmt3.DoSQLFormat("SELECT * FROM Img_events WHERE RepKey = '{0}'",b.repKey);
+                                        bool rc = stmt3.DoSQLFormat("SELECT * FROM Img_events WHERE RepKey = '{0}'", b.repKey);
                                         while (rc)
                                         {
                                             PhotoData pdata = new PhotoData();
@@ -5372,7 +5422,7 @@ namespace RoadaWebService
                                     bool rc2 = stmt2.DoSQLFormat("SELECT * FROM inspection_bridge_item WHERE date = '{0}' AND bridge = '{1}'", b.date, b.bridge);
                                     while (rc2)
                                     {
-                                       
+
 
                                         BridgeItem bi = new BridgeItem();
                                         bi.bridge = b.bridge;
@@ -5387,15 +5437,15 @@ namespace RoadaWebService
                                         b.bridgeItems.Add(bi);
 
                                         rc2 = stmt2.dbSkip();
-                              
+
                                     }
-                             
+
 
                                     Bridges.Add(b);
                                 }
 
                             }
-                            
+
 
                         }
                         Result = Bridges.ToArray();
@@ -5424,7 +5474,7 @@ namespace RoadaWebService
                         stmt3.Close();
                         stmt3 = null;
                     }
-   
+
                 }
             }
             return Result;
@@ -5595,9 +5645,9 @@ namespace RoadaWebService
 
         [WebMethod(Description = "Retrieve vehicle types list as JSON")]
         [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
-        public Bridge[] GetVehicleTypesJson(Request req)
+        public VehicleType[] GetVehicleTypesJson(Request req)
         {
-            return GetBridgeList(req);
+            return GetVehicleTypes(req);
         }
 
         [WebMethod(Description = "Send Bridgedata as JSON")]
@@ -5607,12 +5657,11 @@ namespace RoadaWebService
             return SendBridgeData(req, bdata);
         }
 
-
         [WebMethod(Description = "Retrieve Bridge list as JSON")]
         [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
-        public VehicleType[] GetBridgesJson(Request req)
+        public Bridge[] GetBridgesJson(Request req)
         {
-            return GetVehicleTypes(req);
+            return GetBridgeList(req);
         }
 
         [WebMethod(Description = "Retrieve Bridge Data as JSON")]
