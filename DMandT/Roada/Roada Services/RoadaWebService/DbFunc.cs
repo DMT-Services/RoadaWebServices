@@ -1214,6 +1214,25 @@ namespace DMTServices
             }
         }
 
+        public delegate void TransportErrorEventHandler(object sender);
+
+        static private event TransportErrorEventHandler transportErrorEvent = null;
+
+        static public event TransportErrorEventHandler TransportErrorEvent
+        {
+            add
+            {
+                if (transportErrorEvent == null || !transportErrorEvent.GetInvocationList().Contains(value))
+                {
+                    transportErrorEvent += value;
+                }
+            }
+            remove
+            {
+                transportErrorEvent -= value;
+            }
+        }
+
         private myDbCommand cmd = null;
         private myDataReader rdr = null;
 
@@ -1543,6 +1562,8 @@ namespace DMTServices
 #endif
                 LastError = e.Message;
                 rdrClose();
+                if (e.Message.Contains("transport-level error") && transportErrorEvent != null)
+                    transportErrorEvent(this);
 #if THROW_SQL_EXCP
                 if (!fParent.ignoreDupErr || !e.Message.StartsWith("Cannot insert duplicate key row"))
                     throw new System.Exception(e.Message, e.InnerException);
