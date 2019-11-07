@@ -1172,7 +1172,7 @@ namespace DMTServices
         }
     }
 
-    public class SqlStmt
+    public class SqlStmt : IDisposable
     {
 #if REPLICATE_DB
         /// <summary>
@@ -1562,6 +1562,7 @@ namespace DMTServices
 #endif
                 LastError = e.Message;
                 rdrClose();
+
                 if (e.Message.Contains("transport-level error") && transportErrorEvent != null)
                     transportErrorEvent(this);
 #if THROW_SQL_EXCP
@@ -1959,6 +1960,37 @@ namespace DMTServices
             fParent.AddStmt(this);
 
             createdSqlConn = true;  // force the parent (the connection) to be closed when we close...
+        }
+
+        // Made this Class disposable
+        private bool _disposed = false;
+
+        ~SqlStmt()
+        {
+            Dispose(false);
+        }
+
+        // Public implementation of Dispose pattern callable by consumers.
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        // Protected implementation of Dispose pattern.
+        protected virtual void Dispose(bool disposing)
+        {
+            if (_disposed)
+                return;
+
+            if (disposing)
+            {
+                Close();
+                // Free any other managed objects here.
+                //
+            }
+
+            _disposed = true;
         }
 
         // if they use this one
