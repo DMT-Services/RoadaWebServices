@@ -150,7 +150,7 @@ public static class ArrayExtensions
 
 namespace DMTServices
 {
-    public class SqlConn
+    public class SqlConn : IDisposable
     {
         private myDbConnection connDb = null;
         private myTransaction trans = null;
@@ -190,6 +190,36 @@ namespace DMTServices
         /// </summary>
         public SqlConn()
         {
+        }
+
+        // Made this Class disposable
+        private bool _disposed = false;
+
+        ~SqlConn()
+        {
+            Dispose(false);
+        }
+
+        // Public implementation of Dispose pattern callable by consumers.
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        // Protected implementation of Dispose pattern.
+        protected virtual void Dispose(bool disposing)
+        {
+            if (_disposed)
+                return;
+
+            if (disposing)
+            {
+                Close();
+                // Free any other managed objects here.
+            }
+
+            _disposed = true;
         }
 
         /// <summary>
@@ -1995,13 +2025,13 @@ namespace DMTServices
             {
                 Close();
                 // Free any other managed objects here.
-                //
             }
 
             _disposed = true;
         }
 
-        // if they use this one
+        // Legacy function 
+        //   Please use the one above that takes SqlConn
         public SqlStmt(myDbConnection connDb)
         {
             fParent = new SqlConn(connDb);
