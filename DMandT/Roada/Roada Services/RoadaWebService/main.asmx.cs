@@ -1744,6 +1744,83 @@ namespace RoadaWebService
             public int[] MajorDefects { get; set; }
         } */
 
+        [WebMethod(Description = "Retrieve DVIR Data from React App JSON using vehicle id for")]
+        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public DVIRHeader[] GetDVIRJson(Request req, int veh, int rows)
+        {
+            DVIRHeader[] Result = null;
+            if (LowSecurityCheck(req, "GetDVIRJson"))
+            {
+                string connStr = CustConnectionString(req);
+                SqlStmt stmt = null;
+                SqlStmt stmt2 = null;
+                try
+                {
+                    if (GetStmt(connStr, out stmt))
+                    {
+                        GetStmt(connStr, out stmt2);
+                        List<DVIRHeader> dvirs = new List<DVIRHeader>();
+                        bool rc = stmt.DoSQLFormat("SELECT TOP {0} * FROM dvirheader WHERE vehicle_id = {1} ORDER BY rdate DESC", rows, veh);
+                        int hdrId;
+                        while (rc)
+                        {
+                            hdrId = stmt.ifetch("id");
+                            DVIRHeader dh = new DVIRHeader();
+                            dh.Company = stmt.fetch("company");
+                            dh.TractorPlate = stmt.fetch("tractor_plate");
+                            dh.Odom = stmt.dfetch("odom");
+                            dh.rdate = stmt.dtfetch("rdate");
+                            dh.lat = stmt.dfetch("lat");
+                            dh.lon = stmt.dfetch("lon");
+                            dh.Inspector = stmt.fetch("inspector");
+                            dh.Comments = stmt.fetch("comments");
+                            dh.CommId = stmt.ifetch("comm_id");
+
+                            bool rc2 = stmt2.DoSQLFormat("SELECT * FROM dvirdetail WHERE header_id = {0}", hdrId);
+                            List<DVIRDetail> detList = new List<DVIRDetail>();
+                            while (rc2)
+                            {
+                                DVIRDetail dd = new DVIRDetail();
+                                dd.CategoryId = stmt2.ifetch("category_id");
+                                if (!stmt2.IsNull("minor_defects"))
+                                {
+                                    List<int> mdInts = stmt2.lifetch("minor_defects");
+                                    if (mdInts.Count > 0)
+                                        dd.MinorDefects = mdInts.ToArray();
+                                }
+                                if (!stmt2.IsNull("major_defects"))
+                                {
+                                    List<int> mdInts = stmt2.lifetch("major_defects");
+                                    if (mdInts.Count > 0)
+                                        dd.MajorDefects = mdInts.ToArray();
+                                }
+                                detList.Add(dd);
+                                rc2 = stmt2.dbSkip();
+                            }
+                            dh.Details = detList.ToArray();
+                            dvirs.Add(dh);
+                            rc = stmt.dbSkip();
+                        }
+                        Result = dvirs.ToArray();
+                        dvirs.Clear();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Global.messLog.Flush("GetDVIRJson() HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, ex.Message);
+                    InsertErrorRecord(req.CustCode, "GetDVIRJson() " + ex.Message, req);
+                }
+                finally
+                {
+                    if (stmt != null)
+                        stmt.Close();
+                    if (stmt2 != null)
+                        stmt2.Close();
+                }
+            }
+            return Result;
+        }
+
         [WebMethod(Description = "Save DVIR Data from React App JSON")]
         [ScriptMethod(UseHttpGet = false, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
         public int SaveDVIRJson(Request req, DVIRHeader hdr)
@@ -2864,6 +2941,19 @@ namespace RoadaWebService
                                 dInfo.WetRate = stmt.dfetch("wet_rate");
                             }
                         }
+
+                        bool rc = stmt.DoSQLFormat("SELECT TOP 5 * FROM img_events WHERE hand_code = {0} ORDER BY rdate DESC", devId);
+                        List<ImgInfo> imgs = new List<ImgInfo>();
+                        while (rc)
+                        {
+                            ImgInfo img = new ImgInfo();
+                            img.EvtType = stmt.ifetch("evt_type");
+                            img.rdate = stmt.dtfetch("rdate");
+                            img.ImgUrl = stmt.fetch("img_url");
+                            rc = stmt.dbSkip();
+                        }
+                        dInfo.Images = imgs.ToArray();
+                        imgs.Clear();
                         /* do not enable until engine in is re-indexed
                         if (stmt.DoSQLFormat("SELECT * from EngineIn WHERE id=(SELECT max(id) FROM EngineIn WHERE hand_code = '{0}')", devId))
                         {

@@ -673,6 +673,11 @@ namespace DMTServices
             return Add(colName, data, false);
         }
 
+        public int Add(string colName, List<byte> bl)
+        {
+            return Add(colName, bl.ToArray());
+        }
+
         /// <summary>
         /// Adds all the values from the List
         /// used to create   xxx in (aaa,bbb,ccc,...) for where clause
@@ -779,28 +784,32 @@ namespace DMTServices
             {
                 if (o is string)
                     return Add(colName, (string)o);
+                else if (o is DateTime)
+                     return Add(colName, (DateTime)o);
+                else if (o is int)
+                    return Add(colName, (int)o);
+                else if (o is double)
+                    return Add(colName, (double)o);
+                else if (o is bool)
+                    return Add(colName, (bool)o);
+                else if (o is byte[])
+                    return Add(colName, (byte[])o);
                 else
-                    if (o is DateTime)
-                        return Add(colName, (DateTime)o);
+                {
+                    if (o is List<byte>)
+                        return Add(colName, (List<byte>)o);
                     else
-                        if (o is int)
-                            return Add(colName, (int)o);
-                        else
-                            if (o is double)
-                                return Add(colName, (double)o);
-                            else
-                                if (o is bool)
-                                    return Add(colName, (bool)o);
-                                else
-                                    if (o is byte[])
-                                        return Add(colName, (byte[])o);
-                                    else
-                                        if (o.GetType().IsValueType)
-                                            try
-                                            {
-                                                return Add(colName, o.ToString(), false);
-                                            }
-                                            catch { }
+                    {
+                        if (o.GetType().IsValueType)
+                        {
+                            try
+                            {
+                                return Add(colName, o.ToString(), false);
+                            }
+                            catch { }
+                        }
+                    }
+                }
             }
 
             if (!NoNulls)

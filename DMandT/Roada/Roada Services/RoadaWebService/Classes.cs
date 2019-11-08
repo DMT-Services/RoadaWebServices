@@ -1348,7 +1348,7 @@ namespace RoadaWebService
         [DataMember]
         public string Comments { get; set; }
         [DataMember]
-        public byte[] Signature { get; set; }
+        public List<byte> Signature { get; set; }
 
         [DataMember]
         public DVIRDetail[] Details { get; set; }
@@ -1399,6 +1399,16 @@ namespace RoadaWebService
         public bool HasTow { get; set; }
         [DataMember]
         public bool HasSpreader { get; set; }
+    }
+    [DataContract]
+    public class ImgInfo
+    {
+        [DataMember]
+        public DateTime rdate { get; set; }
+        [DataMember]
+        public int EvtType { get; set; }
+        [DataMember]
+        public string ImgUrl { get; set; }
     }
 
     [DataContract]
@@ -1468,6 +1478,8 @@ namespace RoadaWebService
         public string truck { get; set; }
         [DataMember]
         public bool online { get; set; }
+        [DataMember]
+        public ImgInfo[] Images { get; set; }
     }
 
     public class TPatrol511
