@@ -1561,10 +1561,13 @@ namespace DMTServices
                 }
 #endif
                 LastError = e.Message;
+                if (transportErrorEvent != null)
+                {
+                    if (e.Message.Contains("transport-level error") || e.Message.Contains("forcibly closed"))
+                        transportErrorEvent(this);
+                }
                 rdrClose();
 
-                if (e.Message.Contains("transport-level error") && transportErrorEvent != null)
-                    transportErrorEvent(this);
 #if THROW_SQL_EXCP
                 if (!fParent.ignoreDupErr || !e.Message.StartsWith("Cannot insert duplicate key row"))
                     throw new System.Exception(e.Message, e.InnerException);
@@ -1614,6 +1617,11 @@ namespace DMTServices
                         fParent.Mess.Flush("dbSkip() Exception - " + e.Message);
 #endif
                     LastError = e.Message;
+                    if (transportErrorEvent != null)
+                    {
+                        if (e.Message.Contains("transport-level error") || e.Message.Contains("forcibly closed"))
+                            transportErrorEvent(this);
+                    }
                 }
             }
             return rc;
