@@ -2246,6 +2246,18 @@ namespace DMTServices
         {
             return myConvert.ToDateTime(dr.ofetch(field));
         }
+
+        public static DateTime dtfetch(this DataRow dr, string name, DateTime date)
+        {
+            DateTime rc = date;
+            string dt = dr.fetch(name);
+            if (dt.Contains("/"))
+                rc = myConvert.ToDateTime(dt);
+            else
+                rc = myConvert.ToTime(dr.fetch(name), date);
+            return rc;
+        }
+
     }
 
     public class myDataRow
