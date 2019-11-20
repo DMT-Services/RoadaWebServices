@@ -5251,6 +5251,14 @@ namespace RoadaWebService
             return GetVehicleList(req, fleetId, out vv);
         }
 
+        [WebMethod(Description = "get photo urls")]
+        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public AmazonURL[] GetAmazonUrlJson(Request req, string RepId)
+        {
+            // can't do OUT parameters in JSON, as far as I've been able to find...
+            return GetAmazonUrls(req, RepId);
+        }
+
         [WebMethod(Description = "Retrieve vehicle listing")]
         public Vehicle[] GetVehicleList(Request request, int? fleetId, out int VehicleVersion)
         {
