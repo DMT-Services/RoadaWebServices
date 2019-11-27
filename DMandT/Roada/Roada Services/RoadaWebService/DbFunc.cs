@@ -2614,10 +2614,12 @@ namespace DMTServices
                         return b;
                     }
                     else
+                    {
                         if (o is DateTime)
-                        return def;
-                    else
-                        return Convert.ToBoolean(o);
+                            return def;
+                        else
+                            return Convert.ToBoolean(o);
+                    }
                 }
             }
             catch
@@ -2647,10 +2649,12 @@ namespace DMTServices
                         return d;
                     }
                     else
+                    {
                         if (o is DateTime)
-                        return ((DateTime)o).Ticks / 10000;     // milliseconds since DateTime.MinValue
-                    else
-                        return Convert.ToDecimal(o);
+                            return ((DateTime)o).Ticks / 10000;     // milliseconds since DateTime.MinValue
+                        else
+                            return Convert.ToDecimal(o);
+                    }
                 }
             }
             catch
@@ -2680,10 +2684,12 @@ namespace DMTServices
                         return d;
                     }
                     else
+                    {
                         if (o is DateTime)
-                        return ((DateTime)o).Ticks / 10000;     // milliseconds since DateTime.MinValue
-                    else
-                        return Convert.ToDouble(o);
+                            return ((DateTime)o).Ticks / 10000;     // milliseconds since DateTime.MinValue
+                        else
+                            return Convert.ToDouble(o);
+                    }
                 }
             }
             catch
@@ -2725,24 +2731,30 @@ namespace DMTServices
                         return i;
                     }
                     else
+                    {
                         if (o is bool)
-                        return ((bool)o) ? 1 : 0;
-                    else
+                            return ((bool)o) ? 1 : 0;
+                        else
+                        {
                             // again, anything to avoid an exception,
                             // if someone asks for the int value of a DateTime
                             // what do they expect to get?
                             if (o is DateTime)
-                        return (int)(((DateTime)o).Ticks / 600000000);      // minutes since DateTime.MinValue
-                    else
-                    {
-                        // try to stop numbers too big or too small from causing Exceptions...
-                        if (o is double)
-                            if ((double)o >= Int32.MaxValue)
-                                return Int32.MaxValue;
+                                return (int)(((DateTime)o).Ticks / 600000000);      // minutes since DateTime.MinValue
                             else
-                                if ((double)o <= Int32.MinValue)
-                                return Int32.MinValue;
-                        return Convert.ToInt32(o);
+                            {
+                                // try to stop numbers too big or too small from causing Exceptions...
+                                if (o is double)
+                                    if ((double)o >= Int32.MaxValue)
+                                        return Int32.MaxValue;
+                                    else
+                                    {
+                                        if ((double)o <= Int32.MinValue)
+                                            return Int32.MinValue;
+                                    }
+                                return Convert.ToInt32(o);
+                            }
+                        }
                     }
                 }
             }
@@ -2817,24 +2829,30 @@ namespace DMTServices
                         return i;
                     }
                     else
+                    {
                         if (o is bool)
-                        return ((bool)o) ? 1 : 0;
-                    else
+                            return ((bool)o) ? 1 : 0;
+                        else
+                        {
                             // again, anything to avoid an exception,
                             // if someone asks for the int value of a DateTime
                             // what do they expect to get?
                             if (o is DateTime)
-                        return (Int64)(((DateTime)o).Ticks / 600000000);      // minutes since DateTime.MinValue
-                    else
-                    {
-                        // try to stop numbers too big or too small from causing Exceptions...
-                        if (o is double)
-                            if ((double)o >= Int64.MaxValue)
-                                return Int64.MaxValue;
+                                return (Int64)(((DateTime)o).Ticks / 600000000);      // minutes since DateTime.MinValue
                             else
-                                if ((double)o <= Int64.MinValue)
-                                return Int64.MinValue;
-                        return Convert.ToInt64(o);
+                            {
+                                // try to stop numbers too big or too small from causing Exceptions...
+                                if (o is double)
+                                    if ((double)o >= Int64.MaxValue)
+                                        return Int64.MaxValue;
+                                    else
+                                    {
+                                        if ((double)o <= Int64.MinValue)
+                                            return Int64.MinValue;
+                                    }
+                                return Convert.ToInt64(o);
+                            }
+                        }
                     }
                 }
             }
@@ -2877,16 +2895,22 @@ namespace DMTServices
                         return dt;
                     }
                     else
+                    {
                         if (o is double)
-                        return DateTime.MinValue.AddMilliseconds((double)o);
-                    else
+                            return DateTime.MinValue.AddMilliseconds((double)o);
+                        else
+                        {
                             if (o is int)
-                        return DateTime.MinValue.AddMinutes((double)((int)o));
-                    else
+                                return DateTime.MinValue.AddMinutes((double)((int)o));
+                            else
+                            {
                                 if (o is DateTime)
-                        return (DateTime)o;
-                    else
-                        return def;
+                                    return (DateTime)o;
+                                else
+                                    return def;
+                            }
+                        }
+                    }
                 }
             }
             catch
