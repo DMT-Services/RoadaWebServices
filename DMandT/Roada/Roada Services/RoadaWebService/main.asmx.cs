@@ -1569,6 +1569,7 @@ namespace RoadaWebService
                     ServerInfo.AmazonSecretKey = stmt.fetch("amz_secret_key");
                     ServerInfo.AmazonAccessKey = stmt.fetch("amz_access_key");
                     ServerInfo.patrolFrqURL = stmt.fetch("patrol_frq");
+                    ServerInfo.Name = stmt.fetch("name");
                     validConfig = true;
                 }
                 else
@@ -2906,6 +2907,8 @@ namespace RoadaWebService
                         dInfo.GPSDate = stmt.dtfetch("last_date");
                         dInfo.Latitude = stmt.dfetch("last_lat");
                         dInfo.Longitude = stmt.dfetch("last_long");
+                        dInfo.Pdop = stmt.dfetch("pdop");
+                        dInfo.Hdop = stmt.dfetch("hdop");
                         dInfo.Speed = stmt.ifetch("speed");
                         dInfo.FirmVers = stmt.fetch("firmware_version");
                         dInfo.ModemVers = stmt.fetch("modem_version");
@@ -2950,6 +2953,7 @@ namespace RoadaWebService
                             img.EvtType = stmt.ifetch("evt_type");
                             img.rdate = stmt.dtfetch("rdate");
                             img.ImgUrl = stmt.fetch("img_url");
+                            imgs.Add(img);
                             rc = stmt.dbSkip();
                         }
                         dInfo.Images = imgs.ToArray();

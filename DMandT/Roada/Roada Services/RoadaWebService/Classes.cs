@@ -396,6 +396,8 @@ namespace RoadaWebService
         public string AmazonAccessKey { get; set; }
         [DataMember]
         public string patrolFrqURL { get; set; }
+        [DataMember]
+        public string Name { get; set; }
     }
 
     [DataContract]
@@ -1478,6 +1480,10 @@ namespace RoadaWebService
         public string truck { get; set; }
         [DataMember]
         public bool online { get; set; }
+        [DataMember]
+        public double Pdop { get; set; }
+        [DataMember]
+        public double Hdop { get; set; }
         [DataMember]
         public ImgInfo[] Images { get; set; }
     }
