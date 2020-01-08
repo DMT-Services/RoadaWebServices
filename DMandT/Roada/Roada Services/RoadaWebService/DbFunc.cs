@@ -1534,7 +1534,7 @@ namespace DMTServices
                                 }
                             }
                             cmd.Parameters.Add(new myParameter(paraName, parms.Value));
-#if !ODBC && ! FIREBIRD
+#if !ODBC && ! FIREBIRD && ! MSORACLE
                             if (paraType != string.Empty)
                                 cmd.Parameters[cmd.Parameters.Count - 1].UdtTypeName = paraType;
 #endif
