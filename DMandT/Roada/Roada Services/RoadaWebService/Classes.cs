@@ -652,6 +652,21 @@ namespace RoadaWebService
     }
 
     [DataContract]
+    public class Employee
+    {
+        [DataMember]
+        public int Id { get; set; }
+        [DataMember]
+        public string employee_num { get; set; }
+        [DataMember]
+        public string first_name { get; set; }
+        [DataMember]
+        public string last_name { get; set; }
+        [DataMember]
+        public int dc_id { get; set; }
+    }
+
+    [DataContract]
     public class CommResponse
     {
         [DataMember]

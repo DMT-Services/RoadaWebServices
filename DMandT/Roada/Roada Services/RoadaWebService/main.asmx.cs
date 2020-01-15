@@ -1280,6 +1280,65 @@ namespace RoadaWebService
             return Result;
         }
 
+        [WebMethod(Description = "Retrieve employee list, optionally filtered by cd_id, as JSON")]
+        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public Employee[] GetEmployeeListJson(Request req, int? dc_id)
+        {
+            return GetEmployeeList(req, dc_id);
+        }
+
+        [WebMethod(Description = "Retrieve employee listing")]
+        public Employee[] GetEmployeeList(Request request, int? dc_id)
+        {
+            Employee[] Result = null;
+            if (LowSecurityCheck(request, "GetEmployeeList"))
+            {
+                string connStr = CustConnectionString(request);
+                SqlStmt stmt = null;
+                try
+                {
+                    if (GetStmt(connStr, out stmt))
+                    {
+                        List<Employee> employees = new List<Employee>();
+                        bool rc;
+                        if (dc_id != null)
+                            rc = stmt.DoSQLFormat("SELECT * FROM employee WHERE dc_id = {0} ORDER BY first_name ASC, last_name ASC", dc_id);
+                        else
+                            rc = stmt.DoSQL("SELECT * FROM employee ORDER BY first_name ASC, last_name ASC");
+                        while (rc)
+                        {
+                            Employee e = new Employee();
+                            e.Id = stmt.ifetch("id");
+                            e.employee_num = stmt.fetch("employee_num");
+                            e.first_name = stmt.fetch("first_name");
+                            e.last_name = stmt.fetch("last_name");
+                            e.dc_id = stmt.ifetch("dc_id");
+
+                            employees.Add(e);
+
+                            rc = stmt.dbSkip();
+                        }
+                        Result = employees.ToArray();
+                        employees.Clear();
+                    }
+                }
+                catch (Exception x)
+                {
+                    Global.messLog.Flush("GetEmployeeList() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
+                    InsertErrorRecord(request.CustCode, string.Format("GetEmployeeList() Failed to send HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message), request);
+                }
+                finally
+                {
+                    if (stmt != null)
+                    {
+                        stmt.Close();
+                        stmt = null;
+                    }
+                }
+            }
+            return Result;
+        }
+
         [WebMethod(Description = "Retrieve list of yards as JSON")]
         [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
         public Yard[] RequestYardsJson(Request req)
