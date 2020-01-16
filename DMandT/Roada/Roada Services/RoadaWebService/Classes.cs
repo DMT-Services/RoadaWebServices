@@ -652,6 +652,16 @@ namespace RoadaWebService
     }
 
     [DataContract]
+    public class Sigdata
+    {
+        [DataMember]
+        public DateTime datetime { get; set; }
+        [DataMember]
+        public byte[] signature { get; set; }
+    }
+
+
+    [DataContract]
     public class Employee
     {
         [DataMember]

@@ -1280,6 +1280,58 @@ namespace RoadaWebService
             return Result;
         }
 
+        [WebMethod(Description = "Store signature data.")]
+        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public int SendSignatureDataJson(Request req, Employee emp, Sigdata sig)
+        {
+            return SendSignatureData(req, emp, sig);
+        }
+
+        [WebMethod(Description = "Store signature data.")]
+        public int SendSignatureData(Request req, Employee emp, Sigdata sig)
+        {
+            int Result = 0;
+            // low security check, don't want hackers!
+            if (!LowSecurityCheck(req, "SendSignatureData"))
+                return -2;
+
+            string connStr = CustConnectionString(req);
+
+            SqlStmt stmt = null;
+            try
+            {
+                Result = -3;
+                if (GetStmt(connStr, out stmt))
+                {
+                    SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
+
+                    sql.Add("employee_id", emp.Id);
+                    sql.Add("employee_num", emp.employee_num);
+                    sql.Add("first_name", emp.first_name);
+                    sql.Add("last_name", emp.last_name);
+                    sql.Add("dc_id", emp.dc_id);
+                    sql.Add("datetime", sig.datetime);
+                    sql.Add("signature", sig.signature);
+
+                    stmt.DoSQL(sql.BuildInsert("INSERT INTO signature_data"));
+
+                    Result = 1;
+                }
+            }
+            catch (Exception x)
+            {
+                Result = -4;
+                Global.messLog.Flush("SendSignatureData() HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, x.Message);
+                InsertErrorRecord(req.CustCode, "SendSignatureData() " + x.Message, req);
+            }
+            finally
+            {
+                if (stmt != null)
+                    stmt.Close();
+            }
+            return Result;
+        }
+
         [WebMethod(Description = "Retrieve employee list, optionally filtered by cd_id, as JSON")]
         [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
         public Employee[] GetEmployeeListJson(Request req, int? dc_id)
