@@ -1887,6 +1887,7 @@ namespace RoadaWebService
                             dh.Inspector = stmt.fetch("inspector");
                             dh.Comments = stmt.fetch("comments");
                             dh.CommId = stmt.ifetch("comm_id");
+                            dh.RepKey = stmt.fetch("RepKey");
 
                             bool rc2 = stmt2.DoSQLFormat("SELECT * FROM dvirdetail WHERE header_id = {0}", hdrId);
                             List<DVIRDetail> detList = new List<DVIRDetail>();
