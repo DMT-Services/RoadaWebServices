@@ -657,7 +657,7 @@ namespace RoadaWebService
         [DataMember]
         public DateTime datetime { get; set; }
         [DataMember]
-        public byte[] signature { get; set; }
+        public List<float> signature { get; set; }
     }
 
 

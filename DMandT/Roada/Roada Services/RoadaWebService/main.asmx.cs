@@ -1311,7 +1311,7 @@ namespace RoadaWebService
                     sql.Add("last_name", emp.last_name);
                     sql.Add("dc_id", emp.dc_id);
                     sql.Add("datetime", sig.datetime);
-                    sql.Add("signature", sig.signature);
+                    sql.Add("signature", sig.signature.SelectMany(BitConverter.GetBytes).ToArray());
 
                     stmt.DoSQL(sql.BuildInsert("INSERT INTO signature_data"));
 
