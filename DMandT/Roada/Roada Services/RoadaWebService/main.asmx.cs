@@ -1281,7 +1281,7 @@ namespace RoadaWebService
         }
 
         [WebMethod(Description = "Store signature data.")]
-        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        [ScriptMethod(UseHttpGet = false, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
         public int SendSignatureDataJson(Request req, Employee emp, Sigdata sig)
         {
             return SendSignatureData(req, emp, sig);
