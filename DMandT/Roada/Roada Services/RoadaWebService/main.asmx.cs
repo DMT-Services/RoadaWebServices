@@ -1856,7 +1856,9 @@ namespace RoadaWebService
             public int[] MajorDefects { get; set; }
         } */
 
-        [WebMethod(Description = "Retrieve DVIR Data from React App JSON using vehicle id for")]
+        // DEPRECATED
+        // GetDVIRJson is deprecated and will be removed soon. Use GetDVIRReportJSON instead
+        [WebMethod(Description = "DEPRECATED Retrieve DVIR Data from React App JSON using vehicle id for")]
         [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
         public DVIRHeader[] GetDVIRJson(Request req, int veh, int rows)
         {
@@ -1934,7 +1936,9 @@ namespace RoadaWebService
             return Result;
         }
 
-        [WebMethod(Description = "Save DVIR Data from React App JSON")]
+        // DEPRECATED
+        // SaveDVIRJson is deprecated and will be removed soon. Use SaveDVIRReportJson instead
+        [WebMethod(Description = "DEPRECATED Save DVIR Data from React App JSON")]
         [ScriptMethod(UseHttpGet = false, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
         public int SaveDVIRJson(Request req, DVIRHeader hdr)
         {
@@ -2002,6 +2006,190 @@ namespace RoadaWebService
 
             }
             return rc;
+        }
+
+        [WebMethod(Description = "Get DVIR report by vehicle id, limit by number of rows")]
+        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public DVIRReport[] GetDVIRReportsJson(Request request, int vehicleId, int numberOfRows)
+        {
+            DVIRReport[] result = null;
+            if (LowSecurityCheck(request, "GetDVIRReportsJson"))
+            {
+                string connectionString = CustConnectionString(request);
+                SqlStmt headerStatement = null;
+                SqlStmt defectsStatement = null;
+                try
+                {
+                    if (GetStmt(connectionString, out headerStatement) && GetStmt(connectionString, out defectsStatement))
+                    {
+                        List<DVIRReport> reports = new List<DVIRReport>();
+                        bool haveMoreHeaders = headerStatement.DoSQLFormat(
+                            "SELECT TOP {0} * FROM dvirheader WHERE vehicle_id = {1} ORDER BY rdate DESC", numberOfRows, vehicleId
+                            );
+
+                        while (haveMoreHeaders)
+                        {
+                            int headerId = headerStatement.ifetch("id");
+                            DVIRReport report = new DVIRReport();
+                            report.Company = headerStatement.fetch("company");
+                            report.TractorPlate = headerStatement.fetch("tractor_plate");
+                            report.Odom = headerStatement.dfetch("odom");
+                            report.rdate = headerStatement.dtfetch("rdate");
+                            report.lat = headerStatement.dfetch("lat");
+                            report.lon = headerStatement.dfetch("lon");
+                            report.Inspector = headerStatement.fetch("inspector");
+                            report.Comments = headerStatement.fetch("comments");
+                            report.CommId = headerStatement.ifetch("comm_id");
+                            report.RepKey = headerStatement.fetch("RepKey");
+
+                            bool haveMoreDefects = defectsStatement.DoSQLFormat(
+                                "SELECT defectId FROM DVIRDefectMapping WHERE reportId = {} ORDER BY defectId DESC", headerId
+                                );
+                            report.DefectIds = new List<int>();
+
+                            while (haveMoreDefects)
+                            {
+                                report.DefectIds.Add(defectsStatement.ifetch("defectId"));
+                                haveMoreDefects = defectsStatement.dbSkip();
+                            }
+
+                            reports.Add(report);
+                            headerStatement.dbSkip();
+                        }
+                        result = reports.ToArray();
+
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Global.messLog.Flush("GetDVIRReportsJson() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, ex.Message);
+                    InsertErrorRecord(request.CustCode, "GetDVIRReportsJson() " + ex.Message, request);
+                }
+                finally
+                {
+                    if (headerStatement != null)
+                        headerStatement.Close();
+                    if (defectsStatement != null)
+                        defectsStatement.Close();
+                }
+            }
+            return result;
+        }
+
+        [WebMethod(Description = "Save DVIR report with defects")]
+        [ScriptMethod(UseHttpGet = false, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public int SaveDVIRReportJson(Request request, DVIRReport report)
+        {
+            int rc = -4;
+
+            if (LowSecurityCheck(request, "SaveDVIRJson"))
+            {
+                string connectionString = CustConnectionString(request);
+
+                SqlStmt reportStatement = null;
+
+                try
+                {
+                    rc = -2;
+                    if (GetStmt(connectionString, out reportStatement))
+                    {
+                        SqlHelper sql = procData.fillQuery(report, dvirHeaderLayout);
+                        sql.AddNow("idate");
+                        reportStatement.DoSQL(sql.BuildInsert("INSERT INTO DVIRHeader", " output inserted.id VALUES "), true);
+                        int id = reportStatement.ifetch("id");
+                        if (report.DefectIds != null)
+                        {
+                            foreach (int defectId in report.DefectIds)
+                            {
+                                sql.Clear();
+                                sql.Add("reportId", id);
+                                sql.Add("defectId", defectId);
+                                reportStatement.DoSQL(sql.BuildInsert("INSERT INTO DVIRDefectMapping"));
+                            }
+                        }
+                        rc = 1;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    rc = -3;
+                    Global.messLog.Flush("SaveDVIRReportJson() data failed to receive: " + ex.Message);
+                    InsertErrorRecord(request.CustCode, string.Format("SaveDVIRReportJson() data failed to receive HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, ex.Message), request);
+                }
+                finally
+                {
+                    if (reportStatement != null)
+                    {
+                        reportStatement.Close();
+                        reportStatement = null;
+                    }
+                }
+
+            }
+            return rc;
+        }
+
+        [WebMethod(Description = "Get DVIR defect types and sections")]
+        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public DVIRDefectSection[] GetDVIRDefectTypes(Request request)
+        {
+            DVIRDefectSection[] result = null;
+            if (LowSecurityCheck(request, "DVIRDefectSection"))
+            {
+                string connectionString = CustConnectionString(request);
+                SqlStmt sectionsStatement = null;
+                SqlStmt typesStatement = null;
+
+                try
+                {
+                    if (GetStmt(connectionString, out sectionsStatement) && GetStmt(connectionString, out typesStatement))
+                    {
+                        bool haveSections = sectionsStatement.DoSQL("SELECT * FROM DVIRDefectSections");
+                        List<DVIRDefectSection> sections = new List<DVIRDefectSection>();
+                        while (haveSections)
+                        {
+                            DVIRDefectSection section = new DVIRDefectSection();
+                            section.id = sectionsStatement.ifetch("id");
+                            section.referenceId = sectionsStatement.fetch("referenceId");
+                            section.description = sectionsStatement.fetch("description");
+
+                            List<DVIRDefectType> types = new List<DVIRDefectType>();
+                            bool haveTypes = typesStatement.DoSQLFormat("SELECT * FROM DVIRDefectTypes WHERE sectionId = {1}", section.id);
+                            while (haveTypes)
+                            {
+                                DVIRDefectType type = new DVIRDefectType();
+                                type.id = typesStatement.ifetch("id");
+                                type.referenceId = typesStatement.fetch("referenceId");
+                                type.description = typesStatement.fetch("description");
+                                type.isMajor = typesStatement.bfetch("isMajor");
+                                type.isMinor = typesStatement.bfetch("isMinor");
+                                type.sectionId = typesStatement.ifetch("sectionid");
+
+                                types.Add(type);
+                                typesStatement.dbSkip();
+                            }
+                            section.defectTypes = types.ToArray();
+                            sections.Add(section);
+                            sectionsStatement.dbSkip();
+                        }
+                        result = sections.ToArray();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Global.messLog.Flush("GetDVIRDefectTypesJson() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, ex.Message);
+                    InsertErrorRecord(request.CustCode, "GetDVIRDefectTypesJson() " + ex.Message, request);
+                }
+                finally
+                {
+                    if (sectionsStatement != null)
+                        sectionsStatement.Close();
+                    if (typesStatement != null)
+                        typesStatement.Close();
+                }
+            }
+
+            return result;
         }
 
 

@@ -1352,6 +1352,77 @@ namespace RoadaWebService
     }
 
     [DataContract]
+    public class DVIRReport
+    {
+        [DataMember]
+        public int CommId { get; set; }         // Id from CommResponse of PhoneLoginJson
+        [DataMember]
+        public string Company { get; set; }
+        [DataMember]
+        public int TractorId { get; set; }      // from vehicles table
+        [DataMember]
+        public string TractorPlate { get; set; }
+        [DataMember]
+        public double Odom { get; set; }
+        [DataMember]
+        public DateTime rdate { get; set; }
+        [DataMember]
+        public double lat { get; set; }
+        [DataMember]
+        public double lon { get; set; }
+        [DataMember]
+        public string Inspector { get; set; }
+        [DataMember]
+        public string Comments { get; set; }
+        [DataMember]
+        public List<byte> Signature { get; set; }
+        [DataMember]
+        public string RepKey { get; set; }
+        [DataMember]
+        public List<int> DefectIds { get; set; }
+    }
+
+    [DataContract]
+    public class DVIRDefectType
+    {
+        [DataMember]
+        public int id;
+
+        [DataMember]
+        public string referenceId;
+
+        [DataMember]
+        public string description;
+
+        [DataMember]
+        public bool isMajor;
+
+        [DataMember]
+        public bool isMinor;
+
+        [DataMember]
+        public int sectionId;
+    }
+
+    [DataContract]
+    public class DVIRDefectSection
+    {
+        [DataMember]
+        public int id;
+
+        [DataMember]
+        public string referenceId;
+
+        [DataMember]
+        public string description;
+
+        [DataMember]
+        public DVIRDefectType[] defectTypes;
+    }
+
+    // DEPRECATED
+    // DVIRHeader and DVIRDetail are deprecated and will soon be removed. Use DVIRReport instead
+    [DataContract]
     public class DVIRHeader
     {
         [DataMember]
