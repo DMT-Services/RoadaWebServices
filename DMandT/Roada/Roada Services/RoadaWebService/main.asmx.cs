@@ -2154,7 +2154,7 @@ namespace RoadaWebService
                             section.description = sectionsStatement.fetch("description");
 
                             List<DVIRDefectType> types = new List<DVIRDefectType>();
-                            bool haveTypes = typesStatement.DoSQLFormat("SELECT * FROM DVIRDefectTypes WHERE sectionId = {1}", section.id);
+                            bool haveTypes = typesStatement.DoSQLFormat("SELECT * FROM DVIRDefectTypes WHERE sectionId = {0}", section.id);
                             while (haveTypes)
                             {
                                 DVIRDefectType type = new DVIRDefectType();
