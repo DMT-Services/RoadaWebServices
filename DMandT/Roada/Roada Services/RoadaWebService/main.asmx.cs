@@ -2043,7 +2043,7 @@ namespace RoadaWebService
                             report.RepKey = headerStatement.fetch("RepKey");
 
                             bool haveMoreDefects = defectsStatement.DoSQLFormat(
-                                "SELECT defectId FROM DVIRDefectMapping WHERE reportId = {} ORDER BY defectId DESC", headerId
+                                "SELECT defectId FROM DVIRDefectMapping WHERE reportId = {0} ORDER BY defectId DESC", headerId
                                 );
                             report.DefectIds = new List<int>();
 
@@ -2054,7 +2054,7 @@ namespace RoadaWebService
                             }
 
                             reports.Add(report);
-                            headerStatement.dbSkip();
+                            haveMoreHeaders = headerStatement.dbSkip();
                         }
                         result = reports.ToArray();
 
@@ -2166,11 +2166,11 @@ namespace RoadaWebService
                                 type.sectionId = typesStatement.ifetch("sectionid");
 
                                 types.Add(type);
-                                typesStatement.dbSkip();
+                                haveTypes = typesStatement.dbSkip();
                             }
                             section.defectTypes = types.ToArray();
                             sections.Add(section);
-                            sectionsStatement.dbSkip();
+                            haveSections = sectionsStatement.dbSkip();
                         }
                         result = sections.ToArray();
                     }
