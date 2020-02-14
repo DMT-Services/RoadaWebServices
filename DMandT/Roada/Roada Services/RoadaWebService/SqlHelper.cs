@@ -41,6 +41,17 @@ namespace DMTServices
             DataSource = typ;
         }
 
+        /// <summary>
+        /// pass in SqlStmt handle and query will be 
+        /// filled with all fields in the result record
+        /// </summary>
+        /// <param name="stmt"></param>
+        public SqlHelper(SqlStmt stmt)
+        {
+            foreach (string field in stmt.rdrFields())
+                Add(field, stmt.ofetch(field));
+        }
+
         // 'older' Oracle's connection stuff doesn't appear to have the GetSchema function?
 #if !ORACLEDB
         /// <summary>
