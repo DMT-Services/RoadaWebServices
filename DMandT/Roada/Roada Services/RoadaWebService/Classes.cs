@@ -1375,7 +1375,7 @@ namespace RoadaWebService
         [DataMember]
         public string Comments { get; set; }
         [DataMember]
-        public List<byte> Signature { get; set; }
+        public List<int> Signature { get; set; }
         [DataMember]
         public string RepKey { get; set; }
         [DataMember]
