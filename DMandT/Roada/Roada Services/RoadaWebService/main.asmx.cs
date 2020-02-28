@@ -1425,6 +1425,7 @@ namespace RoadaWebService
                             y.PerSodium = stmt.dfetch("per_sodium");
                             y.Visible = stmt.tfetch("visible");
                             y.FleetId = stmt.ifetch("fid");
+                            y.Dc_Id = stmt.ifetch("id");
                             yards.Add(y);
 
                             rc = stmt.dbSkip();

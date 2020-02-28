@@ -55,6 +55,8 @@ namespace RoadaWebService
         public int FleetId { get; set; }
         [DataMember]
         public bool Visible { get; set; }
+        [DataMember]
+        public int Dc_Id { get; set; }
     }
 
     public class PatrolTripData
