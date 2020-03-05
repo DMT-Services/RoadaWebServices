@@ -2806,6 +2806,46 @@ namespace DMTServices
             }
         }
 
+        public static byte ToByte(object o)
+        {
+            return ToByte(o, 0);
+        }
+
+        public static byte ToByte(object o, byte def)
+        {
+            try
+            {
+                if (o == null || o is System.DBNull)
+                    return def;
+                else
+                {
+                    if (o is string)
+                    {
+                        byte b;
+                        if (!byte.TryParse((string)o, out b))
+                            b = def;
+                        return b;
+                    }
+                    else
+                    {
+                        if (o is bool)
+                            return (byte)(((bool)o) ? 1 : 0);
+                        else
+                        {
+                            if (o is DateTime)  // Convert.ToByte(DateTime) ALWAYS throws invalid cast exception
+                                return def;
+                            else
+                                return Convert.ToByte(o);
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                return def;
+            }
+        }
+
         public static Int64 ToInt64(object o)
         {
             return ToInt64(o, 0);
@@ -2985,6 +3025,42 @@ namespace DMTServices
                 psBuilder.AppendFormat("{0:X2}", abData[i]);
 
             return psBuilder.ToString();
+        }
+
+        public static byte[] StringToByteArray(string hex)
+        {
+            int length = hex.Length / 2;
+            byte[] bytes = new byte[length];
+            for (int i = 0, j = 0; i < length; i++)
+                bytes[i] = (byte)((ParseNibble(hex[j++]) << 4) | ParseNibble(hex[j++]));
+            return bytes;
+        }
+
+        public static int ParseNibble(char c)
+        {
+            if (c >= '0' && c <= '9')
+                return c - '0';
+            c = (char)(c & ~0x20);
+            if (c >= 'A' && c <= 'F')
+                return c - ('A' - 10);
+            return 0;
+        }
+
+        public static string HexToString(string hex)
+        {
+            StringBuilder asciiString = new StringBuilder();
+            int length = hex.Length / 2;
+            for (int i = 0, j = 0; i < length; i++)
+                asciiString.Append((char)((ParseNibble(hex[j++]) << 4) | ParseNibble(hex[j++])));
+            return asciiString.ToString();
+        }
+
+        public static string StringToHex(string asciiString)
+        {
+            StringBuilder hex = new StringBuilder();
+            foreach (char c in asciiString)
+                hex.AppendFormat("{0:x2}", (uint)c);
+            return hex.ToString();
         }
 
         public static string[][] DataTableToStringArray(DataTable dt)
