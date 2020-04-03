@@ -3957,6 +3957,41 @@ namespace RoadaWebService
             return Result;
         }
 
+
+        [WebMethod(Description = "IsDcdWorking.")]
+        public bool IsDcdWorking(Request req, DateTime InUTC, int handcode)
+        {
+            bool Result = false;
+            // low security check, don't want hackers!
+            if (LowSecurityCheck(req, "IsDcdWorking"))
+            {
+                string connStr = CustConnectionString(req);
+                SqlStmt stmt = null;
+                try
+                {
+                    if (GetStmt(connStr, out stmt))
+                    {
+                        if (stmt.DoSQLFormat("SELECT TOP 1 last_date FROM handheld WHERE hand_code = {0} order by last_date desc",handcode))
+                            Result = (stmt.dtfetch("last_date").AddMinutes(15) > InUTC );
+                    }
+                }
+                catch (Exception x)
+                {
+                    Global.messLog.Flush("IsDcdWorking() HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, x.Message);
+                    InsertErrorRecord(req.CustCode, "IsDcdWorking() " + x.Message, req);
+                }
+                finally
+                {
+                    if (stmt != null)
+                    {
+                        stmt.Close();
+                        stmt = null;
+                    }
+                }
+            }
+            return Result;
+        }
+
         [WebMethod(Description = "ValidateVehicleList.")]
         public bool ValidateVehicleList(Request req, int Version)
         {
@@ -5684,6 +5719,68 @@ namespace RoadaWebService
             return Result;
         }
 
+
+
+        [WebMethod(Description = "Retrieve Culverts assets")]
+        public Culvert[] GetCulvertList(Request request)
+        {
+            Culvert[] Result = null;
+
+            if (LowSecurityCheck(request, "GetCulvertList"))
+            {
+                string connStr = CustConnectionString(request);
+                SqlStmt stmt = null;
+                try
+                {
+                    if (GetStmt(connStr, out stmt))
+                    {
+
+
+                        List<Culvert> Bridges = new List<Culvert>();
+                        bool rc;
+
+                        rc = stmt.DoSQL("SELECT * FROM asset_culvert ORDER BY structure");
+                        while (rc)
+                        {
+                            Culvert b = new Culvert();                 
+                            b.structure = stmt.fetch("structure");
+                            b.patrol = stmt.fetch("patrol");
+                            b.region = stmt.fetch("region");
+                            b.road = stmt.fetch("road");
+                            b.location = stmt.fetch("location");
+                            b.type = stmt.ifetch("type");
+                            b.diameter = stmt.dfetch("diameter");
+                            b.latitude = stmt.dfetch("latitude");
+                            b.longitude = stmt.dfetch("longitude");
+                            b.notes = stmt.fetch("notes");
+                            b.date = stmt.dtfetch("date");
+
+                            Bridges.Add(b);
+
+                            rc = stmt.dbSkip();
+                        }
+                        Result = Bridges.ToArray();
+                        Bridges.Clear();
+                    }
+                }
+                catch (Exception x)
+                {
+                    Global.messLog.Flush("GetCulvertList() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
+                    InsertErrorRecord(request.CustCode, string.Format("GetCulvertList() Failed to send HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message), request);
+                }
+                finally
+                {
+                    if (stmt != null)
+                    {
+                        stmt.Close();
+                        stmt = null;
+                    }
+                }
+            }
+            return Result;
+        }
+
+
         [WebMethod(Description = "Push SendBridgeData Report")]
         public int SendBridgeData(Request req, BridgeInspectionData bdata)
         {
@@ -5752,6 +5849,80 @@ namespace RoadaWebService
                 Result = -4;
                 Global.messLog.Flush("SendBridgeData() HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, x.Message);
                 InsertErrorRecord(req.CustCode, "SendBridgeData() " + x.Message, req);
+            }
+            finally
+            {
+                if (stmt != null)
+                    stmt.Close();
+            }
+            return Result;
+        }
+
+        [WebMethod(Description = "Push SendCulvertData Report")]
+        public int SendCulvertData(Request req, CulvertInspectionData bdata)
+        {
+
+            int Result = 0;
+            // low security check, don't want hackers!
+            if (!LowSecurityCheck(req, "SendCulvertData"))
+                return -2;
+
+            string connStr = CustConnectionString(req);
+            SqlStmt stmt = null;
+            try
+            {
+                Result = -3;
+                if (GetStmt(connStr, out stmt))
+                {
+                    SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
+                    DateTime now = DateTime.Now.ToLocalTime();
+
+                    sql.Add("structure", bdata.structure);
+                    sql.Add("location", bdata.location);
+                    sql.Add("name", bdata.name);
+                    sql.Add("region", bdata.region);
+                    sql.Add("type", bdata.type);
+                    sql.Add("diameter", bdata.diameter);
+                    sql.Add("latitude", bdata.latitude);
+                    sql.Add("longitude", bdata.longitude);
+                    sql.Add("other", bdata.other);
+                    sql.Add("patrol", bdata.patrol);
+                    sql.Add("date", bdata.date);
+                    sql.Add("road", bdata.road);
+                    sql.Add("inspector", bdata.inspector);
+                    sql.Add("repKey", bdata.repKey);
+                    sql.Add("idate", DateTime.UtcNow);
+
+
+                    stmt.DoSQL(sql.BuildInsert("INSERT INTO inspection_culvert"));
+
+                    foreach (var item in bdata.culvertItems)
+                    {
+                        sql.Clear();
+
+                        sql.Add("structure", item.structure);
+                        sql.Add("date", item.date);
+                        sql.Add("issue", item.issue);
+                        sql.Add("defect", item.defect);
+                        sql.Add("note", item.note);
+                        sql.Add("tstate", item.tstate);
+                        sql.Add("group_enabled", item.groupEnabled);
+                        sql.Add("severity", item.severity);
+                        sql.Add("idate", DateTime.UtcNow);
+
+                        stmt.DoSQL(sql.BuildInsert("INSERT INTO inspection_culvert_item"));
+
+                    }
+
+                    Result = 1;
+
+                }
+            }
+            catch (Exception x)
+            {
+                Result = -4;
+                Global.messLog.Flush("SendCulvertData() HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, x.Message);
+                InsertErrorRecord(req.CustCode, "SendCulvertData() " + x.Message, req);
             }
             finally
             {
@@ -5853,6 +6024,128 @@ namespace RoadaWebService
                         }
                         Result = Bridges.ToArray();
                         Bridges.Clear();
+                    }
+                }
+                catch (Exception x)
+                {
+                    Global.messLog.Flush("GetBridgeData() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
+                    InsertErrorRecord(request.CustCode, string.Format("GetBridgeData() Failed to send HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message), request);
+                }
+                finally
+                {
+                    if (stmt != null)
+                    {
+                        stmt.Close();
+                        stmt = null;
+                    }
+                    if (stmt2 != null)
+                    {
+                        stmt2.Close();
+                        stmt2 = null;
+                    }
+                    if (stmt3 != null)
+                    {
+                        stmt3.Close();
+                        stmt3 = null;
+                    }
+
+                }
+            }
+            return Result;
+        }
+
+
+
+        [WebMethod(Description = "Retrieve Culverts inspections")]
+        public CulvertInspectionData[] GetCulvertInsectionList(Request request, Culvert[] culvertItems)
+        {
+            CulvertInspectionData[] Result = null;
+
+            if (LowSecurityCheck(request, "GetBridgeList"))
+            {
+                string connStr = CustConnectionString(request);
+                SqlStmt stmt = null;
+                SqlStmt stmt2 = null;
+                SqlStmt stmt3 = null;
+                try
+                {
+                    if (GetStmt(connStr, out stmt) && GetStmt(connStr, out stmt2) && GetStmt(connStr, out stmt3))
+                    {
+
+                        List<CulvertInspectionData> Culverts = new List<CulvertInspectionData>();
+
+                        foreach (var item in culvertItems)
+                        {
+                            if (item.structure != null && item.structure.Length > 0)
+                            {
+                                if (stmt.DoSQLFormat("SELECT TOP 1 * FROM inspection_culvert WHERE structure = '{0}' ORDER BY date desc", item.structure))
+                                {
+                                    CulvertInspectionData b = new CulvertInspectionData();
+                                   
+                                    b.structure = stmt.fetch("structure");
+                                    b.location = stmt.fetch("location");
+                                    b.name = stmt.fetch("name");
+                                    b.road = stmt.fetch("road");
+                                    b.type = stmt.ifetch("type");
+                                    b.diameter = stmt.dfetch("diameter");
+                                    b.latitude = stmt.dfetch("latitude");
+                                    b.longitude = stmt.dfetch("longitude");
+                                    b.other = stmt.fetch("other");
+                                    b.region = stmt.fetch("region");
+                                    b.patrol = stmt.fetch("patrol");
+                                    b.date = stmt.dtfetch("date");
+                                    b.road = stmt.fetch("road");
+                                    b.inspector = stmt.fetch("inspector");
+                                    b.repKey = stmt.fetch("repKey");
+
+
+                                    if (b.repKey.Length > 0)
+                                    {
+                                        bool rc = stmt3.DoSQLFormat("SELECT * FROM Img_events WHERE RepKey = '{0}'", b.repKey);
+                                        while (rc)
+                                        {
+                                            PhotoData pdata = new PhotoData();
+
+                                            pdata.repkey = b.repKey;
+                                            pdata.imgUrl = stmt3.fetch("img_url");
+
+                                            b.photos.Add(pdata);
+
+                                            rc = stmt3.dbSkip();
+                                        }
+                                    }
+
+                                    bool rc2 = stmt2.DoSQLFormat("SELECT * FROM inspection_culvert_item WHERE date = '{0}' AND structure = '{1}'", b.date, b.structure);
+                                    while (rc2)
+                                    {
+
+
+                                        CulvertItem bi = new CulvertItem();
+                                        bi.structure = b.structure;
+                                        bi.date = b.date;
+                                        bi.issue = stmt2.ifetch("issue");
+                                        bi.defect = stmt2.bfetch("defect");
+                                        bi.note = stmt2.fetch("note");
+                                        bi.tstate = stmt2.ifetch("tstate");
+                                        bi.groupEnabled = stmt2.bfetch("group_enabled");
+                                        bi.severity = stmt2.ifetch("severity");
+
+                                        b.culvertItems.Add(bi);
+
+                                        rc2 = stmt2.dbSkip();
+
+                                    }
+
+
+                                    Culverts.Add(b);
+                                }
+
+                            }
+
+
+                        }
+                        Result = Culverts.ToArray();
+                        Culverts.Clear();
                     }
                 }
                 catch (Exception x)
@@ -6059,6 +6352,12 @@ namespace RoadaWebService
         {
             return SendBridgeData(req, bdata);
         }
+        [WebMethod(Description = "Send Culvertdata as JSON")]
+        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public int SendCulvertDataJson(Request req, CulvertInspectionData bdata)
+        {
+            return SendCulvertData(req, bdata);
+        }
 
         [WebMethod(Description = "Retrieve Bridge list as JSON")]
         [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
@@ -6067,11 +6366,25 @@ namespace RoadaWebService
             return GetBridgeList(req);
         }
 
+        [WebMethod(Description = "Retrieve Culvert list as JSON")]
+        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public Culvert[] GetCulvertJson(Request req)
+        {
+            return GetCulvertList(req);
+        }
+
         [WebMethod(Description = "Retrieve Bridge Data as JSON")]
         [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
         public BridgeInspectionData[] GetBridgeDataJson(Request req, Bridge[] bridges)
         {
             return GetBridgeInsectionList(req, bridges);
+        }
+
+        [WebMethod(Description = "Retrieve Culvert Data as JSON")]
+        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public CulvertInspectionData[] GetCulvertDataJson(Request req, Culvert[] culvert)
+        {
+            return GetCulvertInsectionList(req, culvert);
         }
         
         [WebMethod(Description = "Retrieve vehicle types listing")]

@@ -901,7 +901,103 @@ namespace RoadaWebService
         [DataMember]
         public DateTime date { get; set; }
     }
-    
+
+      [DataContract]
+    public class Culvert
+    {
+        [DataMember]
+        public string structure { get; set; }
+        [DataMember]
+        public string road { get; set; }
+        [DataMember]
+        public string location { get; set; }
+        [DataMember]
+        public string region { get; set; }
+        [DataMember]
+        public string patrol { get; set; }
+        [DataMember]
+        public int type { get; set; }
+        [DataMember]
+        public double diameter { get; set; }
+        [DataMember]
+        public double latitude { get; set; }
+        [DataMember]
+        public double longitude { get; set; }
+        [DataMember]
+        public string notes { get; set; }
+        [DataMember]
+        public DateTime date { get; set; }
+    }
+
+      [DataContract]
+    public class CulvertInspectionData
+    {
+        public CulvertInspectionData()
+        {
+            this.culvertItems = new List<CulvertItem>();
+            this.photos = new List<PhotoData>();
+        }
+        [DataMember]
+        public DateTime date { get; set; }
+        [DataMember]
+        public string road { get; set; }
+        [DataMember]
+        public string location { get; set; }
+        [DataMember]
+        public string inspector { get; set; }
+        [DataMember]
+        public string patrol { get; set; }
+        [DataMember]
+        public string structure { get; set; }
+        [DataMember]
+        public string name { get; set; }
+        [DataMember]
+        public string region { get; set; }
+        [DataMember]
+        public int type { get; set; }
+        [DataMember]
+        public double diameter { get; set; }
+        [DataMember]
+        public double latitude { get; set; }
+        [DataMember]
+        public double longitude { get; set; }
+        [DataMember]
+        public string other { get; set; }
+        [DataMember]
+        public List<byte> sigData { get; set; }
+        [DataMember]
+        public List<CulvertItem> culvertItems { get; set; }
+        [DataMember]
+        public string repKey { get; set; }
+        [DataMember]
+        public List<PhotoData> photos { get; set; }
+    }
+
+     [DataContract]
+    public class CulvertItem
+    {
+        [DataMember]
+        public DateTime date { get; set; }
+        [DataMember]
+        public int issue { get; set; }
+        [DataMember]
+        public bool defect { get; set; }
+        [DataMember]
+        public string note { get; set; }
+        [DataMember]
+        public int tstate { get; set; }
+        [DataMember]
+        public bool groupEnabled { get; set; }
+        [DataMember]
+        public int severity { get; set; }
+        [DataMember]
+        public string structure { get; set; }
+        [DataMember]
+        public string location { get; set; }
+        
+    }
+
+
     [DataContract]
     public class ReportData
     {
