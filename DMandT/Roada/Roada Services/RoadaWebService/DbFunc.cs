@@ -2926,7 +2926,7 @@ namespace DMTServices
                         DateTime dt;
                         if (!string.IsNullOrEmpty(fmt))
                         {
-                            if (!DateTime.TryParseExact((string)o, fmt, null, DateTimeStyles.AllowWhiteSpaces | DateTimeStyles.NoCurrentDateDefault, out dt))
+                            if (!DateTime.TryParseExact((string)o, fmt, System.Globalization.CultureInfo.InvariantCulture, DateTimeStyles.AllowWhiteSpaces | DateTimeStyles.NoCurrentDateDefault, out dt))
                                 dt = def;
                         }
                         else
