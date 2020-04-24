@@ -1,23 +1,11 @@
-#if OLEDB
-#define QUESTIONMARK_PARAMS
-#endif
-using System;
-using System.Data;
-using System.Data.Common;
-using System.Text;
-#if !NET20
-using System.Linq;
-#endif
-using System.Configuration;
-using System.Collections;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Security.Cryptography;
-using System.IO;
-using System.Threading;
+// Look for the general using's (ie using System;) below this 
+// as there are a couple of #define's inside 
+// these #if's and they MUST come first
 
 // these "using xxx=yyy" are like typedef's 
 #if OLEDB
+#define QUESTIONMARK_PARAMS
+
 using System.Data.OleDb;
 
 using myDbConnection = System.Data.OleDb.OleDbConnection;
@@ -101,6 +89,7 @@ using myParameter = ADODB.Parameter;
 using myTransaction = ADODB.Transaction;   Nope 
 
 #else
+#define SQLSERVER
 using System.Data.SqlClient;
 
 using myDbConnection = System.Data.SqlClient.SqlConnection;
@@ -109,6 +98,22 @@ using myDataReader = System.Data.SqlClient.SqlDataReader;
 using myParameter = System.Data.SqlClient.SqlParameter;
 using myTransaction = System.Data.SqlClient.SqlTransaction;
 #endif
+
+using System;
+using System.Data;
+using System.Data.Common;
+using System.Text;
+#if !NET20
+using System.Linq;
+#endif
+using System.Configuration;
+using System.Collections;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Security.Cryptography;
+using System.IO;
+using System.Threading;
+
 
 #if NET20
 namespace System.Runtime.CompilerServices
@@ -1024,7 +1029,7 @@ namespace DMTServices
                     try
                     {
 #if SQLLITE
-                        stmt.DoSql(string.Format("PRAGMA {0}_INFO({1})", (index) ? "index" : "table", tableName), true);
+                        stmt.DoSQL(string.Format("PRAGMA {0}_INFO({1})", (index) ? "index" : "table", tableName), true);
 #else
                         stmt.DoSQLnr(string.Format("SELECT * FROM INFORMATION_SCHEMA.{0} WHERE TABLE_NAME='{1}'", (index) ? "INDEXES" : "COLUMNS", tableName));
 #endif
@@ -1534,7 +1539,7 @@ namespace DMTServices
                                 }
                             }
                             cmd.Parameters.Add(new myParameter(paraName, parms.Value));
-#if !ODBC && ! FIREBIRD && ! MSORACLE
+#if SQLSERVER
                             if (paraType != string.Empty)
                                 cmd.Parameters[cmd.Parameters.Count - 1].UdtTypeName = paraType;
 #endif
