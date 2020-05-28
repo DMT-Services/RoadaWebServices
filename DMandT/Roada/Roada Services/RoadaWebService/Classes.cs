@@ -212,10 +212,8 @@ namespace RoadaWebService
         public bool Ready { get; set; }
         [DataMember]
         public bool Sent { get; set; }
-
         [DataMember]
         public string District { get; set; }
-
         [DataMember(IsRequired = false, EmitDefaultValue = false)]
         public string Location { get; set; }
         [DataMember]
@@ -996,6 +994,28 @@ namespace RoadaWebService
         public string location { get; set; }
         
     }
+
+     [DataContract]
+     public class SignItem
+     {
+         [DataMember]
+         public DateTime date { get; set; }
+         [DataMember]
+         public int issue { get; set; }
+         [DataMember]
+         public string note { get; set; }
+         [DataMember]
+         public string structure { get; set; }
+         [DataMember]
+         public double latitude { get; set; }
+         [DataMember]
+         public double longitude { get; set; }
+         [DataMember]
+         public List<byte> sigData { get; set; }
+         [DataMember]
+         public string inspector { get; set; }
+
+     }
 
 
     [DataContract]
