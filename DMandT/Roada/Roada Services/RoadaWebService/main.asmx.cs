@@ -6694,6 +6694,69 @@ namespace RoadaWebService
             return rc;
         }
 
+        // defines the relationship between ReportSchedule class and report_schedule fields
+        // first string is name in class, second is name in database
+        string[,] scheduleLayout = { { "ReportId", "report_id" },
+                                  { "UserName", "username" },
+                                  { "ReportName", "report_name" },
+                                  { "Email", "emails" },
+                                  { "Coverage", "coverage" },
+                                  { "CoverageValues", "coverage_values" },
+                                  { "PeriodType", "period_type" },
+                                  { "PeriodStart", "period_start" },
+                                  { "PeriodEnd", "period_end" },
+                                  { "RecurType", "recur_type" },
+                                  { "RangeEndType", "range_end_type" } };
+
+        [WebMethod(Description = "Add a row to the report_schedule table JSON")]
+        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public int ScheduleReportJson(Request req, ReportSchedule data)
+        {
+            return ScheduleReport(req, data);
+        }
+
+        [WebMethod(Description = "Add a row to the report_schedule table")]
+        public int ScheduleReport(Request req, ReportSchedule data)
+        {
+            int rc = 0;
+
+            // low security check, don't want hackers!
+            if (LowSecurityCheck(req, "ScheduleReport"))
+            {
+                string connStr = CustConnectionString(req);
+
+                SqlStmt stmt = null;
+                try
+                {
+                    rc = -2;
+                    if (GetStmt(connStr, out stmt))
+                    {
+                        SqlHelper sql = procData.fillQuery(data, scheduleLayout);
+                        sql.Add("currently_generating", false);
+                        // MUST set second param of DoSQL() to true as this makes it run the insert 
+                        // as an ExecuteReader instead of ExecuteNonQuery so we can get back the inserted.id
+                        stmt.DoSQL(sql.BuildInsert("INSERT INTO report_schedule", " output inserted.id VALUES "), true);
+                        rc = stmt.ifetch("id");     // return the ID of the new record...
+                    }
+                }
+                catch (Exception ex)
+                {
+                    rc = -3;
+                    Global.messLog.Flush("ScheduleReport() data failed to receive: " + ex.Message);
+                }
+                finally
+                {
+                    if (stmt != null)
+                    {
+                        stmt.Close();
+                        stmt = null;
+                    }
+                }
+
+            }
+            return rc;
+        }
+
         // defines the relationship between VehicleData class and vehicle table fields
         // first string is name in class, second is name in database
         string[,] vehicleLayout = { { "DevId", "hand_code" },

@@ -110,6 +110,33 @@ namespace RoadaWebService
     }
 
     [DataContract]
+    public class ReportSchedule
+    {
+        [DataMember]
+        public string ReportId { get; set; }
+        [DataMember]
+        public string UserName { get; set; }
+        [DataMember]
+        public string ReportName { get; set; }
+        [DataMember]
+        public string Email { get; set; }
+        [DataMember]
+        public int Coverage { get; set; }
+        [DataMember]
+        public string CoverageValues { get; set; }
+        [DataMember]
+        public int PeriodType { get; set; }
+        [DataMember]
+        public DateTime PeriodStart { get; set; }
+        [DataMember]
+        public DateTime PeriodEnd { get; set; }
+        [DataMember]
+        int RecurType { get; set; }
+        [DataMember]
+        int RangeEndType { get; set; }
+    }
+
+    [DataContract]
     public class Comissioninfo
     {
         [DataMember]
