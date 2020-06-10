@@ -5578,7 +5578,13 @@ namespace RoadaWebService
             }
             return result;
         }
-           
+
+        [WebMethod(Description = "Retrieve vehicle list, optionally filtered by fleetId, as JSON")]
+        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public string GetAppVersionJson(Request req)
+        {
+            return GetAppVersion(req);
+        }
         
 
 
@@ -5652,6 +5658,33 @@ namespace RoadaWebService
                         stmt.Close();
                         stmt = null;
                     }
+                }
+            }
+            return Result;
+        }
+
+        [WebMethod(Description = "Retrieve App Version Info")]
+        public string GetAppVersion(Request request)
+        {
+            string Result = string.Empty; 
+            if (LowSecurityCheck(request, "GetAppVersion"))
+            {
+                SqlStmt stmt = null;
+                try
+                {
+                    stmt = new SqlStmt("MainConn");
+                    stmt.Mess = Global.messLog;
+                    stmt.DoSQL("SELECT TOP 1 app_version FROM react_settings ORDER BY id ");
+                    Result = stmt.fetch("app_version");
+                }
+                catch(Exception x)
+                {
+                    Global.messLog.Flush("GetAppVersion() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
+                }
+                finally
+                {
+                    if (stmt != null)
+                        stmt.Close();
                 }
             }
             return Result;
