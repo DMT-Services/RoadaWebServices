@@ -2032,6 +2032,7 @@ namespace RoadaWebService
                         {
                             int headerId = headerStatement.ifetch("id");
                             DVIRReport report = new DVIRReport();
+                            report.Id = headerId;
                             report.Company = headerStatement.fetch("company");
                             report.TractorPlate = headerStatement.fetch("tractor_plate");
                             report.Odom = headerStatement.dfetch("odom");
@@ -6766,6 +6767,7 @@ namespace RoadaWebService
                     {
                         SqlHelper sql = procData.fillQuery(data, scheduleLayout);
                         sql.Add("currently_generating", false);
+                        sql.Add("generate_right_away", true);
                         // MUST set second param of DoSQL() to true as this makes it run the insert 
                         // as an ExecuteReader instead of ExecuteNonQuery so we can get back the inserted.id
                         stmt.DoSQL(sql.BuildInsert("INSERT INTO report_schedule", " output inserted.id VALUES "), true);

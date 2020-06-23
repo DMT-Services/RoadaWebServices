@@ -1500,6 +1500,8 @@ namespace RoadaWebService
     public class DVIRReport
     {
         [DataMember]
+        public int Id { get; set; }     // id from table
+        [DataMember]
         public int CommId { get; set; }         // Id from CommResponse of PhoneLoginJson
         [DataMember]
         public string Company { get; set; }
