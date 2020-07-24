@@ -131,9 +131,9 @@ namespace RoadaWebService
         [DataMember]
         public DateTime PeriodEnd { get; set; }
         [DataMember]
-        int RecurType { get; set; }
+        public int RecurType { get; set; }
         [DataMember]
-        int RangeEndType { get; set; }
+        public int RangeEndType { get; set; }
     }
 
     [DataContract]
