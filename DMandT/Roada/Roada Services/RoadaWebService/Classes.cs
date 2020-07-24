@@ -1601,6 +1601,27 @@ namespace RoadaWebService
     }
 
     [DataContract]
+    public class InspDetails
+    {
+        [DataMember]
+        public int Id { get; set; }
+        [DataMember]
+        public int Type { get; set; }
+        [DataMember]
+        public int Sequence { get; set; }
+        [DataMember]
+        public string Section { get; set; }
+        [DataMember]
+        public string Category { get; set; }
+        [DataMember]
+        public string Issue { get; set; }
+        [DataMember]
+        public int Display { get; set; }
+        [DataMember]
+        public string PdfField { get; set; }
+    }
+
+    [DataContract]
     public class DVIRDetail
     {
         [DataMember]

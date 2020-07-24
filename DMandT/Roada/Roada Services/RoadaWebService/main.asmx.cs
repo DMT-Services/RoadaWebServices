@@ -1815,48 +1815,6 @@ namespace RoadaWebService
             }
             return response;
         }
-        /*
-        [DataContract]
-        public class DVIRHeader
-        {
-            [DataMember]
-            public string imei { get; set; }        // value must be same as used during commissioning
-            [DataMember]
-            public string Company { get; set; }
-            [DataMember]
-            public int TractorId { get; set; }      // from vehicles table
-            [DataMember]
-            public string TrackPlate { get; set; }
-            [DataMember]
-            public double Odom { get; set; }
-            [DataMember]
-            public DateTime rdate { get; set; }
-            [DataMember]
-            public double lat { get; set; }
-            [DataMember]
-            public double lon { get; set; }
-            [DataMember]
-            public string Inspector { get; set; }
-            [DataMember]
-            public string Comments { get; set; }
-            [DataMember]
-            public byte[] Signature { get; set; }
-
-            [DataMember]
-            public DVIRDetail[] Details { get; set; }
-        }
-
-        [DataContract]
-        public class DVIRDetail
-        {
-            [DataMember]
-            public int CategoryId { get; set; }
-            [DataMember]
-            public int[] MinorDefects { get; set; }
-            [DataMember]
-            public int[] MajorDefects { get; set; }
-        } */
-
         // DEPRECATED
         // GetDVIRJson is deprecated and will be removed soon. Use GetDVIRReportJSON instead
         [WebMethod(Description = "DEPRECATED Retrieve DVIR Data from React App JSON using vehicle id for")]
@@ -2073,6 +2031,56 @@ namespace RoadaWebService
                         headerStatement.Close();
                     if (defectsStatement != null)
                         defectsStatement.Close();
+                }
+            }
+            return result;
+        }
+
+        [WebMethod(Description = "Get entire Insp_Details table")]
+        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public InspDetails[] GetInspDetailsJson(Request request)
+        {
+            InspDetails[] result = null;
+            if (LowSecurityCheck(request, "GetInspDetailsJson"))
+            {
+                string connectionString = CustConnectionString(request);
+                SqlStmt stmt = null;
+                try
+                {
+                    if (GetStmt(connectionString, out stmt))
+                    {
+                        List<InspDetails> details = new List<InspDetails>();
+                        bool rc = stmt.DoSQLFormat("SELECT * FROM insp_details ORDER BY id");
+                        while (rc)
+                        {
+                            InspDetails report = new InspDetails();
+                            report.Id = stmt.ifetch("id");
+                            report.Type = stmt.ifetch("type");
+                            report.Sequence = stmt.ifetch("sequence");
+                            if (! stmt.IsNull("section"))
+                                report.Section = stmt.fetch("section");
+                            report.Category = stmt.fetch("category");
+                            report.Issue = stmt.fetch("issue");
+                            if (! stmt.IsNull("display"))
+                                report.Display = stmt.ifetch("display");
+                            if (!stmt.IsNull("pdf_field"))
+                                report.PdfField = stmt.fetch("pdf_field");
+                            details.Add(report);
+                            rc = stmt.dbSkip();
+                        }
+                        result = details.ToArray();
+
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Global.messLog.Flush("GetInspDetailsJson() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, ex.Message);
+                    InsertErrorRecord(request.CustCode, "GetInspDetailsJson() " + ex.Message, request);
+                }
+                finally
+                {
+                    if (stmt != null)
+                        stmt.Close();
                 }
             }
             return result;
