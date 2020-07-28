@@ -4935,13 +4935,20 @@ namespace RoadaWebService
 
         [WebMethod(Description = "Receive Deficiency Additional Note as JSON")]
         [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public int SendDefAddNoteExJson(Request req, int id, string addNote, bool finish)
+        {
+            return SendDefAddNote(req, id, addNote, finish);
+        }
+
+        [WebMethod(Description = "Receive Deficiency Additional Note as JSON")]
+        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
         public int SendDefAddNoteJson(Request req, int id, string addNote)
         {
-            return SendDefAddNote(req, id, addNote);
+            return SendDefAddNote(req, id, addNote, false);
         }
 
         [WebMethod(Description = "Receive Deficiency Additional Note")]
-        public int SendDefAddNote(Request req, int id, string addNote)
+        public int SendDefAddNote(Request req, int id, string addNote, bool finish)
         {
             int Result = -1;
             // low security check, don't want hackers!
@@ -4966,7 +4973,7 @@ namespace RoadaWebService
                                 addNote = note + addNote;
                             }
 
-                            stmt.DoSQLFormat("update deficiencies set add_notes='{0}'" + where, addNote);
+                            stmt.DoSQLFormat("update deficiencies set add_notes='{0}',finished={1}" + where, addNote, (finish) ? 1 : 0);
                         }
                         else
                             Global.messLog.Flush("LastError - " + stmt.LastError);
