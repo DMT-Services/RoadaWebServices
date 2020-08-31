@@ -276,6 +276,28 @@ namespace DMTServices
             }
         }
 
+        public void RolllbackTransaction()
+        {
+            if (trans != null)
+            {
+                try
+                {
+                    trans.Rollback();
+                    trans.Dispose();
+                }
+                catch (Exception e)
+                {
+#if !NO_MESSLOG
+                    if (Mess != null)
+                        Mess.Flush("Rollback Transaction: " + e.Message);
+#else
+                    string s = e.Message;       // just to prevent the error; The variable 'e' is declared but never used
+#endif
+                }
+                trans = null;
+            }
+        }
+
         public bool InTransaction()
         {
             return (trans != null);
