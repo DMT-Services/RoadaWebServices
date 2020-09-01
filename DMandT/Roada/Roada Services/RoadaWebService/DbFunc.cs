@@ -1107,7 +1107,12 @@ namespace DMTServices
             {
 #if !NO_MESSLOG
                 if (Mess != null)
-                    Mess.Flush("FieldList: " + e.Message);
+                {
+                    if (e.InnerException != null)
+                        Mess.Flush("FieldList: {0} Inner Excp: {1}", e.Message, e.InnerException.Message);
+                    else
+                        Mess.Flush("FieldList: {0}", e.Message);
+                }
 #else
                 string s = e.Message;       // just to prevent the error; The variable 'e' is declared but never used
 #endif
