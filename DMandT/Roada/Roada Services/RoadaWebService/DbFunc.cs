@@ -276,7 +276,7 @@ namespace DMTServices
             }
         }
 
-        public void RolllbackTransaction()
+        public void RollbackTransaction()
         {
             if (trans != null)
             {
