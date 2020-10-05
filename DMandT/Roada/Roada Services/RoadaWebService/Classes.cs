@@ -447,6 +447,12 @@ namespace RoadaWebService
         [DataMember]
         public string title { get; set; }
     }
+    [DataContract]
+    public class ServerIDs 
+    {
+        [DataMember]
+        public int[] serverIds { get; set; }
+    }
 
     [DataContract]
     public class Request
@@ -473,19 +479,21 @@ namespace RoadaWebService
     public class HosEvent
     {
         [DataMember]
-        public int code;
+        public int code { get; set; }
         [DataMember]
-        public DateTime eventTime;
+        public DateTime eventTime { get; set; }
         [DataMember]
-        public string user_name;
+        public string user_name { get; set; }
         [DataMember]
-        public int handcode;
+        public int handcode { get; set; }
         [DataMember]
-        public bool duty;
+        public bool duty { get; set; }
         [DataMember]
-        public bool driving;
+        public bool driving { get; set; }
         [DataMember]
-        public int phandcode;
+        public int phandcode { get; set; }
+        [DataMember]
+        public int serverID { get; set; }
     }
 
     public class evntOut
@@ -1527,6 +1535,8 @@ namespace RoadaWebService
         public string RepKey { get; set; }
         [DataMember]
         public List<int> DefectIds { get; set; }
+        [DataMember]
+        public bool done { get; set; }
     }
 
     [DataContract]
@@ -1598,6 +1608,8 @@ namespace RoadaWebService
         public string RepKey { get; set; }
         [DataMember]
         public DVIRDetail[] Details { get; set; }
+        [DataMember]
+        public bool done { get; set; }
     }
 
     [DataContract]

@@ -1849,6 +1849,7 @@ namespace RoadaWebService
                             dh.Comments = stmt.fetch("comments");
                             dh.CommId = stmt.ifetch("comm_id");
                             dh.RepKey = stmt.fetch("RepKey");
+                            dh.done = stmt.tfetch("done");
 
                             bool rc2 = stmt2.DoSQLFormat("SELECT * FROM dvirdetail WHERE header_id = {0}", hdrId);
                             List<DVIRDetail> detList = new List<DVIRDetail>();
@@ -1914,38 +1915,48 @@ namespace RoadaWebService
                     rc = -2;
                     if (GetStmt(connStr, out stmt))
                     {
-                        SqlHelper sql = procData.fillQuery(hdr, dvirHeaderLayout);
-                        sql.AddNow("idate");
-                        stmt.DoSQL(sql.BuildInsert("INSERT INTO DVIRHeader", " output inserted.id VALUES "), true);
-                        int id = stmt.ifetch("id");
-                        if (hdr.Details != null)
+
+                        if (stmt.DoSQL(string.Format("SELECT id FROM DVIRHeader Where RepKey = '{0}'", hdr.RepKey)))
                         {
-                            foreach (DVIRDetail det in hdr.Details)
-                            {
-                                sql.Clear();
-                                sql.Add("category_id", det.CategoryId);
-                                sql.Add("header_id", id);
-                                List<string> defects = new List<string>();
-                                if (det.MajorDefects != null)
-                                {
-                                    foreach (int majd in det.MajorDefects)
-                                        defects.Add(majd.ToString());
-                                    if (defects.Count > 0)
-                                        sql.Add("major_defects", string.Join(",", defects.ToArray()));
-                                    defects.Clear();
-                                }
-                                if (det.MinorDefects != null)
-                                {
-                                    foreach (int mind in det.MinorDefects)
-                                        defects.Add(mind.ToString());
-                                    if (defects.Count > 0)
-                                        sql.Add("minor_defects", string.Join(",", defects.ToArray()));
-                                    defects.Clear();
-                                }
-                                stmt.DoSQL(sql.BuildInsert("INSERT INTO dvirdetail"));
-                            }
+                            stmt.DoSQL(string.Format("UPDATE DVIRHeader SET done = 1 WHERE RepKey = '{0}'", hdr.RepKey));
                         }
-                        rc = 1;
+                        else
+                        {
+                            SqlHelper sql = procData.fillQuery(hdr, dvirHeaderLayout);
+                            sql.AddNow("idate");
+                            stmt.DoSQL(sql.BuildInsert("INSERT INTO DVIRHeader", " output inserted.id VALUES "), true);
+                            int id = stmt.ifetch("id");
+                            if (hdr.Details != null)
+                            {
+                                foreach (DVIRDetail det in hdr.Details)
+                                {
+                                    sql.Clear();
+                                    sql.Add("category_id", det.CategoryId);
+                                    sql.Add("header_id", id);
+                                    List<string> defects = new List<string>();
+                                    if (det.MajorDefects != null)
+                                    {
+                                        foreach (int majd in det.MajorDefects)
+                                            defects.Add(majd.ToString());
+                                        if (defects.Count > 0)
+                                            sql.Add("major_defects", string.Join(",", defects.ToArray()));
+                                        defects.Clear();
+                                    }
+                                    if (det.MinorDefects != null)
+                                    {
+                                        foreach (int mind in det.MinorDefects)
+                                            defects.Add(mind.ToString());
+                                        if (defects.Count > 0)
+                                            sql.Add("minor_defects", string.Join(",", defects.ToArray()));
+                                        defects.Clear();
+                                    }
+                                    stmt.DoSQL(sql.BuildInsert("INSERT INTO dvirdetail"));
+
+                                }
+                            }
+                            rc = 1;  
+                        }
+                       
                     }
                 }
                 catch (Exception ex)
@@ -2001,6 +2012,8 @@ namespace RoadaWebService
                             report.Comments = headerStatement.fetch("comments");
                             report.CommId = headerStatement.ifetch("comm_id");
                             report.RepKey = headerStatement.fetch("RepKey");
+                            report.done = headerStatement.tfetch("done");
+
 
                             bool haveMoreDefects = defectsStatement.DoSQLFormat(
                                 "SELECT defectId FROM DVIRDefectMapping WHERE reportId = {0} ORDER BY defectId DESC", headerId
@@ -2103,21 +2116,32 @@ namespace RoadaWebService
                     rc = -2;
                     if (GetStmt(connectionString, out reportStatement))
                     {
-                        SqlHelper sql = procData.fillQuery(report, dvirHeaderLayout);
-                        sql.AddNow("idate");
-                        reportStatement.DoSQL(sql.BuildInsert("INSERT INTO DVIRHeader", " output inserted.id VALUES "), true);
-                        int id = reportStatement.ifetch("id");
-                        if (report.DefectIds != null)
-                        {
-                            foreach (int defectId in report.DefectIds)
-                            {
-                                sql.Clear();
-                                sql.Add("reportId", id);
-                                sql.Add("defectId", defectId);
-                                reportStatement.DoSQL(sql.BuildInsert("INSERT INTO DVIRDefectMapping"));
-                            }
+                        rc = -3;
+                        if (report.done && reportStatement.DoSQL(string.Format("SELECT * FROM DVIRHeader WHERE RepKey = '{0}'", report.RepKey)))
+                        {                            
+                            reportStatement.DoSQL(string.Format("UPDATE DVIRHeader SET done = 1 WHERE RepKey = '{0}'", report.RepKey));
+                            rc = 1;
                         }
-                        rc = 1;
+                        else
+                        {
+                            SqlHelper sql = procData.fillQuery(report, dvirHeaderLayout);
+                            sql.AddNow("idate");
+                            reportStatement.DoSQL(sql.BuildInsert("INSERT INTO DVIRHeader", " output inserted.id VALUES "), true);
+                            int id = reportStatement.ifetch("id");
+                            if (report.DefectIds != null)
+                            {
+                                foreach (int defectId in report.DefectIds)
+                                {
+                                    sql.Clear();
+                                    sql.Add("reportId", id);
+                                    sql.Add("defectId", defectId);
+                                    reportStatement.DoSQL(sql.BuildInsert("INSERT INTO DVIRDefectMapping"));
+                                }
+                            }
+                            rc = 1;
+                           
+                        }
+ 
                     }
                 }
                 catch (Exception ex)
@@ -4525,8 +4549,11 @@ namespace RoadaWebService
                     List<HosEvent> hosevnts = new List<HosEvent>();
                     bool rc;
                     if (user_name != null && currentDate != null)
+
+                        
+                        
                         currentDate = currentDate.AddDays(-14);
-                    rc = stmt.DoSQLFormat("SELECT * FROM go_hos WHERE user_name = '{0}' AND time_event >= {1} ORDER BY time_event DESC", user_name, SqlHelper.timeStamp(currentDate, SqlHelper.dbType.SqlServer));
+                    rc = stmt.DoSQLFormat("SELECT * FROM go_hos WHERE hide is null AND user_name = '{0}' AND rdate >= {1} ORDER BY rdate DESC", user_name, SqlHelper.timeStamp(currentDate, SqlHelper.dbType.SqlServer));
 
                     while (rc)
                     {
@@ -4537,6 +4564,7 @@ namespace RoadaWebService
                         Hev.duty = stmt.bfetch("duty");
                         Hev.driving = stmt.bfetch("driving");
                         Hev.phandcode = stmt.ifetch("phand_code");
+                        Hev.serverID = stmt.ifetch("id");
                         hosevnts.Add(Hev);
                         rc = stmt.dbSkip();
                     }
@@ -4597,9 +4625,10 @@ namespace RoadaWebService
                     sql.Add("duty", evnt.duty);
                     sql.Add("driving", evnt.driving);
                     sql.Add("phand_code", evnt.phandcode);
-                    stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO go_hos"));
+                    stmt.DoSQL(sql.BuildInsert("INSERT INTO go_hos"));
+                    stmt.DoSQL(string.Format("SELECT id FROM go_hos WHERE rdate = '{0}' and user_name = '{1}'", evnt.eventTime, evnt.user_name));   
+                    Result = stmt.ifetch("id");
 
-                    Result = 1;
                 }
             }
             catch (Exception ex)
@@ -4607,6 +4636,93 @@ namespace RoadaWebService
                 Result = -3;
                 Global.messLog.Flush("HOS Event Message Failed HOS HandCode: {0}", evnt.handcode.ToString());
                 InsertErrorRecord(req.CustCode, string.Format("GetHosEvents() Handcode{0} Error{1}", req.Handcode, ex.Message), req);
+            }
+            finally
+            {
+                if (stmt != null)
+                    stmt.Close();
+            }
+
+            return Result;
+        }
+        [WebMethod(Description = "creates and updates exsiting hos events Json (PUSH)")]
+        [ScriptMethod(UseHttpGet = false, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public ServerIDs SendHosOffWorkEventJson(Request req, HosEvent FromEvent, HosEvent ToEvent)
+        {
+            return SendHosOffWorkEvent(req, FromEvent, ToEvent);
+        }
+
+        [WebMethod(Description = "creates and updates exsiting hos events")]
+        public ServerIDs SendHosOffWorkEvent(Request req, HosEvent FromEvent, HosEvent ToEvent)
+        {
+            List<int> ids = new List<int>();
+            ServerIDs Result = null;
+            // low security check, don't want hackers!
+            Global.messLog.Flush("SendHosOffWorkEvent");
+            if (!LowSecurityCheck(req, "SendHosOffWorkEvent"))
+                return Result;
+
+
+            string connStr = CustConnectionString(req);
+
+            SqlStmt stmt = null;
+            try
+            {
+         
+                if (GetStmt(connStr, out stmt))
+                {
+                    SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
+                    DateTime now = DateTime.Now.ToLocalTime();
+
+
+                    bool rc = stmt.DoSQLFormat("SELECT id FROM go_hos WHERE rdate >= '{0}' AND rdate <= '{1}'", FromEvent.eventTime, ToEvent.eventTime);
+                    while (rc)
+                    {
+                        ids.Add(stmt.ifetch("id"));                       
+                        rc = stmt.dbSkip();
+                    }
+ 
+                    if (ids.Count > 0)
+                    {
+                        foreach (var item in ids)
+                        {
+                            stmt.DoSQL(string.Format("UPDATE go_hos SET hide = 1 WHERE id = {0}", item));
+                        }
+                    }
+                    sql.Add("idate", now);
+                    sql.Add("user_name", FromEvent.user_name);
+                    sql.Add("rdate", FromEvent.eventTime);
+                    sql.Add("event_code", FromEvent.code);
+                    sql.Add("handcode", FromEvent.handcode);
+                    sql.Add("duty", FromEvent.duty);
+                    sql.Add("driving", FromEvent.driving);
+                    sql.Add("phand_code", FromEvent.phandcode);
+                    stmt.DoSQL(sql.BuildInsert("INSERT INTO go_hos"));
+
+                    sql.Clear();
+
+
+                    sql.Add("idate", now);
+                    sql.Add("user_name", ToEvent.user_name);
+                    sql.Add("rdate", ToEvent.eventTime);
+                    sql.Add("event_code", ToEvent.code);
+                    sql.Add("handcode", ToEvent.handcode);
+                    sql.Add("duty", ToEvent.duty);
+                    sql.Add("driving", ToEvent.driving);
+                    sql.Add("phand_code", ToEvent.phandcode);
+                    stmt.DoSQL(sql.BuildInsert("INSERT INTO go_hos"));
+                    ServerIDs si = new ServerIDs();
+                    si.serverIds = ids.ToArray();
+                    Result = si;
+                    
+                }
+            
+            }
+            catch (Exception ex)
+            {
+                
+                Global.messLog.Flush("HOS Event Message Failed HOS VS: {0}", req.Version);
+                InsertErrorRecord(req.CustCode, string.Format("SendHosOffWorkEvent() Handcode{0} Error{1}", req.Handcode, ex.Message), req);
             }
             finally
             {
@@ -6826,6 +6942,7 @@ namespace RoadaWebService
                                   { "Inspector", "inspector" },
                                   { "Comments", "comments" },
                                   { "Signature", "signature" },
+                                  { "RepKey", "RepKey" },
                                   { "rdate", "rdate" } };
                                     
         [WebMethod(Description = "Update vehicle data from Phone App as JSON")]
