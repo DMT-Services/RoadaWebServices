@@ -5362,6 +5362,10 @@ namespace RoadaWebService
 
         private void InsertgoEvent(evntRecord evnt, Request req)
         {
+            // low security check, don't want hackers!
+            if (!LowSecurityCheck(req, "InsertgoEvent"))
+                return;
+
             SqlStmt stmt = null;
             try
             {
@@ -5403,7 +5407,7 @@ namespace RoadaWebService
                             if (evnt.handcode > 0)
                             {
                                 stmt.DoSQLFormat("UPDATE vehicles with (rowlock) SET phone_handcode = null, user_name = null WHERE phone_handcode = {0}", evnt.handcode);
-                                stmt.DoSQLFormat("UPDATE vehicles with (rowlock) SET phone_handcode = {0}, user_name = '{1}', last_checkin = '{2}'  WHERE hand_code = {3}", evnt.handcode, SqlHelper.FixUp(evnt.driver), evnt.eventTime, evnt.dcdHC);
+                                stmt.DoSQLFormat("UPDATE vehicles with (rowlock) SET phone_handcode = {0}, user_name = '{1}', last_checkin = {2}  WHERE hand_code = {3}", evnt.handcode, SqlHelper.FixUp(evnt.driver), SqlHelper.timeStamp(evnt.eventTime), evnt.dcdHC);
 
                             }
                         }
