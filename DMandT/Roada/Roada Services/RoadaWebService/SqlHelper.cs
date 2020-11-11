@@ -690,8 +690,13 @@ namespace DMTServices
 
         public int Add(string colName, List<short> sl)
         {
-            byte[] bytes = new byte[sl.Count * sizeof(short)];
-            Buffer.BlockCopy(sl.ToArray(), 0, bytes, 0, bytes.Length);
+            return Add(colName, sl.ToArray());
+        }
+
+        public int Add(string colName, short[] sa)
+        {
+            byte[] bytes = new byte[sa.Length * sizeof(short)];
+            Buffer.BlockCopy(sa, 0, bytes, 0, bytes.Length);
             return Add(colName, bytes);
         }
 
