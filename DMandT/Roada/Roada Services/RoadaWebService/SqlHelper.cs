@@ -688,6 +688,13 @@ namespace DMTServices
             return Add(colName, data, false);
         }
 
+        public int Add(string colName, List<short> sl)
+        {
+            byte[] bytes = new byte[sl.Count * sizeof(short)];
+            Buffer.BlockCopy(sl.ToArray(), 0, bytes, 0, bytes.Length);
+            return Add(colName, bytes);
+        }
+
         public int Add(string colName, List<byte> bl)
         {
             return Add(colName, bl.ToArray());
@@ -809,20 +816,19 @@ namespace DMTServices
                     return Add(colName, (bool)o);
                 else if (o is byte[])
                     return Add(colName, (byte[])o);
+                else if (o is List<byte>)
+                    return Add(colName, (List<byte>)o);
+                else if (o is List<short>)
+                    return Add(colName, (List<short>)o);
                 else
                 {
-                    if (o is List<byte>)
-                        return Add(colName, (List<byte>)o);
-                    else
+                    if (o.GetType().IsValueType)
                     {
-                        if (o.GetType().IsValueType)
+                        try
                         {
-                            try
-                            {
-                                return Add(colName, o.ToString(), false);
-                            }
-                            catch { }
+                            return Add(colName, o.ToString(), false);
                         }
+                        catch { }
                     }
                 }
             }
