@@ -3613,7 +3613,7 @@ namespace RoadaWebService
                     sql.Add("report_phone", rdata.repPhone);
                     sql.Add("report_datetime", rdata.repDate);
                     sql.Add("opp_reports", rdata.chkOpp);
-                    sql.Add("fatal_report", rdata.chkFatal);         
+                    sql.Add("fatal_report", rdata.chkFatal);
                     sql.Add("other_report", rdata.chkOther);
                     sql.Add("message_sign", rdata.chkSign);
                     sql.Add("latitude", rdata.CurrentLat);
@@ -5958,7 +5958,7 @@ namespace RoadaWebService
 
             int Result = 0;
             // low security check, don't want hackers!
-            if (!LowSecurityCheck(req, "SendReport"))
+            if (!LowSecurityCheck(req, "SendBridgeData"))
                 return -2;
 
             string connStr = CustConnectionString(req);
@@ -5988,7 +5988,8 @@ namespace RoadaWebService
                     sql.Add("road", bdata.road);
                     sql.Add("inspector", bdata.inspector);
                     sql.Add("repKey", bdata.repKey);
-                    sql.Add("idate", DateTime.UtcNow);
+                    sql.Add("sig_data", bdata.sigData);
+                    sql.AddNow("idate");
 
 
                     stmt.DoSQL(sql.BuildInsert("INSERT INTO inspection_bridge"));
@@ -6005,7 +6006,7 @@ namespace RoadaWebService
                         sql.Add("tstate", item.tstate);
                         sql.Add("group_enabled", item.groupEnabled);
                         sql.Add("severity", item.severity);
-                        sql.Add("idate", DateTime.UtcNow);
+                        sql.AddNow("idate");
 
                         stmt.DoSQL(sql.BuildInsert("INSERT INTO inspection_bridge_item"));
 
@@ -6062,6 +6063,7 @@ namespace RoadaWebService
                     sql.Add("road", bdata.road);
                     sql.Add("inspector", bdata.inspector);
                     sql.Add("repKey", bdata.repKey);
+                    sql.Add("sig_data", bdata.sigData);
                     sql.Add("idate", DateTime.UtcNow);
 
 
@@ -6518,13 +6520,14 @@ namespace RoadaWebService
         }
 
         [WebMethod(Description = "Send Bridgedata as JSON")]
-        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        [ScriptMethod(UseHttpGet = false, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
         public int SendBridgeDataJson(Request req, BridgeInspectionData bdata)
         {
             return SendBridgeData(req, bdata);
         }
+
         [WebMethod(Description = "Send Culvertdata as JSON")]
-        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        [ScriptMethod(UseHttpGet = false, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
         public int SendCulvertDataJson(Request req, CulvertInspectionData bdata)
         {
             return SendCulvertData(req, bdata);
