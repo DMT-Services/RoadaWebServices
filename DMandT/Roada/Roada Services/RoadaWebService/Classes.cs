@@ -1146,7 +1146,9 @@ namespace RoadaWebService
            [DataMember]
           public List<int> drifting { get; set; }
            [DataMember]
-          public List<int> roadCondition { get; set; } 
+          public List<int> roadCondition { get; set; }
+           [DataMember]
+          public string Temp { get; set; }
 
         // Update
            [DataMember]

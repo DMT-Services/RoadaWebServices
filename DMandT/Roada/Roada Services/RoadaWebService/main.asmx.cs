@@ -3498,6 +3498,7 @@ namespace RoadaWebService
                     sql.Add("submit_time", DateTime.UtcNow);
                     sql.Add("title", rdata.repTitle);
                     sql.Add("equipment", rdata.equipment);
+                    sql.Add("Temp", rdata.Temp);
 
                     //adds and updates main report table 
                     if (stmt.DoSQL(String.Format("SELECT ci_id FROM collision_incident WHERE ci_id = '{0}'", rdata.reportTime)))
@@ -3612,7 +3613,7 @@ namespace RoadaWebService
                     sql.Add("report_phone", rdata.repPhone);
                     sql.Add("report_datetime", rdata.repDate);
                     sql.Add("opp_reports", rdata.chkOpp);
-                    sql.Add("fatal_report", rdata.chkFatal);
+                    sql.Add("fatal_report", rdata.chkFatal);         
                     sql.Add("other_report", rdata.chkOther);
                     sql.Add("message_sign", rdata.chkSign);
                     sql.Add("latitude", rdata.CurrentLat);
@@ -3623,6 +3624,7 @@ namespace RoadaWebService
                     sql.Add("submit_time", now);
                     sql.Add("title", rdata.repTitle);
                     sql.Add("equipment", rdata.equipment);
+                    sql.Add("Temp", rdata.Temp);
 
                     //adds and updates main report table 
                     if (stmt.DoSQL(String.Format("SELECT ci_id FROM collision_incident WHERE ci_id = '{0}-{1}'", rdata.phoneID, rdata.reportTime)))
