@@ -871,7 +871,7 @@ namespace RoadaWebService
         [DataMember]
         public string reco { get; set; }
         [DataMember]
-        public List<byte> sigData { get; set; }
+        public List<short> sigData { get; set; }
         [DataMember]
         public List<BridgeItem> bridgeItems { get; set; }
         [DataMember]
@@ -997,7 +997,7 @@ namespace RoadaWebService
         [DataMember]
         public string other { get; set; }
         [DataMember]
-        public List<byte> sigData { get; set; }
+        public List<short> sigData { get; set; }
         [DataMember]
         public List<CulvertItem> culvertItems { get; set; }
         [DataMember]
@@ -1532,7 +1532,7 @@ namespace RoadaWebService
         [DataMember]
         public string Comments { get; set; }
         [DataMember]
-        public List<int> Signature { get; set; }
+        public List<short> Signature { get; set; }
         [DataMember]
         public string RepKey { get; set; }
         [DataMember]
@@ -1605,7 +1605,7 @@ namespace RoadaWebService
         [DataMember]
         public string Comments { get; set; }
         [DataMember]
-        public List<byte> Signature { get; set; }
+        public List<short> Signature { get; set; }
         [DataMember]
         public string RepKey { get; set; }
         [DataMember]
