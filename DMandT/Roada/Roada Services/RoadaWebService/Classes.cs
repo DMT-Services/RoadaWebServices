@@ -448,7 +448,7 @@ namespace RoadaWebService
         public string title { get; set; }
     }
     [DataContract]
-    public class ServerIDs 
+    public class ServerIDs
     {
         [DataMember]
         public int[] serverIds { get; set; }
@@ -935,7 +935,7 @@ namespace RoadaWebService
         public DateTime date { get; set; }
     }
 
-      [DataContract]
+    [DataContract]
     public class Culvert
     {
         [DataMember]
@@ -962,7 +962,7 @@ namespace RoadaWebService
         public DateTime date { get; set; }
     }
 
-      [DataContract]
+    [DataContract]
     public class CulvertInspectionData
     {
         public CulvertInspectionData()
@@ -1006,7 +1006,7 @@ namespace RoadaWebService
         public List<PhotoData> photos { get; set; }
     }
 
-     [DataContract]
+    [DataContract]
     public class CulvertItem
     {
         [DataMember]
@@ -1027,30 +1027,30 @@ namespace RoadaWebService
         public string structure { get; set; }
         [DataMember]
         public string location { get; set; }
-        
+
     }
 
-     [DataContract]
-     public class SignItem
-     {
-         [DataMember]
-         public DateTime date { get; set; }
-         [DataMember]
-         public int issue { get; set; }
-         [DataMember]
-         public string note { get; set; }
-         [DataMember]
-         public string structure { get; set; }
-         [DataMember]
-         public double latitude { get; set; }
-         [DataMember]
-         public double longitude { get; set; }
-         [DataMember]
-         public List<byte> sigData { get; set; }
-         [DataMember]
-         public string inspector { get; set; }
+    [DataContract]
+    public class SignItem
+    {
+        [DataMember]
+        public DateTime date { get; set; }
+        [DataMember]
+        public int issue { get; set; }
+        [DataMember]
+        public string note { get; set; }
+        [DataMember]
+        public string structure { get; set; }
+        [DataMember]
+        public double latitude { get; set; }
+        [DataMember]
+        public double longitude { get; set; }
+        [DataMember]
+        public List<byte> sigData { get; set; }
+        [DataMember]
+        public string inspector { get; set; }
 
-     }
+    }
 
 
     [DataContract]
@@ -1060,121 +1060,121 @@ namespace RoadaWebService
         public string reportTime { get; set; }       // used for the unique Time code for linking photos etc..
 
         // user info
-           [DataMember]
+        [DataMember]
         public string username { get; set; }          // users login name
         [DataMember]
         public string repPrep { get; set; }           // Users name
-         [DataMember]
-        public string repTitle { get; set; }          // Users title
-         [DataMember]
-          public string repPhone { get; set; }          // Users phone
-         [DataMember]
-          public string equipment { get; set; }         // truck number
-         [DataMember]
-          public string phoneID { get; set; }           // Id of phone
         [DataMember]
-          public byte[] Signiture { get; set; }         // stores the Signiture Array
+        public string repTitle { get; set; }          // Users title
+        [DataMember]
+        public string repPhone { get; set; }          // Users phone
+        [DataMember]
+        public string equipment { get; set; }         // truck number
+        [DataMember]
+        public string phoneID { get; set; }           // Id of phone
+        [DataMember]
+        public byte[] Signiture { get; set; }         // stores the Signiture Array
         [DataMember]
         public List<short> Signature { get; set; }
         [DataMember]
-          public bool Sent { get; set; } 
+        public bool Sent { get; set; }
 
         // location info
-           [DataMember]
+        [DataMember]
         public decimal CurrentLat { get; set; }
         [DataMember]
-          public decimal CurrentLong { get; set; }
-         [DataMember]
-          public string hwy { get; set; }               // Stores hwy number 404 401 etc...
-           [DataMember]
-          public string locDetails { get; set; }        // stores the 
-          [DataMember]
-          public string locDirection { get; set; }      // east west etc..
-           [DataMember]
-          public string locIntersection { get; set; }
+        public decimal CurrentLong { get; set; }
+        [DataMember]
+        public string hwy { get; set; }               // Stores hwy number 404 401 etc...
+        [DataMember]
+        public string locDetails { get; set; }        // stores the 
+        [DataMember]
+        public string locDirection { get; set; }      // east west etc..
+        [DataMember]
+        public string locIntersection { get; set; }
 
-             [DataMember]
+        [DataMember]
         public DateTime DateCol { get; set; }         // date and time of Collision
-         [DataMember]
-          public DateTime repDate { get; set; }         // date and time of arrival
-          [DataMember]
-          public DateTime clearDate { get; set; }       // Date and time of scene cleared
+        [DataMember]
+        public DateTime repDate { get; set; }         // date and time of arrival
+        [DataMember]
+        public DateTime clearDate { get; set; }       // Date and time of scene cleared
 
         // Descriptions and details
-         [DataMember]
-          public string Detour { get; set; }
-          [DataMember]
-          public string ColDesc { get; set; }
-           [DataMember]
-          public int Fatal { get; set; }
-          [DataMember]
-          public int injuries { get; set; }
-          [DataMember]
-          public string Physical { get; set; }
-          [DataMember]
-          public string Other { get; set; } 
+        [DataMember]
+        public string Detour { get; set; }
+        [DataMember]
+        public string ColDesc { get; set; }
+        [DataMember]
+        public int Fatal { get; set; }
+        [DataMember]
+        public int injuries { get; set; }
+        [DataMember]
+        public string Physical { get; set; }
+        [DataMember]
+        public string Other { get; set; }
 
         // Chks for other documents
-           [DataMember]
-          public int chkOpp { get; set; }
-         [DataMember]
-          public int chkFatal { get; set; }
-          [DataMember]
-          public int chkOther { get; set; }
-           [DataMember]
-          public int chkSign { get; set; }
-           [DataMember]
-          public int chkDmg { get; set; } 
+        [DataMember]
+        public int chkOpp { get; set; }
+        [DataMember]
+        public int chkFatal { get; set; }
+        [DataMember]
+        public int chkOther { get; set; }
+        [DataMember]
+        public int chkSign { get; set; }
+        [DataMember]
+        public int chkDmg { get; set; }
 
-        // Weater Data
-           [DataMember]
-          public List<DateTime> fromTime { get; set; }
-           [DataMember]
-          public List<int> percipitationType { get; set; }
-           [DataMember]
-          public List<int> percipitationLvl { get; set; }
-           [DataMember]
-          public List<int> windStrength { get; set; }
-           [DataMember]
-          public List<int> windDirection { get; set; }
-           [DataMember]
-          public List<int> visibility { get; set; }
-           [DataMember]
-          public List<int> cloudCondition { get; set; }
-           [DataMember]
-          public List<int> fogLvl { get; set; }
-           [DataMember]
-          public List<int> drifting { get; set; }
-           [DataMember]
-          public List<int> roadCondition { get; set; }
-           [DataMember]
-          public string Temp { get; set; }
+        // Weather Data
+        [DataMember]
+        public List<DateTime> fromTime { get; set; }
+        [DataMember]
+        public List<int> percipitationType { get; set; }
+        [DataMember]
+        public List<int> percipitationLvl { get; set; }
+        [DataMember]
+        public List<int> windStrength { get; set; }
+        [DataMember]
+        public List<int> windDirection { get; set; }
+        [DataMember]
+        public List<int> visibility { get; set; }
+        [DataMember]
+        public List<int> cloudCondition { get; set; }
+        [DataMember]
+        public List<int> fogLvl { get; set; }
+        [DataMember]
+        public List<int> drifting { get; set; }
+        [DataMember]
+        public List<int> roadCondition { get; set; }
+        [DataMember]
+        public double Temp { get; set; }
 
         // Update
-           [DataMember]
-          public List<DateTime> updateTime { get; set; }
-           [DataMember]
-          public List<string> upDesc { get; set; } 
+        [DataMember]
+        public List<DateTime> updateTime { get; set; }
+        [DataMember]
+        public List<string> upDesc { get; set; }
 
         // People On scene
-           [DataMember]
-          public List<string> title { get; set; }
-           [DataMember]
-          public List<string> name { get; set; }
-           [DataMember]
-          public List<string> equip { get; set; } 
+        [DataMember]
+        public List<string> title { get; set; }
+        [DataMember]
+        public List<string> name { get; set; }
+        [DataMember]
+        public List<string> equip { get; set; }
 
         // internal use for the App only
-           [DataMember]
-          public int HwyNdx { get; set; }
-           [DataMember]
-          public int HwyDetNdx { get; set; }
-           [DataMember]
-          public int HwyDirNdx { get; set; }
-           [DataMember]
-          public int chkWeather { get; set; }
-           [DataMember]
-          public int chkSig { get; set; } 
+        [DataMember]
+        public int HwyNdx { get; set; }
+        [DataMember]
+        public int HwyDetNdx { get; set; }
+        [DataMember]
+        public int HwyDirNdx { get; set; }
+        [DataMember]
+        public int chkWeather { get; set; }
+        [DataMember]
+        public int chkSig { get; set; }
     }
 
     public class PhoneData
