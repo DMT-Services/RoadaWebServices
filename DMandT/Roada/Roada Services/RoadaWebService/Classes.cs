@@ -692,7 +692,7 @@ namespace RoadaWebService
         [DataMember]
         public DateTime datetime { get; set; }
         [DataMember]
-        public List<float> signature { get; set; }
+        public List<short> signature { get; set; }
     }
 
 
@@ -1075,7 +1075,7 @@ namespace RoadaWebService
         [DataMember]
           public byte[] Signiture { get; set; }         // stores the Signiture Array
         [DataMember]
-        public List<float> Signature { get; set; }
+        public List<short> Signature { get; set; }
         [DataMember]
           public bool Sent { get; set; } 
 

@@ -1311,7 +1311,7 @@ namespace RoadaWebService
                     sql.Add("last_name", emp.last_name);
                     sql.Add("dc_id", emp.dc_id);
                     sql.Add("datetime", sig.datetime);
-                    sql.Add("signature", sig.signature.SelectMany(BitConverter.GetBytes).ToArray());
+                    sql.Add("signature", sig.signature);//.SelectMany(BitConverter.GetBytes).ToArray());
 
                     stmt.DoSQL(sql.BuildInsert("INSERT INTO signature_data"));
 
@@ -3470,9 +3470,9 @@ namespace RoadaWebService
                     //DateTime now = DateTime.Now.ToLocalTime();
 
                     if (rdata.Signature != null && rdata.Signature.Count > 0)
-                        sql.Add("sig_data", rdata.Signature.SelectMany(BitConverter.GetBytes).ToArray());
+                        sql.Add("sig_data", rdata.Signature);
                     else
-                        sql.Add("sig_data", rdata.Signiture);
+                        sql.Add("sig_data", rdata.Signiture);   // this misspelled one is byte[], possibly for others?
                     sql.Add("ci_date", rdata.DateCol);
                     sql.Add("hwy", rdata.hwy);
                     sql.Add("loc_direction", rdata.locDirection);
