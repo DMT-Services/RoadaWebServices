@@ -5108,7 +5108,7 @@ namespace RoadaWebService
 
 
         [WebMethod(Description = "Receive Deficiency Data as JSON")]
-        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        [ScriptMethod(UseHttpGet = false, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
         public int SendDeficiencyJson(Request req, DeficiencyData data)
         {
             return SendDeficiencyData(req, data);
