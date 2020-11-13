@@ -3456,7 +3456,7 @@ namespace RoadaWebService
 
             int Result = 0;
             // low security check, don't want hackers!
-            if (!LowSecurityCheck(req, "SendReportNew"))
+            if (!LowSecurityCheck(req, "SendReportNew (Collision)"))
                 return -2;
 
             string connStr = CustConnectionString(req);
@@ -3469,10 +3469,6 @@ namespace RoadaWebService
                     SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
                     //DateTime now = DateTime.Now.ToLocalTime();
 
-                    if (rdata.Signature != null && rdata.Signature.Count > 0)
-                        sql.Add("sig_data", rdata.Signature);
-                    else
-                        sql.Add("sig_data", rdata.Signiture);   // this misspelled one is byte[], possibly for others?
                     sql.Add("ci_date", rdata.DateCol);
                     sql.Add("hwy", rdata.hwy);
                     sql.Add("loc_direction", rdata.locDirection);
@@ -3498,30 +3494,27 @@ namespace RoadaWebService
                     sql.Add("submit_time", DateTime.UtcNow);
                     sql.Add("title", rdata.repTitle);
                     sql.Add("equipment", rdata.equipment);
+                    if (rdata.Signature != null && rdata.Signature.Count > 0)
+                        sql.Add("sig_data", rdata.Signature);
+                    else
+                        sql.Add("sig_data", rdata.Signiture);   // this misspelled one is byte[], possibly for others?
                     sql.Add("Temp", rdata.Temp);
 
                     //adds and updates main report table 
-                    if (stmt.DoSQL(String.Format("SELECT ci_id FROM collision_incident WHERE ci_id = '{0}'", rdata.reportTime)))
+                    if (stmt.DoSQL(string.Format("SELECT ci_id FROM collision_incident WHERE ci_id = '{0}'", rdata.reportTime)))
                     {
-
-                        stmt.DoSQL(sql.BuildUpdate("UPDATE collision_incident", String.Format("WHERE ci_id = '{0}'", rdata.reportTime)));
-
+                        stmt.DoSQL(sql.BuildUpdate("UPDATE collision_incident", string.Format("WHERE ci_id = '{0}'", rdata.reportTime)));
                         Result = 1;
-
-
                     }
                     else
                     {
                         sql.Add("ci_id", rdata.reportTime);
 
                         stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO collision_incident"));
-
                         Result = 2;
                     }
 
-
-
-                    //updates add adds update files to update table 
+                    // updates add adds update files to update table 
                     int ndx = 0;
                     foreach (DateTime record in rdata.updateTime)
                     {
@@ -3533,8 +3526,6 @@ namespace RoadaWebService
                             ndx++;
                             Result = 5;
                         }
-
-
                         else
                         {
                             if (rdata.updateTime[ndx].Year > 1000)
@@ -3548,7 +3539,6 @@ namespace RoadaWebService
                                 Result = 6;
                             }
                         }
-
                     }
                     ndx = 0;
 
