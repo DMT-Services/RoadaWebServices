@@ -269,6 +269,8 @@ namespace RoadaWebService
         [DataMember]
         public string WindDirection { get; set; }
         [DataMember]
+        public string SnowAccum { get; set; }
+        [DataMember]
         public string PrecipCode { get; set; }
         [DataMember]
         public DateTime PrecipTime { get; set; }
@@ -770,6 +772,8 @@ namespace RoadaWebService
         [DataMember]
         public int windDirection { get; set; }
         [DataMember]
+        public string snowAccum { get; set; }
+        [DataMember]
         public int visibility { get; set; }
         [DataMember]
         public int cloudCondition { get; set; }
@@ -1137,6 +1141,8 @@ namespace RoadaWebService
         public List<int> windStrength { get; set; }
         [DataMember]
         public List<int> windDirection { get; set; }
+        [DataMember]
+        public List<int> snowAccum { get; set; }
         [DataMember]
         public List<int> visibility { get; set; }
         [DataMember]
@@ -1785,6 +1791,8 @@ namespace RoadaWebService
         public int ACWind;
         public int ACWindAN;
         public string ACWindDirection;
+        public string ACSnowAccum;
+
 
         public int ACVisibility;
         public int ACVisibilityAN;
@@ -1794,6 +1802,7 @@ namespace RoadaWebService
         public int ACFogAN;
         public int ACDrifting;
         public int ACDriftingAN;
+        
 
         public int RoadConditions;
         public int RoadConditionsAN;

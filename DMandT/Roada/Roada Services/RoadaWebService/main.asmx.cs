@@ -792,6 +792,7 @@ namespace RoadaWebService
                         sql.Add("ac_fog_an", patrol.ACFogAN);
                         sql.Add("ac_drifting", patrol.ACDrifting);
                         sql.Add("ac_drifting_an", patrol.ACDriftingAN);
+                        sql.Add("ac_snow_accum", patrol.ACSnowAccum);
                         sql.Add("road_cond", patrol.RoadConditions);
                         sql.Add("road_cond_an", patrol.RoadConditionsAN);
                         stmt.DoSQL(sql.BuildInsert("INSERT INTO weather_data"));
@@ -3371,6 +3372,7 @@ namespace RoadaWebService
                         sql.Add("p_level", wdata.percipitationLvl);
                         sql.Add("w_gust", wdata.windStrength);
                         sql.Add("w_direction", wdata.windDirection);
+                        sql.Add("snow_accum", wdata.snowAccum);
                         sql.Add("visibility", wdata.visibility);
                         sql.Add("cloud", wdata.cloudCondition);
                         sql.Add("fog", wdata.fogLvl);
@@ -6703,6 +6705,7 @@ namespace RoadaWebService
         wind_direction varchar(2),
         precip_code varchar(4),
         precip_time datetime,
+        snow_accum varchar(7),
         action varchar(128),
         unit_num varchar(32),
         hand_code int,
@@ -6718,6 +6721,7 @@ namespace RoadaWebService
                                      { "AirTemperature", "temp_air" },
                                      { "WindSpeed", "wind_speed" },
                                      { "WindDirection", "wind_direction" },
+                                     { "SnowAccum","snow_accum" },
                                      { "PrecipCode", "precip_code" },
                                      { "PrecipTime", "precip_time" },
                                      { "Action", "action" },
@@ -7046,6 +7050,7 @@ namespace RoadaWebService
         temp_air decimal(5,1),
         wind_speed decimal(5,1),
         wind_direction varchar(2),
+        snow_accum varchar(7),
         precip_code varchar(4),
         precip_time datetime,
         action varchar(128)
