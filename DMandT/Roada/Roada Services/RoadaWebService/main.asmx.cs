@@ -5040,12 +5040,20 @@ namespace RoadaWebService
         // these are only used when sending data TO tablets and MUST be removed when receiving...
         string[] defSendOnly = new string[] { "id", "requestid", "closed", "workorderid", "workorderno" };
 
-
+        // Allow setting 'finish' with the added note
         [WebMethod(Description = "Receive Deficiency Additional Note as JSON")]
         [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
         public int SendDefAddNoteExJson(Request req, int id, string addNote, int finish)
         {
             return SendDefAddNote(req, id, addNote, finish);
+        }
+
+        // needed to use Post on this function (UseHttpGet = false)
+        [WebMethod(Description = "Receive Deficiency Additional Note as JSON")]
+        [ScriptMethod(UseHttpGet = false, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public int SendDefAddNoteJsonP(Request req, int id, string addNote)
+        {
+            return SendDefAddNote(req, id, addNote, 0);
         }
 
         [WebMethod(Description = "Receive Deficiency Additional Note as JSON")]
@@ -5106,6 +5114,13 @@ namespace RoadaWebService
             return Result;
         }
 
+        // created this to allow using POST as the one below has UseHttpGet = true and is already in use by other programs
+        [WebMethod(Description = "Receive Deficiency Data as JSON")]
+        [ScriptMethod(UseHttpGet = false, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public int SendDeficiencyJsonP(Request req, DeficiencyData data)
+        {
+            return SendDeficiencyData(req, data);
+        }
 
         [WebMethod(Description = "Receive Deficiency Data as JSON")]
         [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
