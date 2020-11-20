@@ -772,7 +772,7 @@ namespace RoadaWebService
         [DataMember]
         public int windDirection { get; set; }
         [DataMember]
-        public string snowAccum { get; set; }
+        public int snowAccum { get; set; }
         [DataMember]
         public int visibility { get; set; }
         [DataMember]
