@@ -609,6 +609,20 @@ namespace DMTServices
             return rc;
         }
 
+        /// <summary>
+        /// add in the DateTime value, but ONLY if DataRow is null, or different data than what is in DataRow
+        /// </summary>
+        /// <param name="colName">column to Add</param>
+        /// <param name="value">Date to set to</param>
+        /// <param name="row">DataRow to find current value</param>
+        /// <returns>greater than 0, added</returns>
+        public int AddDiff(string colName, DateTime value, DataRow row)
+        {
+            int rc = -1;
+            if (row == null || value != row.dtfetch(colName))
+                rc = Add(colName, value);
+            return rc;
+        }
 
         /// <summary>
         /// add the database now() 
