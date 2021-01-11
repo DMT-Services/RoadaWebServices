@@ -907,6 +907,59 @@ namespace RoadaWebService
     }
 
     [DataContract]
+    public class SignInspectionData
+    {
+
+        public SignInspectionData()
+        {
+            this.signItems = new List<SignItem>();
+            this.photos = new List<PhotoData>();
+        }
+        [DataMember]
+        public DateTime date { get; set; }
+        [DataMember]
+        public string structure { get; set; }
+        [DataMember]
+        public string inspector { get; set; }
+        [DataMember]
+        public string notes { get; set; }
+        [DataMember]
+        public double latitude { get; set; }
+        [DataMember]
+        public double longitude { get; set; }
+        [DataMember]
+        public List<short> sigData { get; set; }
+        [DataMember]
+        public string repKey { get; set; }
+        [DataMember]
+        public List<SignItem> signItems { get; set; }
+        [DataMember]
+        public List<PhotoData> photos { get; set; }
+
+    }
+
+    [DataContract]
+    public class SignItem
+    {
+        [DataMember]
+        public DateTime date { get; set; }
+        [DataMember]
+        public int issue { get; set; }
+        [DataMember]
+        public bool defect { get; set; }
+        [DataMember]
+        public string note { get; set; }
+        [DataMember]
+        public int tstate { get; set; }
+        [DataMember]
+        public bool groupEnabled { get; set; }
+        [DataMember]
+        public int severity { get; set; }
+        [DataMember]
+        public string structure { get; set; }
+    }
+
+    [DataContract]
     public class Bridge
     {
         [DataMember]
@@ -937,6 +990,45 @@ namespace RoadaWebService
         public string notes { get; set; }
         [DataMember]
         public DateTime date { get; set; }
+    }
+
+    [DataContract]
+    public class Sign
+    {
+        [DataMember]
+        public DateTime date { get; set; }
+        [DataMember]
+        public string type { get; set; }
+        [DataMember]
+        public string structure { get; set; }
+        [DataMember]
+        public string location { get; set; }
+        [DataMember]
+        public string road { get; set; }
+        [DataMember]
+        public string spot { get; set; }
+        [DataMember]
+        public string site { get; set; }
+        [DataMember]
+        public string struct_type { get; set; }
+        [DataMember]
+        public string panels { get; set; }
+        [DataMember]
+        public string foot_type_l { get; set; }
+        [DataMember]
+        public string foot_type_r { get; set; }
+        [DataMember]
+        public int columns { get; set; }
+        [DataMember]
+        public int arms { get; set; }
+        [DataMember]
+        public double latitude { get; set; }
+        [DataMember]
+        public double longitude { get; set; }
+        [DataMember]
+        public string size { get; set; }
+        [DataMember]
+        public string sign_text { get; set; }
     }
 
     [DataContract]
@@ -1033,29 +1125,6 @@ namespace RoadaWebService
         public string location { get; set; }
 
     }
-
-    [DataContract]
-    public class SignItem
-    {
-        [DataMember]
-        public DateTime date { get; set; }
-        [DataMember]
-        public int issue { get; set; }
-        [DataMember]
-        public string note { get; set; }
-        [DataMember]
-        public string structure { get; set; }
-        [DataMember]
-        public double latitude { get; set; }
-        [DataMember]
-        public double longitude { get; set; }
-        [DataMember]
-        public List<byte> sigData { get; set; }
-        [DataMember]
-        public string inspector { get; set; }
-
-    }
-
 
     [DataContract]
     public class ReportData

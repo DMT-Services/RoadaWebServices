@@ -5897,6 +5897,70 @@ namespace RoadaWebService
             return Result;
         }
 
+        [WebMethod(Description = "Retrieve Signs")]
+        public Sign[] GetSignList(Request request)
+        {
+            Sign[] Result = null;
+
+            if (LowSecurityCheck(request, "GetSignList"))
+            {
+                string connStr = CustConnectionString(request);
+                SqlStmt stmt = null;
+                try
+                {
+                    if (GetStmt(connStr, out stmt))
+                    {
+
+
+                        List<Sign> Signs = new List<Sign>();
+                        bool rc;
+
+                        rc = stmt.DoSQL("SELECT * FROM asset_sign ORDER BY structure");
+                        while (rc)
+                        {
+                            Sign s = new Sign();
+                            s.date = stmt.dtfetch("date");
+                            s.type = stmt.fetch("type");
+                            s.structure = stmt.fetch("structure");
+                            s.location = stmt.fetch("location");
+                            s.road = stmt.fetch("road");
+                            s.spot = stmt.fetch("spot");
+                            s.site = stmt.fetch("site");
+                            s.struct_type = stmt.fetch("struct_type");
+                            s.panels = stmt.fetch("panels");
+                            s.foot_type_l = stmt.fetch("foot_type_l");
+                            s.foot_type_r = stmt.fetch("foot_type_r");
+                            s.columns = stmt.ifetch("columns");
+                            s.arms = stmt.ifetch("arms");
+                            s.latitude = stmt.dfetch("latitude");
+                            s.longitude = stmt.dfetch("longitude");
+                            s.size = stmt.fetch("size");
+                            s.sign_text = stmt.fetch("sign_text");
+
+                            Signs.Add(s);
+
+                            rc = stmt.dbSkip();
+                        }
+                        Result = Signs.ToArray();
+                        Signs.Clear();
+                    }
+                }
+                catch (Exception x)
+                {
+                    Global.messLog.Flush("GetSignList() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
+                    InsertErrorRecord(request.CustCode, string.Format("GetSignList() Failed to send HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message), request);
+                }
+                finally
+                {
+                    if (stmt != null)
+                    {
+                        stmt.Close();
+                        stmt = null;
+                    }
+                }
+            }
+            return Result;
+        }
 
 
         [WebMethod(Description = "Retrieve Culverts assets")]
@@ -6028,6 +6092,76 @@ namespace RoadaWebService
                 Result = -4;
                 Global.messLog.Flush("SendBridgeData() HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, x.Message);
                 InsertErrorRecord(req.CustCode, "SendBridgeData() " + x.Message, req);
+            }
+            finally
+            {
+                if (stmt != null)
+                    stmt.Close();
+            }
+            return Result;
+        }
+
+        [WebMethod(Description = "Push SendSignData Report")]
+        public int SendSignData(Request req, SignInspectionData bdata)
+        {
+
+            int Result = 0;
+            // low security check, don't want hackers!
+            if (!LowSecurityCheck(req, "SendSignData"))
+                return -2;
+
+            string connStr = CustConnectionString(req);
+            SqlStmt stmt = null;
+            try
+            {
+                Result = -3;
+                if (GetStmt(connStr, out stmt))
+                {
+                    SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
+                    DateTime now = DateTime.Now.ToLocalTime();
+
+                    sql.Add("structure", bdata.structure);
+                    sql.Add("notes", bdata.notes);
+                    sql.Add("latitude", bdata.latitude);
+                    sql.Add("longitude", bdata.longitude);
+                    sql.Add("date", bdata.date);
+                    sql.Add("inspector", bdata.inspector);
+                    sql.Add("repKey", bdata.repKey);
+                    sql.Add("sig_data", bdata.sigData);
+                    sql.Add("uni_code", 99);
+                    sql.AddNow("idate");
+
+
+                    stmt.DoSQL(sql.BuildInsert("INSERT INTO inspection_sign"));
+
+                    foreach (var item in bdata.signItems)
+                    {
+                        sql.Clear();
+
+                        sql.Add("structure", item.structure);
+                        sql.Add("date", item.date);
+                        sql.Add("issue", item.issue);
+                        sql.Add("defect", item.defect);
+                        sql.Add("note", item.note);
+                        sql.Add("tstate", item.tstate);
+                        sql.Add("group_enabled", item.groupEnabled);
+                        sql.Add("severity", item.severity);
+                        sql.Add("uni_code", 99);
+                        sql.AddNow("idate");
+
+                        stmt.DoSQL(sql.BuildInsert("INSERT INTO inspection_sign_item"));
+
+                    }
+
+                    Result = 1;
+
+                }
+            }
+            catch (Exception x)
+            {
+                Result = -4;
+                Global.messLog.Flush("SendSignData() HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, x.Message);
+                InsertErrorRecord(req.CustCode, "SendSignData() " + x.Message, req);
             }
             finally
             {
@@ -6210,6 +6344,116 @@ namespace RoadaWebService
                 {
                     Global.messLog.Flush("GetBridgeData() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
                     InsertErrorRecord(request.CustCode, string.Format("GetBridgeData() Failed to send HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message), request);
+                }
+                finally
+                {
+                    if (stmt != null)
+                    {
+                        stmt.Close();
+                        stmt = null;
+                    }
+                    if (stmt2 != null)
+                    {
+                        stmt2.Close();
+                        stmt2 = null;
+                    }
+                    if (stmt3 != null)
+                    {
+                        stmt3.Close();
+                        stmt3 = null;
+                    }
+
+                }
+            }
+            return Result;
+        }
+
+
+        [WebMethod(Description = "Retrieve Sign inspections")]
+        public SignInspectionData[] GetSignInspectionList(Request request,  Sign[] signs)
+        {
+            SignInspectionData[] Result = null;
+
+            if (LowSecurityCheck(request, "GetSignInspectionList"))
+            {
+                string connStr = CustConnectionString(request);
+                SqlStmt stmt = null;
+                SqlStmt stmt2 = null;
+                SqlStmt stmt3 = null;
+                try
+                {
+                    if (GetStmt(connStr, out stmt) && GetStmt(connStr, out stmt2) && GetStmt(connStr, out stmt3))
+                    {
+
+                        List<SignInspectionData> Signs = new List<SignInspectionData>();
+
+                        foreach (var item in signs)
+                        {
+                            if (item.structure != null && item.structure.Length > 0)
+                            {
+                                if (stmt.DoSQLFormat("SELECT TOP 1 * FROM inspection_sign WHERE structure = '{0}' ORDER BY date desc", item.structure))
+                                {
+                                    SignInspectionData s = new SignInspectionData();
+                                    s.date = stmt.dtfetch("date");
+                                    s.structure = stmt.fetch("structure");
+                                    s.inspector = stmt.fetch("inspector");
+                                    s.notes = stmt.fetch("notes");
+                                    s.latitude = stmt.dfetch("latitude");
+                                    s.longitude = stmt.dfetch("longitude");
+                                    s.repKey = stmt.fetch("repKey");
+
+
+                                    if (s.repKey.Length > 0)
+                                    {
+                                        bool rc = stmt3.DoSQLFormat("SELECT * FROM Img_events WHERE RepKey = '{0}'", s.repKey);
+                                        while (rc)
+                                        {
+                                            PhotoData pdata = new PhotoData();
+
+                                            pdata.repkey = s.repKey;
+                                            pdata.imgUrl = stmt3.fetch("img_url");
+
+                                            s.photos.Add(pdata);
+
+                                            rc = stmt3.dbSkip();
+                                        }
+                                    }
+
+                                    bool rc2 = stmt2.DoSQLFormat("SELECT * FROM inspection_sign_item WHERE date = '{0}' AND structure = '{1}'", s.date, s.structure);
+                                    while (rc2)
+                                    {
+                                        SignItem si = new SignItem();
+                                        si.structure = s.structure;
+                                        si.date = s.date;
+                                        si.issue = stmt2.ifetch("issue");
+                                        si.defect = stmt2.bfetch("defect");
+                                        si.note = stmt2.fetch("note");
+                                        si.tstate = stmt2.ifetch("tstate");
+                                        si.groupEnabled = stmt2.bfetch("group_enabled");
+                                        si.severity = stmt2.ifetch("severity");
+
+                                        s.signItems.Add(si);
+
+                                        rc2 = stmt2.dbSkip();
+
+                                    }
+
+
+                                    Signs.Add(s);
+                                }
+
+                            }
+
+
+                        }
+                        Result = Signs.ToArray();
+                        Signs.Clear();
+                    }
+                }
+                catch (Exception x)
+                {
+                    Global.messLog.Flush("GetSignInspectionList() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
+                    InsertErrorRecord(request.CustCode, string.Format("GetSignInspectionList() Failed to send HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message), request);
                 }
                 finally
                 {
@@ -6533,6 +6777,13 @@ namespace RoadaWebService
             return SendBridgeData(req, bdata);
         }
 
+        [WebMethod(Description = "Send Signdata as JSON")]
+        [ScriptMethod(UseHttpGet = false, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public int SendSignDataJson(Request req, SignInspectionData sdata)
+        {
+            return SendSignData(req, sdata);
+        }
+
         [WebMethod(Description = "Send Culvertdata as JSON")]
         [ScriptMethod(UseHttpGet = false, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
         public int SendCulvertDataJson(Request req, CulvertInspectionData bdata)
@@ -6547,6 +6798,13 @@ namespace RoadaWebService
             return GetBridgeList(req);
         }
 
+        [WebMethod(Description = "Retrieve Sign list as JSON")]
+        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public Sign[] GetSignsJson(Request req)
+        {
+            return GetSignList(req);
+        }
+
         [WebMethod(Description = "Retrieve Culvert list as JSON")]
         [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
         public Culvert[] GetCulvertJson(Request req)
@@ -6559,6 +6817,13 @@ namespace RoadaWebService
         public BridgeInspectionData[] GetBridgeDataJson(Request req, Bridge[] bridges)
         {
             return GetBridgeInsectionList(req, bridges);
+        }
+
+        [WebMethod(Description = "Retrieve Sign Data as JSON")]
+        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public SignInspectionData[] GetSignDataJson(Request req, Sign[] signs)
+        {
+            return GetSignInspectionList(req, signs);
         }
 
         [WebMethod(Description = "Retrieve Culvert Data as JSON")]
