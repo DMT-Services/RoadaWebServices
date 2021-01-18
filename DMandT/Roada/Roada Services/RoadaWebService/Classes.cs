@@ -998,7 +998,7 @@ namespace RoadaWebService
         [DataMember]
         public DateTime date { get; set; }
         [DataMember]
-        public string type { get; set; }
+        public int type { get; set; }
         [DataMember]
         public string structure { get; set; }
         [DataMember]
@@ -1029,6 +1029,8 @@ namespace RoadaWebService
         public string size { get; set; }
         [DataMember]
         public string sign_text { get; set; }
+        [DataMember]
+        public double distance { get; set; }
     }
 
     [DataContract]

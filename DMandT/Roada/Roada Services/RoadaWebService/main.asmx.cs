@@ -5897,8 +5897,32 @@ namespace RoadaWebService
             return Result;
         }
 
-        [WebMethod(Description = "Retrieve Signs")]
-        public Sign[] GetSignList(Request request)
+        private Sign FillSign(SqlStmt stmt)
+        {
+            Sign s = new Sign();
+            s.date = stmt.dtfetch("date");
+            s.type = stmt.ifetch("type");
+            s.structure = stmt.fetch("structure");
+            s.location = stmt.fetch("location");
+            s.road = stmt.fetch("road");
+            s.spot = stmt.fetch("spot");
+            s.site = stmt.fetch("site");
+            s.struct_type = stmt.fetch("struct_type");
+            s.panels = stmt.fetch("panels");
+            s.foot_type_l = stmt.fetch("foot_type_l");
+            s.foot_type_r = stmt.fetch("foot_type_r");
+            s.columns = stmt.ifetch("columns");
+            s.arms = stmt.ifetch("arms");
+            s.latitude = stmt.dfetch("latitude");
+            s.longitude = stmt.dfetch("longitude");
+            s.size = stmt.fetch("size");
+            s.sign_text = stmt.fetch("sign_text");
+            s.distance = stmt.dfetch("dist");
+            return s;
+        }
+
+        [WebMethod(Description = "Retrieve Signs using a LIKE clause for maxRows")]
+        public Sign[] GetSignList(Request request, string searchStr, int startRow, int maxRows)
         {
             Sign[] Result = null;
 
@@ -5915,29 +5939,16 @@ namespace RoadaWebService
                         List<Sign> Signs = new List<Sign>();
                         bool rc;
 
-                        rc = stmt.DoSQL("SELECT * FROM asset_sign ORDER BY structure");
+                        rc = stmt.DoSQLFormat("SELECT TOP {0} * FROM asset_sign WHERE structure LIKE '{1}' ORDER BY structure", maxRows + startRow, searchStr);
+                        // scroll past the rows we already have
+                        while (rc && startRow > 0)
+                        {
+                            startRow--;
+                            rc = stmt.dbSkip();
+                        }
                         while (rc)
                         {
-                            Sign s = new Sign();
-                            s.date = stmt.dtfetch("date");
-                            s.type = stmt.fetch("type");
-                            s.structure = stmt.fetch("structure");
-                            s.location = stmt.fetch("location");
-                            s.road = stmt.fetch("road");
-                            s.spot = stmt.fetch("spot");
-                            s.site = stmt.fetch("site");
-                            s.struct_type = stmt.fetch("struct_type");
-                            s.panels = stmt.fetch("panels");
-                            s.foot_type_l = stmt.fetch("foot_type_l");
-                            s.foot_type_r = stmt.fetch("foot_type_r");
-                            s.columns = stmt.ifetch("columns");
-                            s.arms = stmt.ifetch("arms");
-                            s.latitude = stmt.dfetch("latitude");
-                            s.longitude = stmt.dfetch("longitude");
-                            s.size = stmt.fetch("size");
-                            s.sign_text = stmt.fetch("sign_text");
-
-                            Signs.Add(s);
+                            Signs.Add(FillSign(stmt));
 
                             rc = stmt.dbSkip();
                         }
@@ -5961,6 +5972,56 @@ namespace RoadaWebService
             }
             return Result;
         }
+
+        [WebMethod(Description = "Retrieve Signs closest to lat/lon pair for maxRows")]
+        public Sign[] GetSignListNear(Request request, double lat, double lon, int startRow, int maxRows)
+        {
+            Sign[] Result = null;
+
+            if (LowSecurityCheck(request, "GetSignList"))
+            {
+                string connStr = CustConnectionString(request);
+                SqlStmt stmt = null;
+                try
+                {
+                    if (GetStmt(connStr, out stmt))
+                    {
+                        bool rc = stmt.DoSQLFormat("SELECT TOP {0} *, geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326)) as dist FROM asset_sign WHERE latitude is not null and longitude is not null ORDER BY geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326))", maxRows + startRow, lat, lon);
+                        // scroll to the beginning of the rows we call
+                        while (rc && startRow > 0)
+                        {
+                            startRow--;
+                            rc = stmt.dbSkip();
+                        }
+                        // now get the data we want
+                        List<Sign> Signs = new List<Sign>();
+                        while (rc)
+                        {
+                            Signs.Add(FillSign(stmt));
+
+                            rc = stmt.dbSkip();
+                        }
+                        Result = Signs.ToArray();
+                        Signs.Clear();
+                    }
+                }
+                catch (Exception x)
+                {
+                    Global.messLog.Flush("GetSignListNear() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
+                    InsertErrorRecord(request.CustCode, string.Format("GetSignListNear() Failed to send HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message), request);
+                }
+                finally
+                {
+                    if (stmt != null)
+                    {
+                        stmt.Close();
+                        stmt = null;
+                    }
+                }
+            }
+            return Result;
+        }
+
 
 
         [WebMethod(Description = "Retrieve Culverts assets")]
@@ -6069,17 +6130,20 @@ namespace RoadaWebService
                     {
                         sql.Clear();
 
-                        sql.Add("bridge", item.bridge);
-                        sql.Add("date", item.date);
-                        sql.Add("issue", item.issue);
-                        sql.Add("defect", item.defect);
-                        sql.Add("note", item.note);
-                        sql.Add("tstate", item.tstate);
-                        sql.Add("group_enabled", item.groupEnabled);
-                        sql.Add("severity", item.severity);
-                        sql.AddNow("idate");
+                        if (item.issue != null)
+                        {
+                            sql.Add("bridge", bdata.bridge);
+                            sql.Add("date", bdata.date);
+                            sql.Add("issue", item.issue);
+                            sql.Add("defect", item.defect);
+                            sql.Add("note", item.note);
+                            sql.Add("tstate", item.tstate);
+                            sql.Add("group_enabled", item.groupEnabled);
+                            sql.Add("severity", item.severity);
+                            sql.AddNow("idate");
 
-                        stmt.DoSQL(sql.BuildInsert("INSERT INTO inspection_bridge_item"));
+                            stmt.DoSQL(sql.BuildInsert("INSERT INTO inspection_bridge_item"));
+                        }
 
                     }
 
@@ -6137,19 +6201,21 @@ namespace RoadaWebService
                     foreach (var item in bdata.signItems)
                     {
                         sql.Clear();
+                        if (item.issue != null)
+                        {
+                            sql.Add("structure", bdata.structure);
+                            sql.Add("date", bdata.date);
+                            sql.Add("issue", item.issue);
+                            sql.Add("defect", item.defect);
+                            sql.Add("note", item.note);
+                            sql.Add("tstate", item.tstate);
+                            sql.Add("group_enabled", item.groupEnabled);
+                            sql.Add("severity", item.severity);
+                            sql.Add("uni_code", 99);
+                            sql.AddNow("idate");
 
-                        sql.Add("structure", item.structure);
-                        sql.Add("date", item.date);
-                        sql.Add("issue", item.issue);
-                        sql.Add("defect", item.defect);
-                        sql.Add("note", item.note);
-                        sql.Add("tstate", item.tstate);
-                        sql.Add("group_enabled", item.groupEnabled);
-                        sql.Add("severity", item.severity);
-                        sql.Add("uni_code", 99);
-                        sql.AddNow("idate");
-
-                        stmt.DoSQL(sql.BuildInsert("INSERT INTO inspection_sign_item"));
+                            stmt.DoSQL(sql.BuildInsert("INSERT INTO inspection_sign_item"));
+                        }
 
                     }
 
@@ -6798,11 +6864,18 @@ namespace RoadaWebService
             return GetBridgeList(req);
         }
 
-        [WebMethod(Description = "Retrieve Sign list as JSON")]
+        [WebMethod(Description = "Retrieve Sign list as JSON using a LIKE clause for maxRows")]
         [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
-        public Sign[] GetSignsJson(Request req)
+        public Sign[] GetSignsJson(Request req, string searchStr, int startRow, int maxRows)
         {
-            return GetSignList(req);
+            return GetSignList(req, searchStr, startRow, maxRows);
+        }
+
+        [WebMethod(Description = "Retrieve Sign list closest to lat/lon pair for maxRows")]
+        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public Sign[] GetSignsNearJson(Request req, double lat, double lon, int startRow, int maxRows)
+        {
+            return GetSignListNear(req, lat, lon, startRow, maxRows);
         }
 
         [WebMethod(Description = "Retrieve Culvert list as JSON")]
@@ -7646,6 +7719,12 @@ namespace RoadaWebService
 
             return Result;
         }
+    }
+
+    public class DistInfo
+    {
+        public double Distance;
+        public int Id;
     }
 
     public class MQueue
