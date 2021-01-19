@@ -5976,7 +5976,7 @@ namespace RoadaWebService
         }
 
         [WebMethod(Description = "Retrieve Signs closest to lat/lon pair for maxRows")]
-        public Sign[] GetSignListNear(Request request, double lat, double lon, int startRow, int maxRows)
+        public Sign[] GetSignListNear(Request request, string searchStr, double lat, double lon, int startRow, int maxRows)
         {
             Sign[] Result = null;
 
@@ -5988,7 +5988,23 @@ namespace RoadaWebService
                 {
                     if (GetStmt(connStr, out stmt))
                     {
-                        bool rc = stmt.DoSQLFormat("SELECT TOP {0} *, geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326)) as dist FROM asset_sign WHERE latitude is not null and longitude is not null ORDER BY geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326))", maxRows + startRow, lat, lon);
+                        string sqlStr;
+                        if (lat == 0 && lon == 0)
+                        {
+                            if (searchStr == string.Empty)
+                                sqlStr = string.Format("SELECT TOP {0} * FROM asset_sign ORDER BY structure", maxRows + startRow);
+                            else
+                                sqlStr = string.Format("SELECT TOP {0} * FROM asset_sign WHERE structure LIKE '{1}' ORDER BY structure", maxRows + startRow, SqlHelper.FixUp(searchStr));
+                        }
+                        else
+                        {
+                            if (searchStr == string.Empty)
+                                sqlStr = string.Format("SELECT TOP {0} *, geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326)) as dist FROM asset_sign WHERE latitude is not null and longitude is not null ORDER BY geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326))", maxRows + startRow, lat, lon);
+                            else
+                                sqlStr = string.Format("SELECT TOP {0} *, geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326)) as dist FROM asset_sign WHERE latitude is not null and longitude is not null and structure LIKE '{3}' ORDER BY geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326))", maxRows + startRow, lat, lon, SqlHelper.FixUp(searchStr));
+                        }
+
+                        bool rc = stmt.DoSQL(sqlStr);
                         // scroll to the beginning of the rows we call
                         while (rc && startRow > 0)
                         {
@@ -6875,9 +6891,9 @@ namespace RoadaWebService
 
         [WebMethod(Description = "Retrieve Sign list closest to lat/lon pair for maxRows")]
         [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
-        public Sign[] GetSignsNearJson(Request req, double lat, double lon, int startRow, int maxRows)
+        public Sign[] GetSignsNearJson(Request req, string searchStr, double lat, double lon, int startRow, int maxRows)
         {
-            return GetSignListNear(req, lat, lon, startRow, maxRows);
+            return GetSignListNear(req, searchStr, lat, lon, startRow, maxRows);
         }
 
         [WebMethod(Description = "Retrieve Culvert list as JSON")]
