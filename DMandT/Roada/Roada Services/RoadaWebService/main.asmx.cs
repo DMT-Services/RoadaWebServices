@@ -5837,6 +5837,25 @@ namespace RoadaWebService
             return Result;
         }
 
+        private Bridge fillBridge(SqlStmt stmt)
+        {
+            Bridge b = new Bridge();
+            b.bridge = stmt.fetch("bridge");
+            b.structure = stmt.fetch("structure");
+            b.location = stmt.fetch("location");
+            b.name = stmt.fetch("name");
+            b.site = stmt.fetch("site");
+            b.type = stmt.fetch("type");
+            b.spans = stmt.ifetch("bridge");
+            b.length = stmt.dfetch("bridge");
+            b.width = stmt.dfetch("width");
+            b.latitude = stmt.dfetch("latitude");
+            b.longitude = stmt.dfetch("longitude");
+            b.notes = stmt.fetch("notes");
+            b.date = stmt.dtfetch("date");
+
+            return b;
+        }
 
         [WebMethod(Description = "Retrieve Bridges")]
         public Bridge[] GetBridgeList(Request request)
@@ -5851,30 +5870,11 @@ namespace RoadaWebService
                 {
                     if (GetStmt(connStr, out stmt))
                     {
-
-
                         List<Bridge> Bridges = new List<Bridge>();
-                        bool rc;
-
-                        rc = stmt.DoSQL("SELECT * FROM asset_bridge ORDER BY bridge");
+                        bool rc = stmt.DoSQL("SELECT * FROM asset_bridge ORDER BY bridge");
                         while (rc)
                         {
-                            Bridge b = new Bridge();
-                            b.bridge = stmt.fetch("bridge");
-                            b.structure = stmt.fetch("structure");
-                            b.location = stmt.fetch("location");
-                            b.name = stmt.fetch("name");
-                            b.site = stmt.fetch("site");
-                            b.type = stmt.fetch("type");
-                            b.spans = stmt.ifetch("bridge");
-                            b.length = stmt.dfetch("bridge");
-                            b.width = stmt.dfetch("width");
-                            b.latitude = stmt.dfetch("latitude");
-                            b.longitude = stmt.dfetch("longitude");
-                            b.notes = stmt.fetch("notes");
-                            b.date = stmt.dtfetch("date");
-
-                            Bridges.Add(b);
+                            Bridges.Add(fillBridge(stmt));
 
                             rc = stmt.dbSkip();
                         }
@@ -5886,6 +5886,72 @@ namespace RoadaWebService
                 {
                     Global.messLog.Flush("GetBridgeList() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
                     InsertErrorRecord(request.CustCode, string.Format("GetBridgeList() Failed to send HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message), request);
+                }
+                finally
+                {
+                    if (stmt != null)
+                    {
+                        stmt.Close();
+                        stmt = null;
+                    }
+                }
+            }
+            return Result;
+        }
+
+        [WebMethod(Description = "Retrieve Bridges closest to lat/lon pair for maxRows")]
+        public Bridge[] GetBridgeListNear(Request request, string searchStr, double lat, double lon, int startRow, int maxRows)
+        {
+            Bridge[] Result = null;
+
+            if (LowSecurityCheck(request, "GetBridgeListNear"))
+            {
+                string connStr = CustConnectionString(request);
+                SqlStmt stmt = null;
+                try
+                {
+                    if (GetStmt(connStr, out stmt))
+                    {
+                        string sqlStr;
+                        if (lat == 0 && lon == 0)
+                        {
+                            if (searchStr == string.Empty)
+                                sqlStr = string.Format("SELECT TOP {0} * FROM asset_bridge ORDER BY bridge", maxRows + startRow);
+                            else
+                                sqlStr = string.Format("SELECT TOP {0} * FROM asset_bridge WHERE bridge LIKE '{1}' ORDER BY bridge", maxRows + startRow, SqlHelper.FixUp(searchStr));
+                        }
+                        else
+                        {
+                            if (searchStr == string.Empty)
+                                sqlStr = string.Format("SELECT TOP {0} *, geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326)) as dist FROM asset_bridge WHERE latitude is not null and longitude is not null ORDER BY geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326))", maxRows + startRow, lat, lon);
+                            else
+                                sqlStr = string.Format("SELECT TOP {0} *, geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326)) as dist FROM asset_bridge WHERE latitude is not null and longitude is not null and bridge LIKE '{3}' ORDER BY geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326))", maxRows + startRow, lat, lon, SqlHelper.FixUp(searchStr));
+                        }
+
+                        bool rc = stmt.DoSQL(sqlStr);
+                        // scroll to the beginning of the rows we call
+                        while (rc && startRow > 0)
+                        {
+                            startRow--;
+                            rc = stmt.dbSkip();
+                        }
+
+                        // now get the data we want
+                        List<Bridge> Bridges = new List<Bridge>();
+                        while (rc)
+                        {
+                            Bridges.Add(fillBridge(stmt));
+
+                            rc = stmt.dbSkip();
+                        }
+                        Result = Bridges.ToArray();
+                        Bridges.Clear();
+                    }
+                }
+                catch (Exception x)
+                {
+                    Global.messLog.Flush("GetBridgeListNear() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
+                    InsertErrorRecord(request.CustCode, string.Format("GetBridgeListNear() Failed to send HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message), request);
                 }
                 finally
                 {
@@ -5974,7 +6040,7 @@ namespace RoadaWebService
             }
             return Result;
         }
-
+        
         [WebMethod(Description = "Retrieve Signs closest to lat/lon pair for maxRows")]
         public Sign[] GetSignListNear(Request request, string searchStr, double lat, double lon, int startRow, int maxRows)
         {
@@ -6041,7 +6107,6 @@ namespace RoadaWebService
         }
 
 
-
         [WebMethod(Description = "Retrieve Culverts assets")]
         public Culvert[] GetCulvertList(Request request)
         {
@@ -6101,11 +6166,9 @@ namespace RoadaWebService
             return Result;
         }
 
-
         [WebMethod(Description = "Push SendBridgeData Report")]
         public int SendBridgeData(Request req, BridgeInspectionData bdata)
         {
-
             int Result = 0;
             // low security check, don't want hackers!
             if (!LowSecurityCheck(req, "SendBridgeData"))
@@ -6141,17 +6204,18 @@ namespace RoadaWebService
                     sql.Add("sig_data", bdata.sigData);
                     sql.AddNow("idate");
 
-
                     stmt.DoSQL(sql.BuildInsert("INSERT INTO inspection_bridge"));
 
                     foreach (var item in bdata.bridgeItems)
                     {
                         sql.Clear();
 
-                        if (item.issue != null)
+                        // MUST have an issue # 
+                        if (item.issue > 0)
                         {
                             sql.Add("bridge", bdata.bridge);
                             sql.Add("date", bdata.date);
+
                             sql.Add("issue", item.issue);
                             sql.Add("defect", item.defect);
                             sql.Add("note", item.note);
@@ -6162,11 +6226,8 @@ namespace RoadaWebService
 
                             stmt.DoSQL(sql.BuildInsert("INSERT INTO inspection_bridge_item"));
                         }
-
                     }
-
                     Result = 1;
-
                 }
             }
             catch (Exception x)
@@ -6219,10 +6280,11 @@ namespace RoadaWebService
                     foreach (var item in bdata.signItems)
                     {
                         sql.Clear();
-                        if (item.issue != null)
+                        if (item.issue > 0)
                         {
                             sql.Add("structure", bdata.structure);
                             sql.Add("date", bdata.date);
+
                             sql.Add("issue", item.issue);
                             sql.Add("defect", item.defect);
                             sql.Add("note", item.note);
@@ -6340,13 +6402,10 @@ namespace RoadaWebService
             {
                 string connStr = CustConnectionString(request);
                 SqlStmt stmt = null;
-                SqlStmt stmt2 = null;
-                SqlStmt stmt3 = null;
                 try
                 {
-                    if (GetStmt(connStr, out stmt) && GetStmt(connStr, out stmt2) && GetStmt(connStr, out stmt3))
+                    if (GetStmt(connStr, out stmt))
                     {
-
                         List<BridgeInspectionData> Bridges = new List<BridgeInspectionData>();
 
                         foreach (var item in bridges)
@@ -6374,51 +6433,44 @@ namespace RoadaWebService
                                     b.inspector = stmt.fetch("inspector");
                                     b.repKey = stmt.fetch("repKey");
 
-
-                                    if (b.repKey.Length > 0)
+                                    bool rc;
+                                    if (b.repKey != string.Empty)
                                     {
-                                        bool rc = stmt3.DoSQLFormat("SELECT * FROM Img_events WHERE RepKey = '{0}'", b.repKey);
+                                        rc = stmt.DoSQLFormat("SELECT * FROM Img_events WHERE RepKey='{0}'", b.repKey);
                                         while (rc)
                                         {
                                             PhotoData pdata = new PhotoData();
 
                                             pdata.repkey = b.repKey;
-                                            pdata.imgUrl = stmt3.fetch("img_url");
+                                            pdata.imgUrl = stmt.fetch("img_url");
 
                                             b.photos.Add(pdata);
 
-                                            rc = stmt3.dbSkip();
+                                            rc = stmt.dbSkip();
                                         }
                                     }
 
-                                    bool rc2 = stmt2.DoSQLFormat("SELECT * FROM inspection_bridge_item WHERE date = '{0}' AND bridge = '{1}'", b.date, b.bridge);
-                                    while (rc2)
+                                    rc = stmt.DoSQLFormat("SELECT * FROM inspection_bridge_item WHERE bridge='{0}' and date={1}", b.bridge, SqlHelper.timeStamp(b.date));
+                                    while (rc)
                                     {
-
-
                                         BridgeItem bi = new BridgeItem();
                                         bi.bridge = b.bridge;
                                         bi.date = b.date;
-                                        bi.issue = stmt2.ifetch("issue");
-                                        bi.defect = stmt2.bfetch("defect");
-                                        bi.note = stmt2.fetch("note");
-                                        bi.tstate = stmt2.ifetch("tstate");
-                                        bi.groupEnabled = stmt2.bfetch("group_enabled");
-                                        bi.severity = stmt2.ifetch("severity");
+                                        bi.issue = stmt.ifetch("issue");
+                                        bi.defect = stmt.bfetch("defect");
+                                        bi.note = stmt.fetch("note");
+                                        bi.tstate = stmt.ifetch("tstate");
+                                        bi.groupEnabled = stmt.bfetch("group_enabled");
+                                        bi.severity = stmt.ifetch("severity");
 
                                         b.bridgeItems.Add(bi);
 
-                                        rc2 = stmt2.dbSkip();
-
+                                        rc = stmt.dbSkip();
                                     }
-
 
                                     Bridges.Add(b);
                                 }
-
                             }
-
-
                         }
                         Result = Bridges.ToArray();
                         Bridges.Clear();
@@ -6436,17 +6488,6 @@ namespace RoadaWebService
                         stmt.Close();
                         stmt = null;
                     }
-                    if (stmt2 != null)
-                    {
-                        stmt2.Close();
-                        stmt2 = null;
-                    }
-                    if (stmt3 != null)
-                    {
-                        stmt3.Close();
-                        stmt3 = null;
-                    }
-
                 }
             }
             return Result;
@@ -6880,6 +6921,13 @@ namespace RoadaWebService
         public Bridge[] GetBridgesJson(Request req)
         {
             return GetBridgeList(req);
+        }
+
+        [WebMethod(Description = "Retrieve Bridge list closest to lat/lon pair for maxRows")]
+        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public Bridge[] GetBridgesNearJson(Request req, string searchStr, double lat, double lon, int startRow, int maxRows)
+        {
+            return GetBridgeListNear(req, searchStr, lat, lon, startRow, maxRows);
         }
 
         [WebMethod(Description = "Retrieve Sign list as JSON using a LIKE clause for maxRows")]
