@@ -5989,6 +5989,24 @@ namespace RoadaWebService
             return s;
         }
 
+        private Culvert FillCulvert(SqlStmt stmt)
+        {
+
+            Culvert b = new Culvert();
+            b.structure = stmt.fetch("structure");
+            b.patrol = stmt.fetch("patrol");
+            b.region = stmt.fetch("region");
+            b.road = stmt.fetch("road");
+            b.location = stmt.fetch("location");
+            b.type = stmt.ifetch("type");
+            b.diameter = stmt.dfetch("diameter");
+            b.latitude = stmt.dfetch("latitude");
+            b.longitude = stmt.dfetch("longitude");
+            b.notes = stmt.fetch("notes");
+            b.date = stmt.dtfetch("date");
+            return b;
+        }
+
         [WebMethod(Description = "Retrieve Signs using a LIKE clause for maxRows")]
         public Sign[] GetSignList(Request request, string searchStr, int startRow, int maxRows)
         {
@@ -6106,6 +6124,72 @@ namespace RoadaWebService
             return Result;
         }
 
+
+
+        [WebMethod(Description = "Retrieve Culverts closest to lat/lon pair for maxRows")]
+        public Culvert[] GetCulvertListNear(Request request, string searchStr, double lat, double lon, int startRow, int maxRows)
+        {
+            Culvert[] Result = null;
+
+            if (LowSecurityCheck(request, "GetCulvertList"))
+            {
+                string connStr = CustConnectionString(request);
+                SqlStmt stmt = null;
+                try
+                {
+                    if (GetStmt(connStr, out stmt))
+                    {
+                        string sqlStr;
+                        if (lat == 0 && lon == 0)
+                        {
+                            if (searchStr == string.Empty)
+                                sqlStr = string.Format("SELECT TOP {0} * FROM asset_culvert ORDER BY structure", maxRows + startRow);
+                            else
+                                sqlStr = string.Format("SELECT TOP {0} * FROM asset_culvert WHERE structure LIKE '{1}' ORDER BY structure", maxRows + startRow, SqlHelper.FixUp(searchStr));
+                        }
+                        else
+                        {
+                            if (searchStr == string.Empty)
+                                sqlStr = string.Format("SELECT TOP {0} *, geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326)) as dist FROM asset_culvert WHERE latitude is not null and longitude is not null ORDER BY geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326))", maxRows + startRow, lat, lon);
+                            else
+                                sqlStr = string.Format("SELECT TOP {0} *, geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326)) as dist FROM asset_culvert WHERE latitude is not null and longitude is not null and structure LIKE '{3}' ORDER BY geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326))", maxRows + startRow, lat, lon, SqlHelper.FixUp(searchStr));
+                        }
+
+                        bool rc = stmt.DoSQL(sqlStr);
+                        // scroll to the beginning of the rows we call
+                        while (rc && startRow > 0)
+                        {
+                            startRow--;
+                            rc = stmt.dbSkip();
+                        }
+                        // now get the data we want
+                        List<Culvert> Culverts = new List<Culvert>();
+                        while (rc)
+                        {
+                            Culverts.Add(FillCulvert(stmt));
+
+                            rc = stmt.dbSkip();
+                        }
+                        Result = Culverts.ToArray();
+                        Culverts.Clear();
+                    }
+                }
+                catch (Exception x)
+                {
+                    Global.messLog.Flush("GetCulvertListNear() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
+                    InsertErrorRecord(request.CustCode, string.Format("GetSignListNear() Failed to send HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message), request);
+                }
+                finally
+                {
+                    if (stmt != null)
+                    {
+                        stmt.Close();
+                        stmt = null;
+                    }
+                }
+            }
+            return Result;
+        }
 
         [WebMethod(Description = "Retrieve Culverts assets")]
         public Culvert[] GetCulvertList(Request request)
@@ -6942,6 +7026,13 @@ namespace RoadaWebService
         public Sign[] GetSignsNearJson(Request req, string searchStr, double lat, double lon, int startRow, int maxRows)
         {
             return GetSignListNear(req, searchStr, lat, lon, startRow, maxRows);
+        }
+
+        [WebMethod(Description = "Retrieve Culvert list closest to lat/lon pair for maxRows")]
+        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public Culvert[] GetCulvertNearJson(Request req, string searchStr, double lat, double lon, int startRow, int maxRows)
+        {
+            return GetCulvertListNear(req, searchStr, lat, lon, startRow, maxRows);
         }
 
         [WebMethod(Description = "Retrieve Culvert list as JSON")]
