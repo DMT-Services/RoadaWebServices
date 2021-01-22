@@ -6177,7 +6177,7 @@ namespace RoadaWebService
                 catch (Exception x)
                 {
                     Global.messLog.Flush("GetCulvertListNear() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
-                    InsertErrorRecord(request.CustCode, string.Format("GetSignListNear() Failed to send HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message), request);
+                    InsertErrorRecord(request.CustCode, string.Format("GetCulvertListNear() Failed to send HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message), request);
                 }
                 finally
                 {
