@@ -6512,7 +6512,9 @@ namespace RoadaWebService
                                     b.longitude = stmt.dfetch("longitude");
                                     b.other = stmt.fetch("other");
                                     b.reco = stmt.fetch("reco");
-                                    b.date = stmt.dtfetch("date");
+                                    // remove millisecs which some older reports have
+                                    DateTime dt = stmt.dtfetch("date");
+                                    b.date = dt.AddTicks(-(dt.Ticks % TimeSpan.TicksPerSecond));
                                     b.road = stmt.fetch("road");
                                     b.inspector = stmt.fetch("inspector");
                                     b.repKey = stmt.fetch("repKey");
@@ -6534,7 +6536,8 @@ namespace RoadaWebService
                                         }
                                     }
 
-                                    rc = stmt.DoSQLFormat("SELECT * FROM inspection_bridge_item WHERE bridge='{0}' and date={1}", b.bridge, SqlHelper.timeStamp(b.date));
+                                    // the DATEADD(ms, -DATEPART(ms, date), date) is because some older inspections had millisecs in the date, this makes sure to ignore that
+                                    rc = stmt.DoSQLFormat("SELECT * FROM inspection_bridge_item WHERE bridge='{0}' and DATEADD(ms, -DATEPART(ms, date), date)={1}", b.bridge, SqlHelper.timeStamp(b.date));
                                     while (rc)
                                     {
                                         BridgeItem bi = new BridgeItem();
