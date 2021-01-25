@@ -6486,9 +6486,10 @@ namespace RoadaWebService
             {
                 string connStr = CustConnectionString(request);
                 SqlStmt stmt = null;
+                SqlStmt stmt2 = null;
                 try
                 {
-                    if (GetStmt(connStr, out stmt))
+                    if (GetStmt(connStr, out stmt) && GetStmt(connStr, out stmt2))
                     {
                         List<BridgeInspectionData> Bridges = new List<BridgeInspectionData>();
 
@@ -6496,7 +6497,8 @@ namespace RoadaWebService
                         {
                             if (item.bridge != null && item.bridge.Length > 0)
                             {
-                                if (stmt.DoSQLFormat("SELECT TOP 1 * FROM inspection_bridge WHERE bridge = '{0}' ORDER BY date desc", item.bridge))
+                                bool brc = stmt.DoSQLFormat("SELECT TOP 3 * FROM inspection_bridge WHERE bridge = '{0}' ORDER BY date desc", item.bridge);
+                                while(brc)
                                 {
                                     BridgeInspectionData b = new BridgeInspectionData();
                                     b.bridge = stmt.fetch("bridge");
@@ -6522,40 +6524,42 @@ namespace RoadaWebService
                                     bool rc;
                                     if (b.repKey != string.Empty)
                                     {
-                                        rc = stmt.DoSQLFormat("SELECT * FROM Img_events WHERE RepKey='{0}'", b.repKey);
+                                        rc = stmt2.DoSQLFormat("SELECT * FROM Img_events WHERE RepKey='{0}'", b.repKey);
                                         while (rc)
                                         {
                                             PhotoData pdata = new PhotoData();
 
                                             pdata.repkey = b.repKey;
-                                            pdata.imgUrl = stmt.fetch("img_url");
+                                            pdata.imgUrl = stmt2.fetch("img_url");
 
                                             b.photos.Add(pdata);
 
-                                            rc = stmt.dbSkip();
+                                            rc = stmt2.dbSkip();
                                         }
                                     }
 
                                     // the DATEADD(ms, -DATEPART(ms, date), date) is because some older inspections had millisecs in the date, this makes sure to ignore that
-                                    rc = stmt.DoSQLFormat("SELECT * FROM inspection_bridge_item WHERE bridge='{0}' and DATEADD(ms, -DATEPART(ms, date), date)={1}", b.bridge, SqlHelper.timeStamp(b.date));
+                                    rc = stmt2.DoSQLFormat("SELECT * FROM inspection_bridge_item WHERE bridge='{0}' and DATEADD(ms, -DATEPART(ms, date), date)={1}", b.bridge, SqlHelper.timeStamp(b.date));
                                     while (rc)
                                     {
                                         BridgeItem bi = new BridgeItem();
                                         bi.bridge = b.bridge;
                                         bi.date = b.date;
-                                        bi.issue = stmt.ifetch("issue");
-                                        bi.defect = stmt.bfetch("defect");
-                                        bi.note = stmt.fetch("note");
-                                        bi.tstate = stmt.ifetch("tstate");
-                                        bi.groupEnabled = stmt.bfetch("group_enabled");
-                                        bi.severity = stmt.ifetch("severity");
+                                        bi.issue = stmt2.ifetch("issue");
+                                        bi.defect = stmt2.bfetch("defect");
+                                        bi.note = stmt2.fetch("note");
+                                        bi.tstate = stmt2.ifetch("tstate");
+                                        bi.groupEnabled = stmt2.bfetch("group_enabled");
+                                        bi.severity = stmt2.ifetch("severity");
 
                                         b.bridgeItems.Add(bi);
 
-                                        rc = stmt.dbSkip();
+                                        rc = stmt2.dbSkip();
                                     }
 
                                     Bridges.Add(b);
+
+                                    brc = stmt.dbSkip();
                                 }
                             }
                         }
