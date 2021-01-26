@@ -6478,7 +6478,7 @@ namespace RoadaWebService
 
 
         [WebMethod(Description = "Retrieve Bridges inspections")]
-        public BridgeInspectionData[] GetBridgeInsectionList(Request request, Bridge[] bridges)
+        public BridgeInspectionData[] GetBridgeInsectionList(Request request, Bridge[] bridges, int maxInsp)
         {
             BridgeInspectionData[] Result = null;
 
@@ -6497,7 +6497,7 @@ namespace RoadaWebService
                         {
                             if (item.bridge != null && item.bridge.Length > 0)
                             {
-                                bool brc = stmt.DoSQLFormat("SELECT TOP 3 * FROM inspection_bridge WHERE bridge = '{0}' ORDER BY date desc", item.bridge);
+                                bool brc = stmt.DoSQLFormat("SELECT TOP {0} * FROM inspection_bridge WHERE bridge='{1}' ORDER BY date desc", maxInsp, item.bridge);
                                 while(brc)
                                 {
                                     BridgeInspectionData b = new BridgeInspectionData();
@@ -6616,7 +6616,11 @@ namespace RoadaWebService
                                 while(rc3)
                                 {
                                     SignInspectionData s = new SignInspectionData();
-                                    s.date = stmt.dtfetch("date");
+
+                                    // remove millisecs which some older reports have
+                                    DateTime dt = stmt.dtfetch("date");
+                                    s.date = dt.AddTicks(-(dt.Ticks % TimeSpan.TicksPerSecond));
+
                                     s.structure = stmt.fetch("structure");
                                     s.inspector = stmt.fetch("inspector");
                                     s.notes = stmt.fetch("notes");
@@ -6641,7 +6645,8 @@ namespace RoadaWebService
                                         }
                                     }
 
-                                    bool rc2 = stmt2.DoSQLFormat("SELECT * FROM inspection_sign_item WHERE date = '{0}' AND structure = '{1}'", s.date, s.structure);
+                                    // the DATEADD(ms, -DATEPART(ms, date), date) is because some older inspections had millisecs in the date, this makes sure to ignore that
+                                    bool rc2 = stmt2.DoSQLFormat("SELECT * FROM inspection_sign_item WHERE DATEADD(ms, -DATEPART(ms, date), date)={0} AND structure = '{1}'", SqlHelper.timeStamp(s.date), s.structure);
                                     while (rc2)
                                     {
                                         SignItem si = new SignItem();
@@ -7058,9 +7063,9 @@ namespace RoadaWebService
 
         [WebMethod(Description = "Retrieve Bridge Data as JSON")]
         [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
-        public BridgeInspectionData[] GetBridgeDataJson(Request req, Bridge[] bridges)
+        public BridgeInspectionData[] GetBridgeDataJson(Request req, Bridge[] bridges, int maxInsp)
         {
-            return GetBridgeInsectionList(req, bridges);
+            return GetBridgeInsectionList(req, bridges, maxInsp);
         }
 
         [WebMethod(Description = "Retrieve Sign Data as JSON")]
