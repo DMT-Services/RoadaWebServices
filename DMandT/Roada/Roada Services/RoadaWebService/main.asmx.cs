@@ -6143,16 +6143,16 @@ namespace RoadaWebService
                         if (lat == 0 && lon == 0)
                         {
                             if (searchStr == string.Empty)
-                                sqlStr = string.Format("SELECT TOP {0} * FROM asset_culvert ORDER BY structure", maxRows + startRow);
+                                sqlStr = string.Format("SELECT TOP {0} * FROM asset_culvert WHERE type = 3 or type = 4 ORDER BY structure", maxRows + startRow);
                             else
-                                sqlStr = string.Format("SELECT TOP {0} * FROM asset_culvert WHERE structure LIKE '{1}' ORDER BY structure", maxRows + startRow, SqlHelper.FixUp(searchStr));
+                                sqlStr = string.Format("SELECT TOP {0} * FROM asset_culvert WHERE (type = 3 or type = 4) and structure LIKE '{1}' ORDER BY structure", maxRows + startRow, SqlHelper.FixUp(searchStr));
                         }
                         else
                         {
                             if (searchStr == string.Empty)
-                                sqlStr = string.Format("SELECT TOP {0} *, geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326)) as dist FROM asset_culvert WHERE latitude is not null and longitude is not null ORDER BY geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326))", maxRows + startRow, lat, lon);
+                                sqlStr = string.Format("SELECT TOP {0} *, geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326)) as dist FROM asset_culvert WHERE (type = 3 or type = 4) and latitude is not null and longitude is not null ORDER BY geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326))", maxRows + startRow, lat, lon);
                             else
-                                sqlStr = string.Format("SELECT TOP {0} *, geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326)) as dist FROM asset_culvert WHERE latitude is not null and longitude is not null and structure LIKE '{3}' ORDER BY geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326))", maxRows + startRow, lat, lon, SqlHelper.FixUp(searchStr));
+                                sqlStr = string.Format("SELECT TOP {0} *, geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326)) as dist FROM asset_culvert WHERE (type = 3 or type = 4) and latitude is not null and longitude is not null and structure LIKE '{3}' ORDER BY geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326))", maxRows + startRow, lat, lon, SqlHelper.FixUp(searchStr));
                         }
 
                         bool rc = stmt.DoSQL(sqlStr);
@@ -6586,7 +6586,7 @@ namespace RoadaWebService
 
 
         [WebMethod(Description = "Retrieve Sign inspections")]
-        public SignInspectionData[] GetSignInspectionList(Request request,  Sign[] signs)
+        public SignInspectionData[] GetSignInspectionList(Request request,  Sign[] signs, int maxInsp)
         {
             SignInspectionData[] Result = null;
 
@@ -6607,7 +6607,8 @@ namespace RoadaWebService
                         {
                             if (item.structure != null && item.structure.Length > 0)
                             {
-                                if (stmt.DoSQLFormat("SELECT TOP 1 * FROM inspection_sign WHERE structure = '{0}' ORDER BY date desc", item.structure))
+                                bool rc3 = stmt.DoSQLFormat("SELECT TOP {1} * FROM inspection_sign WHERE structure = '{0}' ORDER BY date desc", item.structure, maxInsp);
+                                while(rc3)
                                 {
                                     SignInspectionData s = new SignInspectionData();
                                     s.date = stmt.dtfetch("date");
@@ -6654,8 +6655,9 @@ namespace RoadaWebService
 
                                     }
 
-
                                     Signs.Add(s);
+
+                                    rc3 = stmt.dbSkip();
                                 }
 
                             }
@@ -7058,9 +7060,9 @@ namespace RoadaWebService
 
         [WebMethod(Description = "Retrieve Sign Data as JSON")]
         [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
-        public SignInspectionData[] GetSignDataJson(Request req, Sign[] signs)
+        public SignInspectionData[] GetSignDataJson(Request req, Sign[] signs, int maxInsp)
         {
-            return GetSignInspectionList(req, signs);
+            return GetSignInspectionList(req, signs, maxInsp);
         }
 
         [WebMethod(Description = "Retrieve Culvert Data as JSON")]
