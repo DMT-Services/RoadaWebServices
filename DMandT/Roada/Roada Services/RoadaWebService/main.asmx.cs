@@ -6482,7 +6482,7 @@ namespace RoadaWebService
         {
             BridgeInspectionData[] Result = null;
 
-            if (LowSecurityCheck(request, "GetBridgeList"))
+            if (LowSecurityCheck(request, "GetBridgeInspectionList"))
             {
                 string connStr = CustConnectionString(request);
                 SqlStmt stmt = null;
@@ -6491,6 +6491,7 @@ namespace RoadaWebService
                 {
                     if (GetStmt(connStr, out stmt) && GetStmt(connStr, out stmt2))
                     {
+                        maxInsp = Math.Max(1, maxInsp);
                         List<BridgeInspectionData> Bridges = new List<BridgeInspectionData>();
 
                         foreach (var item in bridges)
@@ -6569,8 +6570,8 @@ namespace RoadaWebService
                 }
                 catch (Exception x)
                 {
-                    Global.messLog.Flush("GetBridgeData() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
-                    InsertErrorRecord(request.CustCode, string.Format("GetBridgeData() Failed to send HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message), request);
+                    Global.messLog.Flush("GetBridgeInspectionList() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
+                    InsertErrorRecord(request.CustCode, string.Format("GetBridgeInspectionList() Failed to send HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message), request);
                 }
                 finally
                 {
@@ -6605,7 +6606,7 @@ namespace RoadaWebService
                 {
                     if (GetStmt(connStr, out stmt) && GetStmt(connStr, out stmt2) && GetStmt(connStr, out stmt3))
                     {
-
+                        maxInsp = Math.Max(1, maxInsp);
                         List<SignInspectionData> Signs = new List<SignInspectionData>();
 
                         foreach (var item in signs)
@@ -6706,95 +6707,91 @@ namespace RoadaWebService
             return Result;
         }
 
-
-
         [WebMethod(Description = "Retrieve Culverts inspections")]
-        public CulvertInspectionData[] GetCulvertInsectionList(Request request, Culvert[] culvertItems)
+        public CulvertInspectionData[] GetCulvertInsectionList(Request request, Culvert[] culvertItems, int maxInsp)
         {
             CulvertInspectionData[] Result = null;
 
-            if (LowSecurityCheck(request, "GetBridgeList"))
+            if (LowSecurityCheck(request, "GetCulvertInspectionList"))
             {
                 string connStr = CustConnectionString(request);
                 SqlStmt stmt = null;
                 SqlStmt stmt2 = null;
-                SqlStmt stmt3 = null;
                 try
                 {
-                    if (GetStmt(connStr, out stmt) && GetStmt(connStr, out stmt2) && GetStmt(connStr, out stmt3))
+                    if (GetStmt(connStr, out stmt) && GetStmt(connStr, out stmt2))
                     {
-
+                        maxInsp = Math.Max(1, maxInsp);
                         List<CulvertInspectionData> Culverts = new List<CulvertInspectionData>();
 
                         foreach (var item in culvertItems)
                         {
                             if (item.structure != null && item.structure.Length > 0)
                             {
-                                if (stmt.DoSQLFormat("SELECT TOP 1 * FROM inspection_culvert WHERE structure = '{0}' ORDER BY date desc", item.structure))
+                                bool crc = stmt.DoSQLFormat("SELECT TOP {0} * FROM inspection_culvert WHERE structure='{1}' ORDER BY date desc", maxInsp, item.structure);
+                                while(crc)
                                 {
-                                    CulvertInspectionData b = new CulvertInspectionData();
+                                    CulvertInspectionData c = new CulvertInspectionData();
                                    
-                                    b.structure = stmt.fetch("structure");
-                                    b.location = stmt.fetch("location");
-                                    b.name = stmt.fetch("name");
-                                    b.road = stmt.fetch("road");
-                                    b.type = stmt.ifetch("type");
-                                    b.diameter = stmt.dfetch("diameter");
-                                    b.latitude = stmt.dfetch("latitude");
-                                    b.longitude = stmt.dfetch("longitude");
-                                    b.other = stmt.fetch("other");
-                                    b.region = stmt.fetch("region");
-                                    b.patrol = stmt.fetch("patrol");
-                                    b.date = stmt.dtfetch("date");
-                                    b.road = stmt.fetch("road");
-                                    b.inspector = stmt.fetch("inspector");
-                                    b.repKey = stmt.fetch("repKey");
+                                    c.structure = stmt.fetch("structure");
+                                    c.location = stmt.fetch("location");
+                                    c.name = stmt.fetch("name");
+                                    c.road = stmt.fetch("road");
+                                    c.type = stmt.ifetch("type");
+                                    c.diameter = stmt.dfetch("diameter");
+                                    c.latitude = stmt.dfetch("latitude");
+                                    c.longitude = stmt.dfetch("longitude");
+                                    c.other = stmt.fetch("other");
+                                    c.region = stmt.fetch("region");
+                                    c.patrol = stmt.fetch("patrol");
+                                    // remove millisecs which some older reports have
+                                    DateTime dt = stmt.dtfetch("date");
+                                    c.date = dt.AddTicks(-(dt.Ticks % TimeSpan.TicksPerSecond));
 
+                                    c.road = stmt.fetch("road");
+                                    c.inspector = stmt.fetch("inspector");
+                                    c.repKey = stmt.fetch("repKey");
 
-                                    if (b.repKey.Length > 0)
+                                    if (c.repKey.Length > 0)
                                     {
-                                        bool rc = stmt3.DoSQLFormat("SELECT * FROM Img_events WHERE RepKey = '{0}'", b.repKey);
+                                        bool rc = stmt2.DoSQLFormat("SELECT * FROM Img_events WHERE RepKey = '{0}'", c.repKey);
                                         while (rc)
                                         {
                                             PhotoData pdata = new PhotoData();
 
-                                            pdata.repkey = b.repKey;
-                                            pdata.imgUrl = stmt3.fetch("img_url");
+                                            pdata.repkey = c.repKey;
+                                            pdata.imgUrl = stmt2.fetch("img_url");
 
-                                            b.photos.Add(pdata);
+                                            c.photos.Add(pdata);
 
-                                            rc = stmt3.dbSkip();
+                                            rc = stmt2.dbSkip();
                                         }
                                     }
 
-                                    bool rc2 = stmt2.DoSQLFormat("SELECT * FROM inspection_culvert_item WHERE date = '{0}' AND structure = '{1}'", b.date, b.structure);
+                                    // the DATEADD(ms, -DATEPART(ms, date), date) is because some older inspections had millisecs in the date, this makes sure to ignore that
+                                    bool rc2 = stmt2.DoSQLFormat("SELECT * FROM inspection_culvert_item WHERE DATEADD(ms, -DATEPART(ms, date), date)={0} AND structure='{1}'", SqlHelper.timeStamp(c.date), c.structure);
                                     while (rc2)
                                     {
+                                        CulvertItem ci = new CulvertItem();
+                                        ci.structure = c.structure;
+                                        ci.date = c.date;
+                                        ci.issue = stmt2.ifetch("issue");
+                                        ci.defect = stmt2.bfetch("defect");
+                                        ci.note = stmt2.fetch("note");
+                                        ci.tstate = stmt2.ifetch("tstate");
+                                        ci.groupEnabled = stmt2.bfetch("group_enabled");
+                                        ci.severity = stmt2.ifetch("severity");
 
-
-                                        CulvertItem bi = new CulvertItem();
-                                        bi.structure = b.structure;
-                                        bi.date = b.date;
-                                        bi.issue = stmt2.ifetch("issue");
-                                        bi.defect = stmt2.bfetch("defect");
-                                        bi.note = stmt2.fetch("note");
-                                        bi.tstate = stmt2.ifetch("tstate");
-                                        bi.groupEnabled = stmt2.bfetch("group_enabled");
-                                        bi.severity = stmt2.ifetch("severity");
-
-                                        b.culvertItems.Add(bi);
+                                        c.culvertItems.Add(ci);
 
                                         rc2 = stmt2.dbSkip();
-
                                     }
 
+                                    Culverts.Add(c);
 
-                                    Culverts.Add(b);
+                                    crc = stmt.dbSkip();
                                 }
-
                             }
-
-
                         }
                         Result = Culverts.ToArray();
                         Culverts.Clear();
@@ -6802,8 +6799,8 @@ namespace RoadaWebService
                 }
                 catch (Exception x)
                 {
-                    Global.messLog.Flush("GetBridgeData() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
-                    InsertErrorRecord(request.CustCode, string.Format("GetBridgeData() Failed to send HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message), request);
+                    Global.messLog.Flush("GetCulvertInspectionList() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
+                    InsertErrorRecord(request.CustCode, string.Format("GetCulvertInspectionList() Failed to send HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message), request);
                 }
                 finally
                 {
@@ -6817,12 +6814,6 @@ namespace RoadaWebService
                         stmt2.Close();
                         stmt2 = null;
                     }
-                    if (stmt3 != null)
-                    {
-                        stmt3.Close();
-                        stmt3 = null;
-                    }
-
                 }
             }
             return Result;
@@ -7077,9 +7068,9 @@ namespace RoadaWebService
 
         [WebMethod(Description = "Retrieve Culvert Data as JSON")]
         [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
-        public CulvertInspectionData[] GetCulvertDataJson(Request req, Culvert[] culvert)
+        public CulvertInspectionData[] GetCulvertDataJson(Request req, Culvert[] culvert, int maxInsp)
         {
-            return GetCulvertInsectionList(req, culvert);
+            return GetCulvertInsectionList(req, culvert, maxInsp);
         }
         
         [WebMethod(Description = "Retrieve vehicle types listing")]
