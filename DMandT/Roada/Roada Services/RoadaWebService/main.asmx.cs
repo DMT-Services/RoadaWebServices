@@ -6574,6 +6574,11 @@ namespace RoadaWebService
                 }
                 finally
                 {
+                    if (stmt2 != null)
+                    {
+                        stmt2.Close();
+                        stmt2 = null;
+                    }
                     if (stmt != null)
                     {
                         stmt.Close();
