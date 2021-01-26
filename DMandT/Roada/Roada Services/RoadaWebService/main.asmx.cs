@@ -5965,6 +5965,128 @@ namespace RoadaWebService
             return Result;
         }
 
+        private Pond fillPond(SqlStmt stmt)
+        {
+            Pond b = new Pond();
+            b.pond = stmt.fetch("pond");
+            b.location = stmt.fetch("location");
+            b.name = stmt.fetch("name");
+            b.latitude = stmt.dfetch("latitude");
+            b.longitude = stmt.dfetch("longitude");
+            b.notes = stmt.fetch("notes");
+            b.date = stmt.dtfetch("date");
+
+            return b;
+        }
+
+        [WebMethod(Description = "Retrieve Ponds")]
+        public Pond[] GetPondList(Request request)
+        {
+            Pond[] Result = null;
+
+            if (LowSecurityCheck(request, "GetPondList"))
+            {
+                string connStr = CustConnectionString(request);
+                SqlStmt stmt = null;
+                try
+                {
+                    if (GetStmt(connStr, out stmt))
+                    {
+                        List<Pond> Ponds = new List<Pond>();
+                        bool rc = stmt.DoSQL("SELECT * FROM asset_pond ORDER BY pond");
+                        while (rc)
+                        {
+                            Ponds.Add(fillPond(stmt));
+
+                            rc = stmt.dbSkip();
+                        }
+                        Result = Ponds.ToArray();
+                        Ponds.Clear();
+                    }
+                }
+                catch (Exception x)
+                {
+                    Global.messLog.Flush("GetPondList() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
+                    InsertErrorRecord(request.CustCode, string.Format("GetPondList() Failed to send HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message), request);
+                }
+                finally
+                {
+                    if (stmt != null)
+                    {
+                        stmt.Close();
+                        stmt = null;
+                    }
+                }
+            }
+            return Result;
+        }
+
+        [WebMethod(Description = "Retrieve Ponds closest to lat/lon pair for maxRows")]
+        public Pond[] GetPondListNear(Request request, string searchStr, double lat, double lon, int startRow, int maxRows)
+        {
+            Pond[] Result = null;
+
+            if (LowSecurityCheck(request, "GetPondListNear"))
+            {
+                string connStr = CustConnectionString(request);
+                SqlStmt stmt = null;
+                try
+                {
+                    if (GetStmt(connStr, out stmt))
+                    {
+                        string sqlStr;
+                        if (lat == 0 && lon == 0)
+                        {
+                            if (searchStr == string.Empty)
+                                sqlStr = string.Format("SELECT TOP {0} * FROM asset_pond ORDER BY pond", maxRows + startRow);
+                            else
+                                sqlStr = string.Format("SELECT TOP {0} * FROM asset_pond WHERE pond LIKE '{1}' ORDER BY pond", maxRows + startRow, SqlHelper.FixUp(searchStr));
+                        }
+                        else
+                        {
+                            if (searchStr == string.Empty)
+                                sqlStr = string.Format("SELECT TOP {0} *, geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326)) as dist FROM asset_pond WHERE latitude is not null and longitude is not null ORDER BY geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326))", maxRows + startRow, lat, lon);
+                            else
+                                sqlStr = string.Format("SELECT TOP {0} *, geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326)) as dist FROM asset_pond WHERE latitude is not null and longitude is not null and pond LIKE '{3}' ORDER BY geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326))", maxRows + startRow, lat, lon, SqlHelper.FixUp(searchStr));
+                        }
+
+                        bool rc = stmt.DoSQL(sqlStr);
+                        // scroll to the beginning of the rows we call
+                        while (rc && startRow > 0)
+                        {
+                            startRow--;
+                            rc = stmt.dbSkip();
+                        }
+
+                        // now get the data we want
+                        List<Pond> Ponds = new List<Pond>();
+                        while (rc)
+                        {
+                            Ponds.Add(fillPond(stmt));
+
+                            rc = stmt.dbSkip();
+                        }
+                        Result = Ponds.ToArray();
+                        Ponds.Clear();
+                    }
+                }
+                catch (Exception x)
+                {
+                    Global.messLog.Flush("GetPondListNear() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
+                    InsertErrorRecord(request.CustCode, string.Format("GetBridgeListNear() Failed to send HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message), request);
+                }
+                finally
+                {
+                    if (stmt != null)
+                    {
+                        stmt.Close();
+                        stmt = null;
+                    }
+                }
+            }
+            return Result;
+        }
+
         private Sign FillSign(SqlStmt stmt)
         {
             Sign s = new Sign();
@@ -6319,6 +6441,77 @@ namespace RoadaWebService
                 Result = -4;
                 Global.messLog.Flush("SendBridgeData() HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, x.Message);
                 InsertErrorRecord(req.CustCode, "SendBridgeData() " + x.Message, req);
+            }
+            finally
+            {
+                if (stmt != null)
+                    stmt.Close();
+            }
+            return Result;
+        }
+
+        [WebMethod(Description = "Push SendPondData Report")]
+        public int SendPondData(Request req, PondInspectionData bdata)
+        {
+            int Result = 0;
+            // low security check, don't want hackers!
+            if (!LowSecurityCheck(req, "SendPondData"))
+                return -2;
+
+            string connStr = CustConnectionString(req);
+            SqlStmt stmt = null;
+            try
+            {
+                Result = -3;
+                if (GetStmt(connStr, out stmt))
+                {
+                    SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
+                    DateTime now = DateTime.Now.ToLocalTime();
+
+                    sql.Add("pond", bdata.pond);
+                    sql.Add("location", bdata.location);
+                    sql.Add("name", bdata.name);
+                    sql.Add("site", bdata.site);
+                    sql.Add("latitude", bdata.latitude);
+                    sql.Add("longitude", bdata.longitude);
+                    sql.Add("other", bdata.other);
+                    sql.Add("date", bdata.date);
+                    sql.Add("road", bdata.road);
+                    sql.Add("inspector", bdata.inspector);
+                    sql.Add("repKey", bdata.repKey);
+                    sql.Add("sig_data", bdata.sigData);
+                    sql.AddNow("idate");
+
+                    stmt.DoSQL(sql.BuildInsert("INSERT INTO inspection_pond"));
+
+                    foreach (var item in bdata.pondItems)
+                    {
+                        sql.Clear();
+
+                        // MUST have an issue # 
+                        if (item.issue > 0)
+                        {
+                            sql.Add("pond", bdata.pond);
+                            sql.Add("date", bdata.date);
+
+                            sql.Add("issue", item.issue);
+                            sql.Add("defect", item.defect);
+                            sql.Add("note", item.note);
+                            sql.Add("tstate", item.tstate);
+                            sql.Add("group_enabled", item.groupEnabled);
+                            sql.AddNow("idate");
+
+                            stmt.DoSQL(sql.BuildInsert("INSERT INTO inspection_pond_item"));
+                        }
+                    }
+                    Result = 1;
+                }
+            }
+            catch (Exception x)
+            {
+                Result = -4;
+                Global.messLog.Flush("SendPondData() HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, x.Message);
+                InsertErrorRecord(req.CustCode, "SendPondData() " + x.Message, req);
             }
             finally
             {
@@ -6996,6 +7189,13 @@ namespace RoadaWebService
             return SendBridgeData(req, bdata);
         }
 
+        [WebMethod(Description = "Send Ponddata as JSON")]
+        [ScriptMethod(UseHttpGet = false, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public int SendPondDataJson(Request req, PondInspectionData bdata)
+        {
+            return SendPondData(req, bdata);
+        }
+
         [WebMethod(Description = "Send Signdata as JSON")]
         [ScriptMethod(UseHttpGet = false, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
         public int SendSignDataJson(Request req, SignInspectionData sdata)
@@ -7022,6 +7222,20 @@ namespace RoadaWebService
         public Bridge[] GetBridgesNearJson(Request req, string searchStr, double lat, double lon, int startRow, int maxRows)
         {
             return GetBridgeListNear(req, searchStr, lat, lon, startRow, maxRows);
+        }
+
+        [WebMethod(Description = "Retrieve Pond list as JSON")]
+        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public Pond[] GetPondsJson(Request req)
+        {
+            return GetPondList(req);
+        }
+
+        [WebMethod(Description = "Retrieve Pond list closest to lat/lon pair for maxRows")]
+        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public Pond[] GetPondsNearJson(Request req, string searchStr, double lat, double lon, int startRow, int maxRows)
+        {
+            return GetPondListNear(req, searchStr, lat, lon, startRow, maxRows);
         }
 
         [WebMethod(Description = "Retrieve Sign list as JSON using a LIKE clause for maxRows")]

@@ -911,6 +911,65 @@ namespace RoadaWebService
     }
 
     [DataContract]
+    public class PondInspectionData
+    {
+
+        public PondInspectionData()
+        {
+            this.pondItems = new List<PondItem>();
+            this.photos = new List<PhotoData>();
+        }
+        [DataMember]
+        public DateTime date { get; set; }
+        [DataMember]
+        public string road { get; set; }
+        [DataMember]
+        public string location { get; set; }
+        [DataMember]
+        public string inspector { get; set; }
+        [DataMember]
+        public string pond { get; set; }
+        [DataMember]
+        public string name { get; set; }
+        [DataMember]
+        public string site { get; set; }
+        [DataMember]
+        public double latitude { get; set; }
+        [DataMember]
+        public double longitude { get; set; }
+        [DataMember]
+        public string other { get; set; }
+        [DataMember]
+        public List<short> sigData { get; set; }
+        [DataMember]
+        public List<PondItem> pondItems { get; set; }
+        [DataMember]
+        public string repKey { get; set; }
+        [DataMember]
+        public List<PhotoData> photos { get; set; }
+
+    }
+
+    [DataContract]
+    public class PondItem
+    {
+        [DataMember]
+        public DateTime date { get; set; }
+        [DataMember]
+        public int issue { get; set; }
+        [DataMember]
+        public bool defect { get; set; }
+        [DataMember]
+        public string note { get; set; }
+        [DataMember]
+        public int tstate { get; set; }
+        [DataMember]
+        public bool groupEnabled { get; set; }
+        [DataMember]
+        public string pond { get; set; }
+    }
+
+    [DataContract]
     public class SignInspectionData
     {
 
@@ -986,6 +1045,27 @@ namespace RoadaWebService
         public double length { get; set; }
         [DataMember]
         public double width { get; set; }
+        [DataMember]
+        public double latitude { get; set; }
+        [DataMember]
+        public double longitude { get; set; }
+        [DataMember]
+        public string notes { get; set; }
+        [DataMember]
+        public DateTime date { get; set; }
+    }
+
+    [DataContract]
+    public class Pond
+    {
+        [DataMember]
+        public string pond { get; set; }
+        [DataMember]
+        public string road { get; set; }
+        [DataMember]
+        public string location { get; set; }
+        [DataMember]
+        public string name { get; set; }
         [DataMember]
         public double latitude { get; set; }
         [DataMember]
