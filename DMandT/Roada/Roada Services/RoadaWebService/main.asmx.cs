@@ -6073,7 +6073,251 @@ namespace RoadaWebService
                 catch (Exception x)
                 {
                     Global.messLog.Flush("GetPondListNear() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
-                    InsertErrorRecord(request.CustCode, string.Format("GetBridgeListNear() Failed to send HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message), request);
+                    InsertErrorRecord(request.CustCode, string.Format("GetPondListNear() Failed to send HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message), request);
+                }
+                finally
+                {
+                    if (stmt != null)
+                    {
+                        stmt.Close();
+                        stmt = null;
+                    }
+                }
+            }
+            return Result;
+        }
+
+        private Beaver fillBeaver(SqlStmt stmt)
+        {
+            Beaver b = new Beaver();
+            b.beaver = stmt.fetch("beaver");
+            b.location = stmt.fetch("location");
+            b.name = stmt.fetch("name");
+            b.latitude = stmt.dfetch("latitude");
+            b.longitude = stmt.dfetch("longitude");
+            b.notes = stmt.fetch("notes");
+            b.date = stmt.dtfetch("date");
+
+            return b;
+        }
+
+        [WebMethod(Description = "Retrieve Beavers")]
+        public Beaver[] GetBeaverList(Request request)
+        {
+            Beaver[] Result = null;
+
+            if (LowSecurityCheck(request, "GetBeaverList"))
+            {
+                string connStr = CustConnectionString(request);
+                SqlStmt stmt = null;
+                try
+                {
+                    if (GetStmt(connStr, out stmt))
+                    {
+                        List<Beaver> Beavers = new List<Beaver>();
+                        bool rc = stmt.DoSQL("SELECT * FROM asset_beaver ORDER BY pond");
+                        while (rc)
+                        {
+                            Beavers.Add(fillBeaver(stmt));
+
+                            rc = stmt.dbSkip();
+                        }
+                        Result = Beavers.ToArray();
+                        Beavers.Clear();
+                    }
+                }
+                catch (Exception x)
+                {
+                    Global.messLog.Flush("GetBeaverList() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
+                    InsertErrorRecord(request.CustCode, string.Format("GetBeaverList() Failed to send HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message), request);
+                }
+                finally
+                {
+                    if (stmt != null)
+                    {
+                        stmt.Close();
+                        stmt = null;
+                    }
+                }
+            }
+            return Result;
+        }
+
+        [WebMethod(Description = "Retrieve Beavers closest to lat/lon pair for maxRows")]
+        public Beaver[] GetBeaverListNear(Request request, string searchStr, double lat, double lon, int startRow, int maxRows)
+        {
+            Beaver[] Result = null;
+
+            if (LowSecurityCheck(request, "GetBeaverListNear"))
+            {
+                string connStr = CustConnectionString(request);
+                SqlStmt stmt = null;
+                try
+                {
+                    if (GetStmt(connStr, out stmt))
+                    {
+                        string sqlStr;
+                        if (lat == 0 && lon == 0)
+                        {
+                            if (searchStr == string.Empty)
+                                sqlStr = string.Format("SELECT TOP {0} * FROM asset_beaver ORDER BY pond", maxRows + startRow);
+                            else
+                                sqlStr = string.Format("SELECT TOP {0} * FROM asset_beaver WHERE pond LIKE '{1}' ORDER BY beaver", maxRows + startRow, SqlHelper.FixUp(searchStr));
+                        }
+                        else
+                        {
+                            if (searchStr == string.Empty)
+                                sqlStr = string.Format("SELECT TOP {0} *, geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326)) as dist FROM asset_beaver WHERE latitude is not null and longitude is not null ORDER BY geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326))", maxRows + startRow, lat, lon);
+                            else
+                                sqlStr = string.Format("SELECT TOP {0} *, geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326)) as dist FROM asset_beaver WHERE latitude is not null and longitude is not null and beaver LIKE '{3}' ORDER BY geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326))", maxRows + startRow, lat, lon, SqlHelper.FixUp(searchStr));
+                        }
+
+                        bool rc = stmt.DoSQL(sqlStr);
+                        // scroll to the beginning of the rows we call
+                        while (rc && startRow > 0)
+                        {
+                            startRow--;
+                            rc = stmt.dbSkip();
+                        }
+
+                        // now get the data we want
+                        List<Beaver> Beavers = new List<Beaver>();
+                        while (rc)
+                        {
+                            Beavers.Add(fillBeaver(stmt));
+
+                            rc = stmt.dbSkip();
+                        }
+                        Result = Beavers.ToArray();
+                        Beavers.Clear();
+                    }
+                }
+                catch (Exception x)
+                {
+                    Global.messLog.Flush("GetPondListNear() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
+                    InsertErrorRecord(request.CustCode, string.Format("GetPondListNear() Failed to send HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message), request);
+                }
+                finally
+                {
+                    if (stmt != null)
+                    {
+                        stmt.Close();
+                        stmt = null;
+                    }
+                }
+            }
+            return Result;
+        }
+
+        private Fence fillFence(SqlStmt stmt)
+        {
+            Fence b = new Fence();
+            b.fence = stmt.fetch("fence");
+            b.location = stmt.fetch("location");
+            b.name = stmt.fetch("name");
+            b.latitude = stmt.dfetch("latitude");
+            b.longitude = stmt.dfetch("longitude");
+            b.notes = stmt.fetch("notes");
+            b.date = stmt.dtfetch("date");
+
+            return b;
+        }
+
+        [WebMethod(Description = "Retrieve Fence and Fencing")]
+        public Fence[] GetFenceList(Request request)
+        {
+            Fence[] Result = null;
+
+            if (LowSecurityCheck(request, "GetFenceList"))
+            {
+                string connStr = CustConnectionString(request);
+                SqlStmt stmt = null;
+                try
+                {
+                    if (GetStmt(connStr, out stmt))
+                    {
+                        List<Fence> Fences = new List<Fence>();
+                        bool rc = stmt.DoSQL("SELECT * FROM asset_fence ORDER BY fence");
+                        while (rc)
+                        {
+                            Fences.Add(fillFence(stmt));
+
+                            rc = stmt.dbSkip();
+                        }
+                        Result = Fences.ToArray();
+                        Fences.Clear();
+                    }
+                }
+                catch (Exception x)
+                {
+                    Global.messLog.Flush("GetFenceList() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
+                    InsertErrorRecord(request.CustCode, string.Format("GetFenceList() Failed to send HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message), request);
+                }
+                finally
+                {
+                    if (stmt != null)
+                    {
+                        stmt.Close();
+                        stmt = null;
+                    }
+                }
+            }
+            return Result;
+        }
+
+        [WebMethod(Description = "Retrieve Fence Fencing closest to lat/lon pair for maxRows")]
+        public Fence[] GetFenceListNear(Request request, string searchStr, double lat, double lon, int startRow, int maxRows)
+        {
+            Fence[] Result = null;
+
+            if (LowSecurityCheck(request, "GetFenceListNear"))
+            {
+                string connStr = CustConnectionString(request);
+                SqlStmt stmt = null;
+                try
+                {
+                    if (GetStmt(connStr, out stmt))
+                    {
+                        string sqlStr;
+                        if (lat == 0 && lon == 0)
+                        {
+                            if (searchStr == string.Empty)
+                                sqlStr = string.Format("SELECT TOP {0} * FROM asset_fence ORDER BY fence", maxRows + startRow);
+                            else
+                                sqlStr = string.Format("SELECT TOP {0} * FROM asset_fence WHERE fence LIKE '{1}' ORDER BY fence", maxRows + startRow, SqlHelper.FixUp(searchStr));
+                        }
+                        else
+                        {
+                            if (searchStr == string.Empty)
+                                sqlStr = string.Format("SELECT TOP {0} *, geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326)) as dist FROM asset_fence WHERE latitude is not null and longitude is not null ORDER BY geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326))", maxRows + startRow, lat, lon);
+                            else
+                                sqlStr = string.Format("SELECT TOP {0} *, geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326)) as dist FROM asset_fence WHERE latitude is not null and longitude is not null and fence LIKE '{3}' ORDER BY geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326))", maxRows + startRow, lat, lon, SqlHelper.FixUp(searchStr));
+                        }
+
+                        bool rc = stmt.DoSQL(sqlStr);
+                        // scroll to the beginning of the rows we call
+                        while (rc && startRow > 0)
+                        {
+                            startRow--;
+                            rc = stmt.dbSkip();
+                        }
+
+                        // now get the data we want
+                        List<Fence> Fences = new List<Fence>();
+                        while (rc)
+                        {
+                            Fences.Add(fillFence(stmt));
+
+                            rc = stmt.dbSkip();
+                        }
+                        Result = Fences.ToArray();
+                        Fences.Clear();
+                    }
+                }
+                catch (Exception x)
+                {
+                    Global.messLog.Flush("GetFenceListNear() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
+                    InsertErrorRecord(request.CustCode, string.Format("GetFenceListNear() Failed to send HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message), request);
                 }
                 finally
                 {
@@ -6518,6 +6762,142 @@ namespace RoadaWebService
             return Result;
         }
 
+        [WebMethod(Description = "Push SendBeaverData Report")]
+        public int SendBeaverData(Request req, BeaverInspectionData bdata)
+        {
+            int Result = 0;
+            // low security check, don't want hackers!
+            if (!LowSecurityCheck(req, "SendBeaverData"))
+                return -2;
+
+            string connStr = CustConnectionString(req);
+            SqlStmt stmt = null;
+            try
+            {
+                Result = -3;
+                if (GetStmt(connStr, out stmt))
+                {
+                    SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
+                    DateTime now = DateTime.Now.ToLocalTime();
+
+                    sql.Add("beaver", bdata.beaver);
+                    sql.Add("latitude", bdata.latitude);
+                    sql.Add("longitude", bdata.longitude);
+                    sql.Add("other", bdata.other);
+                    sql.Add("reco", bdata.reco);
+                    sql.Add("date", bdata.date);
+                    sql.Add("inspector", bdata.inspector);
+                    sql.Add("repKey", bdata.repKey);
+                    sql.Add("sig_data", bdata.sigData);
+                    sql.AddNow("idate");
+
+                    stmt.DoSQL(sql.BuildInsert("INSERT INTO inspection_beaver"));
+
+                    foreach (var item in bdata.beaverItems)
+                    {
+                        sql.Clear();
+
+                        // MUST have an issue # 
+                        if (item.issue > 0)
+                        {
+                            sql.Add("beaver", bdata.beaver);
+                            sql.Add("date", bdata.date);
+
+                            sql.Add("issue", item.issue);
+                            sql.Add("defect", item.defect);
+                            sql.Add("note", item.note);
+                            sql.Add("tstate", item.tstate);
+                            sql.Add("group_enabled", item.groupEnabled);
+                            sql.AddNow("idate");
+
+                            stmt.DoSQL(sql.BuildInsert("INSERT INTO inspection_beaver_item"));
+                        }
+                    }
+                    Result = 1;
+                }
+            }
+            catch (Exception x)
+            {
+                Result = -4;
+                Global.messLog.Flush("SendBeaverData() HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, x.Message);
+                InsertErrorRecord(req.CustCode, "SendBeaverData() " + x.Message, req);
+            }
+            finally
+            {
+                if (stmt != null)
+                    stmt.Close();
+            }
+            return Result;
+        }
+
+        [WebMethod(Description = "Push SendFenceData Report")]
+        public int SendFenceData(Request req, FenceInspectionData bdata)
+        {
+            int Result = 0;
+            // low security check, don't want hackers!
+            if (!LowSecurityCheck(req, "SendFenceData"))
+                return -2;
+
+            string connStr = CustConnectionString(req);
+            SqlStmt stmt = null;
+            try
+            {
+                Result = -3;
+                if (GetStmt(connStr, out stmt))
+                {
+                    SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
+                    DateTime now = DateTime.Now.ToLocalTime();
+
+                    sql.Add("fence", bdata.fence);
+                    sql.Add("latitude", bdata.latitude);
+                    sql.Add("longitude", bdata.longitude);
+                    sql.Add("other", bdata.other);
+                    sql.Add("reco", bdata.reco);
+                    sql.Add("date", bdata.date);
+                    sql.Add("inspector", bdata.inspector);
+                    sql.Add("repKey", bdata.repKey);
+                    sql.Add("sig_data", bdata.sigData);
+                    sql.AddNow("idate");
+
+                    stmt.DoSQL(sql.BuildInsert("INSERT INTO inspection_fence"));
+
+                    foreach (var item in bdata.fenceItems)
+                    {
+                        sql.Clear();
+
+                        // MUST have an issue # 
+                        if (item.issue > 0)
+                        {
+                            sql.Add("fence", bdata.fence);
+                            sql.Add("date", bdata.date);
+
+                            sql.Add("issue", item.issue);
+                            sql.Add("defect", item.defect);
+                            sql.Add("note", item.note);
+                            sql.Add("tstate", item.tstate);
+                            sql.Add("group_enabled", item.groupEnabled);
+                            sql.AddNow("idate");
+
+                            stmt.DoSQL(sql.BuildInsert("INSERT INTO inspection_fence_item"));
+                        }
+                    }
+                    Result = 1;
+                }
+            }
+            catch (Exception x)
+            {
+                Result = -4;
+                Global.messLog.Flush("SendFenceData() HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, x.Message);
+                InsertErrorRecord(req.CustCode, "SendFenceData() " + x.Message, req);
+            }
+            finally
+            {
+                if (stmt != null)
+                    stmt.Close();
+            }
+            return Result;
+        }
+
         [WebMethod(Description = "Push SendSignData Report")]
         public int SendSignData(Request req, SignInspectionData bdata)
         {
@@ -6780,7 +7160,7 @@ namespace RoadaWebService
             return Result;
         }
 
-        [WebMethod(Description = "Retrieve Bridges inspections")]
+        [WebMethod(Description = "Retrieve Pond inspections")]
         public PondInspectionData[] GetPondInspectionList(Request request, Pond[] ponds, int maxInsp)
         {
             PondInspectionData[] Result = null;
@@ -6869,6 +7249,220 @@ namespace RoadaWebService
                 {
                     Global.messLog.Flush("GetPondInspectionList() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
                     InsertErrorRecord(request.CustCode, string.Format("GetPondInspectionList() Failed to send HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message), request);
+                }
+                finally
+                {
+                    if (stmt2 != null)
+                    {
+                        stmt2.Close();
+                        stmt2 = null;
+                    }
+                    if (stmt != null)
+                    {
+                        stmt.Close();
+                        stmt = null;
+                    }
+                }
+            }
+            return Result;
+        }
+
+        [WebMethod(Description = "Retrieve Beaver inspections")]
+        public BeaverInspectionData[] GetBeaverInspectionList(Request request, Beaver[] beavers, int maxInsp)
+        {
+            BeaverInspectionData[] Result = null;
+
+            if (LowSecurityCheck(request, "GetBeaverInspectionList"))
+            {
+                string connStr = CustConnectionString(request);
+                SqlStmt stmt = null;
+                SqlStmt stmt2 = null;
+                try
+                {
+                    if (GetStmt(connStr, out stmt) && GetStmt(connStr, out stmt2))
+                    {
+                        maxInsp = Math.Max(1, maxInsp);
+                        List<BeaverInspectionData> Beavers = new List<BeaverInspectionData>();
+
+                        foreach (var item in beavers)
+                        {
+                            if (item.beaver != null && item.beaver.Length > 0)
+                            {
+                                bool brc = stmt.DoSQLFormat("SELECT TOP {0} * FROM inspection_beaver WHERE beaver='{1}' ORDER BY date desc", maxInsp, SqlHelper.FixUp(item.beaver));
+                                while (brc)
+                                {
+                                    BeaverInspectionData b = new BeaverInspectionData();
+                                    b.beaver = stmt.fetch("beaver");
+                                    b.location = stmt.fetch("location");
+                                    b.name = stmt.fetch("name");
+                                    b.site = stmt.fetch("site");
+                                    b.latitude = stmt.dfetch("latitude");
+                                    b.longitude = stmt.dfetch("longitude");
+                                    b.other = stmt.fetch("other");
+                                    b.reco = stmt.fetch("reco");
+                                    // remove millisecs which some older reports have
+                                    DateTime dt = stmt.dtfetch("date");
+                                    b.date = dt.AddTicks(-(dt.Ticks % TimeSpan.TicksPerSecond));
+                                    b.road = stmt.fetch("road");
+                                    b.inspector = stmt.fetch("inspector");
+                                    b.repKey = stmt.fetch("repKey");
+
+                                    bool rc;
+                                    if (b.repKey != string.Empty)
+                                    {
+                                        rc = stmt2.DoSQLFormat("SELECT * FROM Img_events WHERE RepKey='{0}'", b.repKey);
+                                        while (rc)
+                                        {
+                                            PhotoData pdata = new PhotoData();
+
+                                            pdata.repkey = b.repKey;
+                                            pdata.imgUrl = stmt2.fetch("img_url");
+
+                                            b.photos.Add(pdata);
+
+                                            rc = stmt2.dbSkip();
+                                        }
+                                    }
+
+                                    // the DATEADD(ms, -DATEPART(ms, date), date) is because some older inspections had millisecs in the date, this makes sure to ignore that
+                                    rc = stmt2.DoSQLFormat("SELECT * FROM inspection_beaver_item WHERE beaver='{0}' and DATEADD(ms, -DATEPART(ms, date), date)={1}", SqlHelper.FixUp(b.beaver), SqlHelper.timeStamp(b.date));
+                                    while (rc)
+                                    {
+                                        BeaverItem bi = new BeaverItem();
+                                        bi.beaver = b.beaver;
+                                        bi.date = b.date;
+                                        bi.issue = stmt2.ifetch("issue");
+                                        bi.defect = stmt2.bfetch("defect");
+                                        bi.note = stmt2.fetch("note");
+                                        bi.tstate = stmt2.ifetch("tstate");
+                                        bi.groupEnabled = stmt2.bfetch("group_enabled");
+
+                                        b.beaverItems.Add(bi);
+
+                                        rc = stmt2.dbSkip();
+                                    }
+
+                                    Beavers.Add(b);
+
+                                    brc = stmt.dbSkip();
+                                }
+                            }
+                        }
+                        Result = Beavers.ToArray();
+                        Beavers.Clear();
+                    }
+                }
+                catch (Exception x)
+                {
+                    Global.messLog.Flush("GetBeaverInspectionList() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
+                    InsertErrorRecord(request.CustCode, string.Format("GetBeaverInspectionList() Failed to send HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message), request);
+                }
+                finally
+                {
+                    if (stmt2 != null)
+                    {
+                        stmt2.Close();
+                        stmt2 = null;
+                    }
+                    if (stmt != null)
+                    {
+                        stmt.Close();
+                        stmt = null;
+                    }
+                }
+            }
+            return Result;
+        }
+
+        [WebMethod(Description = "Retrieve Fence Fence inspections")]
+        public FenceInspectionData[] GetFenceInspectionList(Request request, Fence[] fences, int maxInsp)
+        {
+            FenceInspectionData[] Result = null;
+
+            if (LowSecurityCheck(request, "GetFenceInspectionList"))
+            {
+                string connStr = CustConnectionString(request);
+                SqlStmt stmt = null;
+                SqlStmt stmt2 = null;
+                try
+                {
+                    if (GetStmt(connStr, out stmt) && GetStmt(connStr, out stmt2))
+                    {
+                        maxInsp = Math.Max(1, maxInsp);
+                        List<FenceInspectionData> Fences = new List<FenceInspectionData>();
+
+                        foreach (var item in fences)
+                        {
+                            if (item.fence != null && item.fence.Length > 0)
+                            {
+                                bool brc = stmt.DoSQLFormat("SELECT TOP {0} * FROM inspection_fence WHERE fence='{1}' ORDER BY date desc", maxInsp, SqlHelper.FixUp(item.fence));
+                                while (brc)
+                                {
+                                    FenceInspectionData b = new FenceInspectionData();
+                                    b.fence = stmt.fetch("fence");
+                                    b.location = stmt.fetch("location");
+                                    b.name = stmt.fetch("name");
+                                    b.site = stmt.fetch("site");
+                                    b.latitude = stmt.dfetch("latitude");
+                                    b.longitude = stmt.dfetch("longitude");
+                                    b.other = stmt.fetch("other");
+                                    b.reco = stmt.fetch("reco");
+                                    // remove millisecs which some older reports have
+                                    DateTime dt = stmt.dtfetch("date");
+                                    b.date = dt.AddTicks(-(dt.Ticks % TimeSpan.TicksPerSecond));
+                                    b.road = stmt.fetch("road");
+                                    b.inspector = stmt.fetch("inspector");
+                                    b.repKey = stmt.fetch("repKey");
+
+                                    bool rc;
+                                    if (b.repKey != string.Empty)
+                                    {
+                                        rc = stmt2.DoSQLFormat("SELECT * FROM Img_events WHERE RepKey='{0}'", b.repKey);
+                                        while (rc)
+                                        {
+                                            PhotoData pdata = new PhotoData();
+
+                                            pdata.repkey = b.repKey;
+                                            pdata.imgUrl = stmt2.fetch("img_url");
+
+                                            b.photos.Add(pdata);
+
+                                            rc = stmt2.dbSkip();
+                                        }
+                                    }
+
+                                    // the DATEADD(ms, -DATEPART(ms, date), date) is because some older inspections had millisecs in the date, this makes sure to ignore that
+                                    rc = stmt2.DoSQLFormat("SELECT * FROM inspection_fence_item WHERE fence='{0}' and DATEADD(ms, -DATEPART(ms, date), date)={1}", SqlHelper.FixUp(b.fence), SqlHelper.timeStamp(b.date));
+                                    while (rc)
+                                    {
+                                        FenceItem bi = new FenceItem();
+                                        bi.fence = b.fence;
+                                        bi.date = b.date;
+                                        bi.issue = stmt2.ifetch("issue");
+                                        bi.defect = stmt2.bfetch("defect");
+                                        bi.note = stmt2.fetch("note");
+                                        bi.tstate = stmt2.ifetch("tstate");
+                                        bi.groupEnabled = stmt2.bfetch("group_enabled");
+
+                                        b.fenceItems.Add(bi);
+
+                                        rc = stmt2.dbSkip();
+                                    }
+
+                                    Fences.Add(b);
+
+                                    brc = stmt.dbSkip();
+                                }
+                            }
+                        }
+                        Result = Fences.ToArray();
+                        Fences.Clear();
+                    }
+                }
+                catch (Exception x)
+                {
+                    Global.messLog.Flush("GetFenceInspectionList() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
+                    InsertErrorRecord(request.CustCode, string.Format("GetFenceInspectionList() Failed to send HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message), request);
                 }
                 finally
                 {
@@ -7300,6 +7894,20 @@ namespace RoadaWebService
             return SendPondData(req, bdata);
         }
 
+        [WebMethod(Description = "Send Beaverdata as JSON")]
+        [ScriptMethod(UseHttpGet = false, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public int SendBeaverDataJson(Request req, BeaverInspectionData bdata)
+        {
+            return SendBeaverData(req, bdata);
+        }
+
+        [WebMethod(Description = "Send Fence as JSON")]
+        [ScriptMethod(UseHttpGet = false, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public int SendFenceDataJson(Request req, FenceInspectionData bdata)
+        {
+            return SendFenceData(req, bdata);
+        }
+
         [WebMethod(Description = "Send Signdata as JSON")]
         [ScriptMethod(UseHttpGet = false, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
         public int SendSignDataJson(Request req, SignInspectionData sdata)
@@ -7342,6 +7950,27 @@ namespace RoadaWebService
             return GetPondListNear(req, searchStr, lat, lon, startRow, maxRows);
         }
 
+        [WebMethod(Description = "Retrieve Pond list closest to lat/lon pair for maxRows")]
+        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public Beaver[] GetBeaversNearJson(Request req, string searchStr, double lat, double lon, int startRow, int maxRows)
+        {
+            return GetBeaverListNear(req, searchStr, lat, lon, startRow, maxRows);
+        }
+
+        [WebMethod(Description = "Retrieve Fence list as JSON")]
+        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public Fence[] GetFencesJson(Request req)
+        {
+            return GetFenceList(req);
+        }
+
+        [WebMethod(Description = "Retrieve Fence list closest to lat/lon pair for maxRows")]
+        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public Fence[] GetFencesNearJson(Request req, string searchStr, double lat, double lon, int startRow, int maxRows)
+        {
+            return GetFenceListNear(req, searchStr, lat, lon, startRow, maxRows);
+        }
+
         [WebMethod(Description = "Retrieve Sign list as JSON using a LIKE clause for maxRows")]
         [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
         public Sign[] GetSignsJson(Request req, string searchStr, int startRow, int maxRows)
@@ -7382,6 +8011,20 @@ namespace RoadaWebService
         public PondInspectionData[] GetPondDataJson(Request req, Pond[] ponds, int maxInsp)
         {
             return GetPondInspectionList(req, ponds, maxInsp);
+        }
+
+        [WebMethod(Description = "Retrieve Beaver Data as JSON")]
+        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public BeaverInspectionData[] GetBeaverDataJson(Request req, Beaver[] beavers, int maxInsp)
+        {
+            return GetBeaverInspectionList(req, beavers, maxInsp);
+        }
+
+        [WebMethod(Description = "Retrieve Fence Data as JSON")]
+        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public FenceInspectionData[] GetFenceDataJson(Request req, Fence[] fences, int maxInsp)
+        {
+            return GetFenceInspectionList(req, fences, maxInsp);
         }
 
         [WebMethod(Description = "Retrieve Sign Data as JSON")]

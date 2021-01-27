@@ -972,6 +972,128 @@ namespace RoadaWebService
     }
 
     [DataContract]
+    public class BeaverInspectionData
+    {
+
+        public BeaverInspectionData()
+        {
+            this.beaverItems = new List<BeaverItem>();
+            this.photos = new List<PhotoData>();
+        }
+        [DataMember]
+        public DateTime date { get; set; }
+        [DataMember]
+        public string road { get; set; }
+        [DataMember]
+        public string location { get; set; }
+        [DataMember]
+        public string inspector { get; set; }
+        [DataMember]
+        public string beaver { get; set; }
+        [DataMember]
+        public string name { get; set; }
+        [DataMember]
+        public string site { get; set; }
+        [DataMember]
+        public double latitude { get; set; }
+        [DataMember]
+        public double longitude { get; set; }
+        [DataMember]
+        public string other { get; set; }
+        [DataMember]
+        public string reco { get; set; }
+        [DataMember]
+        public List<short> sigData { get; set; }
+        [DataMember]
+        public List<BeaverItem> beaverItems { get; set; }
+        [DataMember]
+        public string repKey { get; set; }
+        [DataMember]
+        public List<PhotoData> photos { get; set; }
+
+    }
+
+    [DataContract]
+    public class BeaverItem
+    {
+        [DataMember]
+        public DateTime date { get; set; }
+        [DataMember]
+        public int issue { get; set; }
+        [DataMember]
+        public bool defect { get; set; }
+        [DataMember]
+        public string note { get; set; }
+        [DataMember]
+        public int tstate { get; set; }
+        [DataMember]
+        public bool groupEnabled { get; set; }
+        [DataMember]
+        public string beaver { get; set; }
+    }
+
+    [DataContract]
+    public class FenceInspectionData
+    {
+
+        public FenceInspectionData()
+        {
+            this.fenceItems = new List<FenceItem>();
+            this.photos = new List<PhotoData>();
+        }
+        [DataMember]
+        public DateTime date { get; set; }
+        [DataMember]
+        public string road { get; set; }
+        [DataMember]
+        public string location { get; set; }
+        [DataMember]
+        public string inspector { get; set; }
+        [DataMember]
+        public string fence { get; set; }
+        [DataMember]
+        public string name { get; set; }
+        [DataMember]
+        public string site { get; set; }
+        [DataMember]
+        public double latitude { get; set; }
+        [DataMember]
+        public double longitude { get; set; }
+        [DataMember]
+        public string other { get; set; }
+        [DataMember]
+        public string reco { get; set; }
+        [DataMember]
+        public List<short> sigData { get; set; }
+        [DataMember]
+        public List<FenceItem> fenceItems { get; set; }
+        [DataMember]
+        public string repKey { get; set; }
+        [DataMember]
+        public List<PhotoData> photos { get; set; }
+
+    }
+
+    [DataContract]
+    public class FenceItem
+    {
+        [DataMember]
+        public DateTime date { get; set; }
+        [DataMember]
+        public int issue { get; set; }
+        [DataMember]
+        public bool defect { get; set; }
+        [DataMember]
+        public string note { get; set; }
+        [DataMember]
+        public int tstate { get; set; }
+        [DataMember]
+        public bool groupEnabled { get; set; }
+        [DataMember]
+        public string fence { get; set; }
+    }
+
+    [DataContract]
     public class SignInspectionData
     {
 
@@ -1062,6 +1184,48 @@ namespace RoadaWebService
     {
         [DataMember]
         public string pond { get; set; }
+        [DataMember]
+        public string road { get; set; }
+        [DataMember]
+        public string location { get; set; }
+        [DataMember]
+        public string name { get; set; }
+        [DataMember]
+        public double latitude { get; set; }
+        [DataMember]
+        public double longitude { get; set; }
+        [DataMember]
+        public string notes { get; set; }
+        [DataMember]
+        public DateTime date { get; set; }
+    }
+
+    [DataContract]
+    public class Beaver
+    {
+        [DataMember]
+        public string beaver { get; set; }
+        [DataMember]
+        public string road { get; set; }
+        [DataMember]
+        public string location { get; set; }
+        [DataMember]
+        public string name { get; set; }
+        [DataMember]
+        public double latitude { get; set; }
+        [DataMember]
+        public double longitude { get; set; }
+        [DataMember]
+        public string notes { get; set; }
+        [DataMember]
+        public DateTime date { get; set; }
+    }
+
+    [DataContract]
+    public class Fence
+    {
+        [DataMember]
+        public string fence { get; set; }
         [DataMember]
         public string road { get; set; }
         [DataMember]
