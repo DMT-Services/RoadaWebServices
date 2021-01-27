@@ -6469,14 +6469,11 @@ namespace RoadaWebService
                     DateTime now = DateTime.Now.ToLocalTime();
 
                     sql.Add("pond", bdata.pond);
-                    sql.Add("location", bdata.location);
-                    sql.Add("name", bdata.name);
-                    sql.Add("site", bdata.site);
                     sql.Add("latitude", bdata.latitude);
                     sql.Add("longitude", bdata.longitude);
                     sql.Add("other", bdata.other);
+                    sql.Add("reco", bdata.reco);
                     sql.Add("date", bdata.date);
-                    sql.Add("road", bdata.road);
                     sql.Add("inspector", bdata.inspector);
                     sql.Add("repKey", bdata.repKey);
                     sql.Add("sig_data", bdata.sigData);
@@ -6637,8 +6634,8 @@ namespace RoadaWebService
                     {
                         sql.Clear();
 
-                        sql.Add("structure", item.structure);
-                        sql.Add("date", item.date);
+                        sql.Add("structure", bdata.structure);
+                        sql.Add("date", bdata.date);
                         sql.Add("issue", item.issue);
                         sql.Add("defect", item.defect);
                         sql.Add("note", item.note);
@@ -6765,6 +6762,113 @@ namespace RoadaWebService
                 {
                     Global.messLog.Flush("GetBridgeInspectionList() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
                     InsertErrorRecord(request.CustCode, string.Format("GetBridgeInspectionList() Failed to send HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message), request);
+                }
+                finally
+                {
+                    if (stmt2 != null)
+                    {
+                        stmt2.Close();
+                        stmt2 = null;
+                    }
+                    if (stmt != null)
+                    {
+                        stmt.Close();
+                        stmt = null;
+                    }
+                }
+            }
+            return Result;
+        }
+
+        [WebMethod(Description = "Retrieve Bridges inspections")]
+        public PondInspectionData[] GetPondInspectionList(Request request, Pond[] ponds, int maxInsp)
+        {
+            PondInspectionData[] Result = null;
+
+            if (LowSecurityCheck(request, "GetPondInspectionList"))
+            {
+                string connStr = CustConnectionString(request);
+                SqlStmt stmt = null;
+                SqlStmt stmt2 = null;
+                try
+                {
+                    if (GetStmt(connStr, out stmt) && GetStmt(connStr, out stmt2))
+                    {
+                        maxInsp = Math.Max(1, maxInsp);
+                        List<PondInspectionData> Ponds = new List<PondInspectionData>();
+
+                        foreach (var item in ponds)
+                        {
+                            if (item.pond != null && item.pond.Length > 0)
+                            {
+                                bool brc = stmt.DoSQLFormat("SELECT TOP {0} * FROM inspection_pond WHERE pond='{1}' ORDER BY date desc", maxInsp, SqlHelper.FixUp(item.pond));
+                                while (brc)
+                                {
+                                    PondInspectionData b = new PondInspectionData();
+                                    b.pond = stmt.fetch("pond");
+                                    b.location = stmt.fetch("location");
+                                    b.name = stmt.fetch("name");
+                                    b.site = stmt.fetch("site");
+                                    b.latitude = stmt.dfetch("latitude");
+                                    b.longitude = stmt.dfetch("longitude");
+                                    b.other = stmt.fetch("other");
+                                    b.reco = stmt.fetch("reco");
+                                    // remove millisecs which some older reports have
+                                    DateTime dt = stmt.dtfetch("date");
+                                    b.date = dt.AddTicks(-(dt.Ticks % TimeSpan.TicksPerSecond));
+                                    b.road = stmt.fetch("road");
+                                    b.inspector = stmt.fetch("inspector");
+                                    b.repKey = stmt.fetch("repKey");
+
+                                    bool rc;
+                                    if (b.repKey != string.Empty)
+                                    {
+                                        rc = stmt2.DoSQLFormat("SELECT * FROM Img_events WHERE RepKey='{0}'", b.repKey);
+                                        while (rc)
+                                        {
+                                            PhotoData pdata = new PhotoData();
+
+                                            pdata.repkey = b.repKey;
+                                            pdata.imgUrl = stmt2.fetch("img_url");
+
+                                            b.photos.Add(pdata);
+
+                                            rc = stmt2.dbSkip();
+                                        }
+                                    }
+
+                                    // the DATEADD(ms, -DATEPART(ms, date), date) is because some older inspections had millisecs in the date, this makes sure to ignore that
+                                    rc = stmt2.DoSQLFormat("SELECT * FROM inspection_pond_item WHERE pond='{0}' and DATEADD(ms, -DATEPART(ms, date), date)={1}", SqlHelper.FixUp(b.pond), SqlHelper.timeStamp(b.date));
+                                    while (rc)
+                                    {
+                                        PondItem bi = new PondItem();
+                                        bi.pond = b.pond;
+                                        bi.date = b.date;
+                                        bi.issue = stmt2.ifetch("issue");
+                                        bi.defect = stmt2.bfetch("defect");
+                                        bi.note = stmt2.fetch("note");
+                                        bi.tstate = stmt2.ifetch("tstate");
+                                        bi.groupEnabled = stmt2.bfetch("group_enabled");
+
+                                        b.pondItems.Add(bi);
+
+                                        rc = stmt2.dbSkip();
+                                    }
+
+                                    Ponds.Add(b);
+
+                                    brc = stmt.dbSkip();
+                                }
+                            }
+                        }
+                        Result = Ponds.ToArray();
+                        Ponds.Clear();
+                    }
+                }
+                catch (Exception x)
+                {
+                    Global.messLog.Flush("GetPondInspectionList() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
+                    InsertErrorRecord(request.CustCode, string.Format("GetPondInspectionList() Failed to send HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message), request);
                 }
                 finally
                 {
@@ -7271,6 +7375,13 @@ namespace RoadaWebService
         public BridgeInspectionData[] GetBridgeDataJson(Request req, Bridge[] bridges, int maxInsp)
         {
             return GetBridgeInsectionList(req, bridges, maxInsp);
+        }
+
+        [WebMethod(Description = "Retrieve Pond Data as JSON")]
+        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public PondInspectionData[] GetPondDataJson(Request req, Pond[] ponds, int maxInsp)
+        {
+            return GetPondInspectionList(req, ponds, maxInsp);
         }
 
         [WebMethod(Description = "Retrieve Sign Data as JSON")]

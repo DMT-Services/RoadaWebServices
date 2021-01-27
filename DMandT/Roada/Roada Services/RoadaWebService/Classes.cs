@@ -940,6 +940,8 @@ namespace RoadaWebService
         [DataMember]
         public string other { get; set; }
         [DataMember]
+        public string reco { get; set; }
+        [DataMember]
         public List<short> sigData { get; set; }
         [DataMember]
         public List<PondItem> pondItems { get; set; }
