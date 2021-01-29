@@ -6115,7 +6115,7 @@ namespace RoadaWebService
                     if (GetStmt(connStr, out stmt))
                     {
                         List<Beaver> Beavers = new List<Beaver>();
-                        bool rc = stmt.DoSQL("SELECT * FROM asset_beaver ORDER BY pond");
+                        bool rc = stmt.DoSQL("SELECT * FROM asset_beaver ORDER BY beaver");
                         while (rc)
                         {
                             Beavers.Add(fillBeaver(stmt));
@@ -6160,9 +6160,9 @@ namespace RoadaWebService
                         if (lat == 0 && lon == 0)
                         {
                             if (searchStr == string.Empty)
-                                sqlStr = string.Format("SELECT TOP {0} * FROM asset_beaver ORDER BY pond", maxRows + startRow);
+                                sqlStr = string.Format("SELECT TOP {0} * FROM asset_beaver ORDER BY beaver", maxRows + startRow);
                             else
-                                sqlStr = string.Format("SELECT TOP {0} * FROM asset_beaver WHERE pond LIKE '{1}' ORDER BY beaver", maxRows + startRow, SqlHelper.FixUp(searchStr));
+                                sqlStr = string.Format("SELECT TOP {0} * FROM asset_beaver WHERE beaver LIKE '{1}' ORDER BY beaver", maxRows + startRow, SqlHelper.FixUp(searchStr));
                         }
                         else
                         {
@@ -6194,8 +6194,8 @@ namespace RoadaWebService
                 }
                 catch (Exception x)
                 {
-                    Global.messLog.Flush("GetPondListNear() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
-                    InsertErrorRecord(request.CustCode, string.Format("GetPondListNear() Failed to send HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message), request);
+                    Global.messLog.Flush("GetBeaverListNear() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
+                    InsertErrorRecord(request.CustCode, string.Format("GetBeaverListNear() Failed to send HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message), request);
                 }
                 finally
                 {
@@ -6762,6 +6762,72 @@ namespace RoadaWebService
             return Result;
         }
 
+        [WebMethod(Description = "Push SendRockData Report")]
+        public int SendRockData(Request req, RockInspectionData bdata)
+        {
+            int Result = 0;
+            // low security check, don't want hackers!
+            if (!LowSecurityCheck(req, "SendRockData"))
+                return -2;
+
+            string connStr = CustConnectionString(req);
+            SqlStmt stmt = null;
+            try
+            {
+                Result = -3;
+                if (GetStmt(connStr, out stmt))
+                {
+                    SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
+                    DateTime now = DateTime.Now.ToLocalTime();
+
+                    sql.Add("latitude", bdata.latitude);
+                    sql.Add("longitude", bdata.longitude);
+                    sql.Add("area", bdata.area);
+                    sql.Add("hwy", bdata.hwy);
+                    sql.Add("patrol", bdata.patrol);
+                    sql.Add("site", bdata.site);
+                    sql.Add("side", bdata.side);
+                    sql.Add("lhrs", bdata.lhrs);
+                    sql.Add("os", bdata.os);
+                    sql.Add("location", bdata.location);
+                    sql.Add("weather", bdata.weather);
+                    sql.Add("conditions", bdata.conditions);
+                    sql.Add("phone", bdata.phone);
+                    sql.Add("quantity", bdata.quantity);
+                    sql.Add("block_estimate", bdata.block);
+                    sql.Add("distribution", bdata.distribution);
+                    sql.Add("officer", bdata.officer);
+                    sql.Add("badge", bdata.badge);
+                    sql.Add("vehicle_damage", bdata.vehicle);
+                    sql.Add("closure", bdata.closure);
+                    sql.Add("trimming", bdata.trimming);
+                    sql.Add("remarks", bdata.remarks);
+
+                    sql.Add("date", bdata.date);
+                    sql.Add("inspector", bdata.inspector);
+                    sql.Add("repKey", bdata.repKey);
+                    sql.Add("sig_data", bdata.sigData);
+                    sql.AddNow("idate");
+
+                    stmt.DoSQL(sql.BuildInsert("INSERT INTO inspection_rock"));
+
+                    Result = 1;
+                }
+            }
+            catch (Exception x)
+            {
+                Result = -4;
+                Global.messLog.Flush("SendRockData() HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, x.Message);
+                InsertErrorRecord(req.CustCode, "SendRockData() " + x.Message, req);
+            }
+            finally
+            {
+                if (stmt != null)
+                    stmt.Close();
+            }
+            return Result;
+        }
+
         [WebMethod(Description = "Push SendBeaverData Report")]
         public int SendBeaverData(Request req, BeaverInspectionData bdata)
         {
@@ -7261,6 +7327,117 @@ namespace RoadaWebService
                     {
                         stmt.Close();
                         stmt = null;
+                    }
+                }
+            }
+            return Result;
+        }
+
+        [WebMethod(Description = "Retrieve Rock inspections near")]
+        public RockInspectionData[] GetRockInspectionListNear(Request request, double lat, double lon, int startRow, int maxRows)
+        {
+            RockInspectionData[] Result = null;
+
+            if (LowSecurityCheck(request, "GetRockInspectionListNear"))
+            {
+                string connStr = CustConnectionString(request);
+                SqlStmt stmt = null;
+                SqlStmt stmt2 = null;
+                try
+                {
+                    if (GetStmt(connStr, out stmt) && GetStmt(connStr, out stmt2)) 
+                    {
+                        string sqlStr;
+                        if (lat == 0 && lon == 0)
+                        {
+                            sqlStr = string.Format("SELECT TOP {0} * FROM rock_inspections ORDER BY date DESC", maxRows + startRow);
+                        }
+                        else
+                        {
+                                sqlStr = string.Format("SELECT TOP {0} *, geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326)) as dist FROM rock_inspections WHERE latitude is not null and longitude is not null ORDER BY geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326))", maxRows + startRow, lat, lon);
+                        }
+
+                        bool rc = stmt.DoSQL(sqlStr);
+                        // scroll to the beginning of the rows we call
+                        while (rc && startRow > 0)
+                        {
+                            startRow--;
+                            rc = stmt.dbSkip();
+                        }
+
+                        // now get the data we want
+                        List<RockInspectionData> Rocks = new List<RockInspectionData>();
+                        while (rc)
+                        {
+                            RockInspectionData b = new RockInspectionData();
+                            b.location = stmt.fetch("location");
+                            b.site = stmt.fetch("site");
+                            b.latitude = stmt.dfetch("latitude");
+                            b.longitude = stmt.dfetch("longitude");
+                            b.area = stmt.fetch("area");
+                            b.hwy = stmt.fetch("hwy");
+                            b.patrol = stmt.fetch("patrol");
+                            b.site = stmt.fetch("site");
+                            b.lhrs = stmt.fetch("lhrs");
+                            b.os = stmt.fetch("os");
+                            b.location = stmt.fetch("location");
+                            b.weather = stmt.fetch("weather");
+                            b.conditions = stmt.fetch("conditions");
+                            b.phone = stmt.fetch("phone");
+                            b.quantity = stmt.ifetch("quantity");
+                            b.block = stmt.ifetch("block_estimate");
+                            b.distribution = stmt.ifetch("distribution");
+                            b.officer = stmt.fetch("officer");
+                            b.badge = stmt.fetch("badge");
+                            b.vehicle = stmt.fetch("vehicle_damage");
+                            b.closure = stmt.fetch("closure");
+                            b.trimming = stmt.fetch("trimming");
+                            b.remarks = stmt.fetch("remarks");
+                            // remove millisecs which some older reports have
+                            DateTime dt = stmt.dtfetch("date");
+                            b.date = dt.AddTicks(-(dt.Ticks % TimeSpan.TicksPerSecond));
+                            b.inspector = stmt.fetch("inspector");
+                            b.repKey = stmt.fetch("repKey");
+
+                            bool rc2;
+                            if (b.repKey != string.Empty)
+                            {
+                                rc2 = stmt2.DoSQLFormat("SELECT * FROM Img_events WHERE RepKey='{0}'", b.repKey);
+                                while (rc2)
+                                {
+                                    PhotoData pdata = new PhotoData();
+
+                                    pdata.repkey = b.repKey;
+                                    pdata.imgUrl = stmt2.fetch("img_url");
+
+                                    b.photos.Add(pdata);
+
+                                    rc = stmt2.dbSkip();
+                                }
+                            }
+
+                            rc = stmt.dbSkip();
+                        }
+                        Result = Rocks.ToArray();
+                        Rocks.Clear();
+                    }
+                }
+                catch (Exception x)
+                {
+                    Global.messLog.Flush("GetRockInspectionListNear() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
+                    InsertErrorRecord(request.CustCode, string.Format("GetRockInspectionListNear() Failed to send HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message), request);
+                }
+                finally
+                {
+                    if (stmt != null)
+                    {
+                        stmt.Close();
+                        stmt = null;
+                    }
+                    if (stmt2 != null)
+                    {
+                        stmt2.Close();
+                        stmt2 = null;
                     }
                 }
             }
@@ -7894,6 +8071,13 @@ namespace RoadaWebService
             return SendPondData(req, bdata);
         }
 
+        [WebMethod(Description = "Send Rockdata as JSON")]
+        [ScriptMethod(UseHttpGet = false, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public int SendRockDataJson(Request req, RockInspectionData bdata)
+        {
+            return SendRockData(req, bdata);
+        }
+
         [WebMethod(Description = "Send Beaverdata as JSON")]
         [ScriptMethod(UseHttpGet = false, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
         public int SendBeaverDataJson(Request req, BeaverInspectionData bdata)
@@ -7948,6 +8132,13 @@ namespace RoadaWebService
         public Pond[] GetPondsNearJson(Request req, string searchStr, double lat, double lon, int startRow, int maxRows)
         {
             return GetPondListNear(req, searchStr, lat, lon, startRow, maxRows);
+        }
+
+        [WebMethod(Description = "Retrieve Rock list closest to lat/lon pair for maxRows")]
+        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public RockInspectionData[] GetRocksNearJson(Request req, double lat, double lon, int startRow, int maxRows)
+        {
+            return GetRockInspectionListNear(req, lat, lon, startRow, maxRows);
         }
 
         [WebMethod(Description = "Retrieve Pond list closest to lat/lon pair for maxRows")]

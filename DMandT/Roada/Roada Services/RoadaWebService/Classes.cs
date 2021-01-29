@@ -953,6 +953,75 @@ namespace RoadaWebService
     }
 
     [DataContract]
+    public class RockInspectionData
+    {
+
+        public RockInspectionData()
+        {
+            this.photos = new List<PhotoData>();
+        }
+        [DataMember]
+        public DateTime date { get; set; }
+        [DataMember]
+        public string hwy { get; set; }
+        [DataMember]
+        public string area { get; set; }
+        [DataMember]
+        public string side { get; set; }
+        [DataMember]
+        public string patrol { get; set; }
+        [DataMember]
+        public string site { get; set; }
+        [DataMember]
+        public string lhrs { get; set; }
+        [DataMember]
+        public string os { get; set; }
+        [DataMember]
+        public string location { get; set; }
+        [DataMember]
+        public string inspector { get; set; }
+        [DataMember]
+        public double latitude { get; set; }
+        [DataMember]
+        public double longitude { get; set; }
+        [DataMember]
+        public string remarks { get; set; }
+        [DataMember]
+        public string conditions { get; set; }
+        [DataMember]
+        public string weather { get; set; }
+        [DataMember]
+        public string phone { get; set; }
+        [DataMember]
+        public int quantity { get; set; }
+        [DataMember]
+        public int block { get; set; }
+        [DataMember]
+        public int distribution { get; set; }
+        [DataMember]
+        public string vehicle { get; set; }
+        [DataMember]
+        public string injuries { get; set; }
+        [DataMember]
+        public string officer { get; set; }
+        [DataMember]
+        public string badge { get; set; }
+        [DataMember]
+        public string closure { get; set; }
+        [DataMember]
+        public string trimming { get; set; }
+        [DataMember]
+        public string removal { get; set; }
+        [DataMember]
+        public List<short> sigData { get; set; }
+        [DataMember]
+        public string repKey { get; set; }
+        [DataMember]
+        public List<PhotoData> photos { get; set; }
+
+    }
+
+    [DataContract]
     public class PondItem
     {
         [DataMember]
