@@ -5837,6 +5837,68 @@ namespace RoadaWebService
             return Result;
         }
 
+        // first string is name in class, second is name in database
+        string[,] bridgeLayout = { { "bridge", "bridge" },
+                                   { "structure", "structure" },
+                                   { "road", "road" },
+                                   { "location", "location" },
+                                   { "name", "name" },
+                                   { "site", "site" },
+                                   { "type","type" },
+                                   { "spans", "spans"},
+                                   { "length", "length" },
+                                   { "width", "width" },
+                                   { "latitude", "latitude" },
+                                   { "longitude", "longitude" },
+                                   { "notes", "notes" } };
+
+        [WebMethod(Description = "Add a Bridge")]
+        public int AddBridge(Request request, Bridge bdata)
+        {
+            int  Result = -5;
+
+            if (LowSecurityCheck(request, "AddBridge"))
+            {
+                Result = -4;
+                string connStr = CustConnectionString(request);
+                SqlStmt stmt = null;
+                try
+                {
+                    Result = -3;
+                    if (GetStmt(connStr, out stmt))
+                    {
+                        Result = -2;
+                        
+                        // currently, we are only adding a bridge, no UPDATES
+                        if (!stmt.DoSQLFormat("SELECT id FROM asset_bridge WHERE bridge='{0}'", bdata.bridge))
+                        {
+                            Result = -1;
+
+                            SqlHelper sql = procData.fillQuery(bdata, bridgeLayout);
+                            sql.AddNow("date");
+
+                            if (stmt.DoSQL(sql.BuildCmd("asset_bridge", true)))
+                                Result = 1;
+                        }
+                    }
+                }
+                catch (Exception x)
+                {
+                    Global.messLog.Flush("AddBridge() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
+                    InsertErrorRecord(request.CustCode, string.Format("AddBridge() Failed to receive HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message), request);
+                }
+                finally
+                {
+                    if (stmt != null)
+                    {
+                        stmt.Close();
+                        stmt = null;
+                    }
+                }
+            }
+            return Result;
+        }
+
         private Bridge fillBridge(SqlStmt stmt)
         {
             Bridge b = new Bridge();
@@ -8104,6 +8166,13 @@ namespace RoadaWebService
         public int SendCulvertDataJson(Request req, CulvertInspectionData bdata)
         {
             return SendCulvertData(req, bdata);
+        }
+
+        [WebMethod(Description = "Add a Bridge")]
+        [ScriptMethod(UseHttpGet = false, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public int AddBridgeJson(Request req, Bridge bdata)
+        {
+            return AddBridge(req, bdata);
         }
 
         [WebMethod(Description = "Retrieve Bridge list as JSON")]
