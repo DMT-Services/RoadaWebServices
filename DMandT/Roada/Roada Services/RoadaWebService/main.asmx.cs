@@ -1956,9 +1956,9 @@ namespace RoadaWebService
 
                                 }
                             }
-                            rc = 1;  
+                            rc = 1;
                         }
-                       
+
                     }
                 }
                 catch (Exception ex)
@@ -2072,11 +2072,11 @@ namespace RoadaWebService
                             report.Id = stmt.ifetch("id");
                             report.Type = stmt.ifetch("type");
                             report.Sequence = stmt.ifetch("sequence");
-                            if (! stmt.IsNull("section"))
+                            if (!stmt.IsNull("section"))
                                 report.Section = stmt.fetch("section");
                             report.Category = stmt.fetch("category");
                             report.Issue = stmt.fetch("issue");
-                            if (! stmt.IsNull("display"))
+                            if (!stmt.IsNull("display"))
                                 report.Display = stmt.ifetch("display");
                             if (!stmt.IsNull("pdf_field"))
                                 report.PdfField = stmt.fetch("pdf_field");
@@ -2120,7 +2120,7 @@ namespace RoadaWebService
                     {
                         rc = -3;
                         if (report.done && reportStatement.DoSQL(string.Format("SELECT * FROM DVIRHeader WHERE RepKey = '{0}'", report.RepKey)))
-                        {                            
+                        {
                             reportStatement.DoSQL(string.Format("UPDATE DVIRHeader SET done = 1 WHERE RepKey = '{0}'", report.RepKey));
                             rc = 1;
                         }
@@ -2141,9 +2141,9 @@ namespace RoadaWebService
                                 }
                             }
                             rc = 1;
-                           
+
                         }
- 
+
                     }
                 }
                 catch (Exception ex)
@@ -4000,8 +4000,8 @@ namespace RoadaWebService
                 {
                     if (GetStmt(connStr, out stmt))
                     {
-                        if (stmt.DoSQLFormat("SELECT TOP 1 last_date FROM handheld WHERE hand_code = {0} order by last_date desc",handcode))
-                            Result = (stmt.dtfetch("last_date").AddMinutes(15) > InUTC );
+                        if (stmt.DoSQLFormat("SELECT TOP 1 last_date FROM handheld WHERE hand_code = {0} order by last_date desc", handcode))
+                            Result = (stmt.dtfetch("last_date").AddMinutes(15) > InUTC);
                     }
                 }
                 catch (Exception x)
@@ -4546,8 +4546,8 @@ namespace RoadaWebService
                     bool rc;
                     if (user_name != null && currentDate != null)
 
-                        
-                        
+
+
                         currentDate = currentDate.AddDays(-14);
                     rc = stmt.DoSQLFormat("SELECT * FROM go_hos WHERE hide is null AND user_name = '{0}' AND rdate >= {1} ORDER BY rdate DESC", user_name, SqlHelper.timeStamp(currentDate, SqlHelper.dbType.SqlServer));
 
@@ -4622,7 +4622,7 @@ namespace RoadaWebService
                     sql.Add("driving", evnt.driving);
                     sql.Add("phand_code", evnt.phandcode);
                     stmt.DoSQL(sql.BuildInsert("INSERT INTO go_hos"));
-                    stmt.DoSQL(string.Format("SELECT id FROM go_hos WHERE rdate = '{0}' and user_name = '{1}'", evnt.eventTime, evnt.user_name));   
+                    stmt.DoSQL(string.Format("SELECT id FROM go_hos WHERE rdate = '{0}' and user_name = '{1}'", evnt.eventTime, evnt.user_name));
                     Result = stmt.ifetch("id");
 
                 }
@@ -4664,7 +4664,7 @@ namespace RoadaWebService
             SqlStmt stmt = null;
             try
             {
-         
+
                 if (GetStmt(connStr, out stmt))
                 {
                     SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
@@ -4674,10 +4674,10 @@ namespace RoadaWebService
                     bool rc = stmt.DoSQLFormat("SELECT id FROM go_hos WHERE rdate >= '{0}' AND rdate <= '{1}'", FromEvent.eventTime, ToEvent.eventTime);
                     while (rc)
                     {
-                        ids.Add(stmt.ifetch("id"));                       
+                        ids.Add(stmt.ifetch("id"));
                         rc = stmt.dbSkip();
                     }
- 
+
                     if (ids.Count > 0)
                     {
                         foreach (var item in ids)
@@ -4710,13 +4710,13 @@ namespace RoadaWebService
                     ServerIDs si = new ServerIDs();
                     si.serverIds = ids.ToArray();
                     Result = si;
-                    
+
                 }
-            
+
             }
             catch (Exception ex)
             {
-                
+
                 Global.messLog.Flush("HOS Event Message Failed HOS VS: {0}", req.Version);
                 InsertErrorRecord(req.CustCode, string.Format("SendHosOffWorkEvent() Handcode{0} Error{1}", req.Handcode, ex.Message), req);
             }
@@ -5732,7 +5732,7 @@ namespace RoadaWebService
         {
             return GetAppVersion(req);
         }
-        
+
 
 
         [WebMethod(Description = "Retrieve vehicle list, optionally filtered by fleetId, as JSON")]
@@ -5813,7 +5813,7 @@ namespace RoadaWebService
         [WebMethod(Description = "Retrieve App Version Info")]
         public string GetAppVersion(Request request)
         {
-            string Result = string.Empty; 
+            string Result = string.Empty;
             if (LowSecurityCheck(request, "GetAppVersion"))
             {
                 SqlStmt stmt = null;
@@ -5824,7 +5824,7 @@ namespace RoadaWebService
                     stmt.DoSQL("SELECT TOP 1 app_version FROM react_settings ORDER BY id ");
                     Result = stmt.fetch("app_version");
                 }
-                catch(Exception x)
+                catch (Exception x)
                 {
                     Global.messLog.Flush("GetAppVersion() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
                 }
@@ -5855,7 +5855,7 @@ namespace RoadaWebService
         [WebMethod(Description = "Add a Bridge")]
         public int AddBridge(Request request, Bridge bdata)
         {
-            int  Result = -5;
+            int Result = -5;
 
             if (LowSecurityCheck(request, "AddBridge"))
             {
@@ -5867,18 +5867,20 @@ namespace RoadaWebService
                     Result = -3;
                     if (GetStmt(connStr, out stmt))
                     {
-                        Result = -2;
-                        
-                        // currently, we are only adding a bridge, no UPDATES
-                        if (!stmt.DoSQLFormat("SELECT id FROM asset_bridge WHERE bridge='{0}'", bdata.bridge))
+                        if (bdata != null && bdata.bridge != string.Empty)
                         {
-                            Result = -1;
+                            Result = -2;
+                            // currently, we are only adding a bridge, no UPDATES
+                            if (!stmt.DoSQLFormat("SELECT id FROM asset_bridge WHERE bridge='{0}'", bdata.bridge))
+                            {
+                                Result = -1;
 
-                            SqlHelper sql = procData.fillQuery(bdata, bridgeLayout);
-                            sql.AddNow("date");
+                                SqlHelper sql = procData.fillQuery(bdata, bridgeLayout);
+                                sql.AddNow("date");
 
-                            if (stmt.DoSQL(sql.BuildCmd("asset_bridge", true)))
-                                Result = 1;
+                                if (stmt.DoSQL(sql.BuildCmd("asset_bridge", true)))
+                                    Result = 1;
+                            }
                         }
                     }
                 }
@@ -6136,6 +6138,67 @@ namespace RoadaWebService
                 {
                     Global.messLog.Flush("GetPondListNear() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
                     InsertErrorRecord(request.CustCode, string.Format("GetPondListNear() Failed to send HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message), request);
+                }
+                finally
+                {
+                    if (stmt != null)
+                    {
+                        stmt.Close();
+                        stmt = null;
+                    }
+                }
+            }
+            return Result;
+        }
+
+        // first string is name in class, second is name in database
+        string[,] beaverLayout = { { "beaver", "beaver" },
+                                   { "road", "road" },
+                                   { "location", "location" },
+                                   { "area","area" },
+                                   { "size", "size"},
+                                   { "name", "name" },
+                                   { "site", "site" },
+                                   { "latitude", "latitude" },
+                                   { "longitude", "longitude" },
+                                   { "notes", "notes" } };
+
+        [WebMethod(Description = "Add a Beaver Pond")]
+        public int AddBeaver(Request request, Beaver bdata)
+        {
+            int Result = -5;
+
+            if (LowSecurityCheck(request, "AddBeaver"))
+            {
+                Result = -4;
+                string connStr = CustConnectionString(request);
+                SqlStmt stmt = null;
+                try
+                {
+                    Result = -3;
+                    if (GetStmt(connStr, out stmt))
+                    {
+                        if (bdata != null && bdata.beaver != string.Empty)
+                        {
+                            Result = -2;
+                            // currently, we are only adding a beaver pond, no UPDATES
+                            if (!stmt.DoSQLFormat("SELECT id FROM asset_beaver WHERE beaver='{0}'", bdata.beaver))
+                            {
+                                Result = -1;
+
+                                SqlHelper sql = procData.fillQuery(bdata, beaverLayout);
+                                sql.AddNow("date");
+
+                                if (stmt.DoSQL(sql.BuildCmd("asset_beaver", true)))
+                                    Result = 1;
+                            }
+                        }
+                    }
+                }
+                catch (Exception x)
+                {
+                    Global.messLog.Flush("AddBeaver() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
+                    InsertErrorRecord(request.CustCode, string.Format("AddBeaver() Failed to receive HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message), request);
                 }
                 finally
                 {
@@ -6417,24 +6480,6 @@ namespace RoadaWebService
             return s;
         }
 
-        private Culvert FillCulvert(SqlStmt stmt)
-        {
-
-            Culvert b = new Culvert();
-            b.structure = stmt.fetch("structure");
-            b.patrol = stmt.fetch("patrol");
-            b.region = stmt.fetch("region");
-            b.road = stmt.fetch("road");
-            b.location = stmt.fetch("location");
-            b.type = stmt.ifetch("type");
-            b.diameter = stmt.dfetch("diameter");
-            b.latitude = stmt.dfetch("latitude");
-            b.longitude = stmt.dfetch("longitude");
-            b.notes = stmt.fetch("notes");
-            b.date = stmt.dtfetch("date");
-            return b;
-        }
-
         [WebMethod(Description = "Retrieve Signs using a LIKE clause for maxRows")]
         public Sign[] GetSignList(Request request, string searchStr, int startRow, int maxRows)
         {
@@ -6486,7 +6531,7 @@ namespace RoadaWebService
             }
             return Result;
         }
-        
+
         [WebMethod(Description = "Retrieve Signs closest to lat/lon pair for maxRows")]
         public Sign[] GetSignListNear(Request request, string searchStr, double lat, double lon, int startRow, int maxRows)
         {
@@ -6552,7 +6597,82 @@ namespace RoadaWebService
             return Result;
         }
 
+        // first string is name in class, second is name in database
+        string[,] culvertLayout = { { "type", "type" },
+                                   { "structure", "structure" },
+                                   { "region", "region" },
+                                   { "diameter", "diameter" },
+                                   { "road", "road" },
+                                   { "location", "location" },
+                                   { "patrol","patrol" },
+                                   { "latitude", "latitude" },
+                                   { "longitude", "longitude" } };
 
+        [WebMethod(Description = "Add a Culvert")]
+        public int AddCulvert(Request request, Culvert cdata)
+        {
+            int Result = -5;
+
+            if (LowSecurityCheck(request, "AddCulvert"))
+            {
+                Result = -4;
+                string connStr = CustConnectionString(request);
+                SqlStmt stmt = null;
+                try
+                {
+                    Result = -3;
+                    if (GetStmt(connStr, out stmt))
+                    {
+                        if (cdata != null && cdata.type > 0 && cdata.structure != string.Empty)
+                        {
+                            Result = -2;
+                            // currently, we are only adding a culvert, no UPDATES
+                            if (!stmt.DoSQLFormat("SELECT id FROM asset_culvert WHERE structure='{0}'", cdata.structure))
+                            {
+                                Result = -1;
+
+                                SqlHelper sql = procData.fillQuery(cdata, culvertLayout);
+                                sql.AddNow("date");
+
+                                if (stmt.DoSQL(sql.BuildCmd("asset_culvert", true)))
+                                    Result = 1;
+                            }
+                        }
+                    }
+                }
+                catch (Exception x)
+                {
+                    Global.messLog.Flush("AddCulvert() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
+                    InsertErrorRecord(request.CustCode, string.Format("AddCulvert() Failed to receive HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message), request);
+                }
+                finally
+                {
+                    if (stmt != null)
+                    {
+                        stmt.Close();
+                        stmt = null;
+                    }
+                }
+            }
+            return Result;
+        }
+
+        private Culvert FillCulvert(SqlStmt stmt)
+        {
+            Culvert c = new Culvert();
+            c.structure = stmt.fetch("structure");
+            c.patrol = stmt.fetch("patrol");
+            c.region = stmt.fetch("region");
+            c.road = stmt.fetch("road");
+            c.location = stmt.fetch("location");
+            c.type = stmt.ifetch("type");
+            c.diameter = stmt.dfetch("diameter");
+            c.latitude = stmt.dfetch("latitude");
+            c.longitude = stmt.dfetch("longitude");
+            c.notes = stmt.fetch("notes");
+            c.date = stmt.dtfetch("date");
+            return c;
+        }
 
         [WebMethod(Description = "Retrieve Culverts closest to lat/lon pair for maxRows")]
         public Culvert[] GetCulvertListNear(Request request, string searchStr, double lat, double lon, int startRow, int maxRows)
@@ -6640,7 +6760,7 @@ namespace RoadaWebService
                         rc = stmt.DoSQL("SELECT * FROM asset_culvert ORDER BY structure");
                         while (rc)
                         {
-                            Culvert b = new Culvert();                 
+                            Culvert b = new Culvert();
                             b.structure = stmt.fetch("structure");
                             b.patrol = stmt.fetch("patrol");
                             b.region = stmt.fetch("region");
@@ -6840,9 +6960,9 @@ namespace RoadaWebService
                 if (GetStmt(connStr, out stmt))
                 {
                     SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
-                    
+
                     sql.Add("latitude", bdata.latitude);
-                    sql.Add("longitude", bdata.longitude);                    
+                    sql.Add("longitude", bdata.longitude);
                     sql.Add("area", bdata.area);
                     sql.Add("hwy", bdata.hwy);
                     sql.Add("patrol", bdata.patrol);
@@ -7196,7 +7316,7 @@ namespace RoadaWebService
                             if (item.bridge != null && item.bridge.Length > 0)
                             {
                                 bool brc = stmt.DoSQLFormat("SELECT TOP {0} * FROM inspection_bridge WHERE bridge='{1}' ORDER BY date desc", maxInsp, item.bridge);
-                                while(brc)
+                                while (brc)
                                 {
                                     BridgeInspectionData b = new BridgeInspectionData();
                                     b.bridge = stmt.fetch("bridge");
@@ -7406,7 +7526,7 @@ namespace RoadaWebService
                 SqlStmt stmt2 = null;
                 try
                 {
-                    if (GetStmt(connStr, out stmt) && GetStmt(connStr, out stmt2)) 
+                    if (GetStmt(connStr, out stmt) && GetStmt(connStr, out stmt2))
                     {
                         string sqlStr;
                         if (lat == 0 && lon == 0)
@@ -7415,7 +7535,7 @@ namespace RoadaWebService
                         }
                         else
                         {
-                                sqlStr = string.Format("SELECT TOP {0} *, geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326)) as dist FROM rock_inspections WHERE latitude is not null and longitude is not null ORDER BY geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326))", maxRows + startRow, lat, lon);
+                            sqlStr = string.Format("SELECT TOP {0} *, geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326)) as dist FROM rock_inspections WHERE latitude is not null and longitude is not null ORDER BY geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326))", maxRows + startRow, lat, lon);
                         }
 
                         bool rc = stmt.DoSQL(sqlStr);
@@ -7721,7 +7841,7 @@ namespace RoadaWebService
 
 
         [WebMethod(Description = "Retrieve Sign inspections")]
-        public SignInspectionData[] GetSignInspectionList(Request request,  Sign[] signs, int maxInsp)
+        public SignInspectionData[] GetSignInspectionList(Request request, Sign[] signs, int maxInsp)
         {
             SignInspectionData[] Result = null;
 
@@ -7743,7 +7863,7 @@ namespace RoadaWebService
                             if (item.structure != null && item.structure.Length > 0)
                             {
                                 bool rc3 = stmt.DoSQLFormat("SELECT TOP {1} * FROM inspection_sign WHERE structure = '{0}' ORDER BY date desc", item.structure, maxInsp);
-                                while(rc3)
+                                while (rc3)
                                 {
                                     SignInspectionData s = new SignInspectionData();
 
@@ -7858,10 +7978,10 @@ namespace RoadaWebService
                             if (item.structure != null && item.structure.Length > 0)
                             {
                                 bool crc = stmt.DoSQLFormat("SELECT TOP {0} * FROM inspection_culvert WHERE structure='{1}' ORDER BY date desc", maxInsp, item.structure);
-                                while(crc)
+                                while (crc)
                                 {
                                     CulvertInspectionData c = new CulvertInspectionData();
-                                   
+
                                     c.structure = stmt.fetch("structure");
                                     c.location = stmt.fetch("location");
                                     c.name = stmt.fetch("name");
@@ -8174,6 +8294,20 @@ namespace RoadaWebService
             return AddBridge(req, bdata);
         }
 
+        [WebMethod(Description = "Add a Beaver Pond")]
+        [ScriptMethod(UseHttpGet = false, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public int AddBeaverJson(Request req, Beaver bdata)
+        {
+            return AddBeaver(req, bdata);
+        }
+
+        [WebMethod(Description = "Add a Culvert")]
+        [ScriptMethod(UseHttpGet = false, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public int AddCulvertJson(Request req, Culvert cdata)
+        {
+            return AddCulvert(req, cdata);
+        }
+
         [WebMethod(Description = "Retrieve Bridge list as JSON")]
         [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
         public Bridge[] GetBridgesJson(Request req)
@@ -8299,7 +8433,7 @@ namespace RoadaWebService
         {
             return GetCulvertInsectionList(req, culvert, maxInsp);
         }
-        
+
         [WebMethod(Description = "Retrieve vehicle types listing")]
         public VehicleType[] GetVehicleTypes(Request request)
         {
@@ -8600,7 +8734,7 @@ namespace RoadaWebService
                 }
                 finally
                 {
-                    if(stmt != null)
+                    if (stmt != null)
                     {
                         stmt.Close();
                         stmt = null;
@@ -8696,7 +8830,7 @@ namespace RoadaWebService
                                   { "Signature", "signature" },
                                   { "RepKey", "RepKey" },
                                   { "rdate", "rdate" } };
-                                    
+
         [WebMethod(Description = "Update vehicle data from Phone App as JSON")]
         [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
         public int UpdateVehicleDataJson(Request req, Vehicle data)
@@ -8721,7 +8855,7 @@ namespace RoadaWebService
                     if (GetStmt(connStr, out stmt))
                     {
                         SqlHelper sql = procData.fillQuery(data, vehicleLayout);
-                        
+
                         string where = string.Format("WHERE vehicle={0}", data.Id);
 
                         stmt.DoSQL(sql.BuildUpdate("UPDATE vehicles with (rowlock)", where));
