@@ -6840,10 +6840,9 @@ namespace RoadaWebService
                 if (GetStmt(connStr, out stmt))
                 {
                     SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
-                    DateTime now = DateTime.Now.ToLocalTime();
-
+                    
                     sql.Add("latitude", bdata.latitude);
-                    sql.Add("longitude", bdata.longitude);
+                    sql.Add("longitude", bdata.longitude);                    
                     sql.Add("area", bdata.area);
                     sql.Add("hwy", bdata.hwy);
                     sql.Add("patrol", bdata.patrol);
@@ -6858,7 +6857,7 @@ namespace RoadaWebService
                     sql.Add("quantity", bdata.quantity);
                     sql.Add("block_estimate", bdata.block);
                     sql.Add("distribution", bdata.distribution);
-                    sql.Add("officer", bdata.officer);
+                    sql.Add("opp_officer", bdata.officer);
                     sql.Add("badge", bdata.badge);
                     sql.Add("vehicle_damage", bdata.vehicle);
                     sql.Add("closure", bdata.closure);
@@ -6871,7 +6870,7 @@ namespace RoadaWebService
                     sql.Add("sig_data", bdata.sigData);
                     sql.AddNow("idate");
 
-                    stmt.DoSQL(sql.BuildInsert("INSERT INTO inspection_rock"));
+                    stmt.DoSQL(sql.BuildInsert("INSERT INTO inspection_rockfall"));
 
                     Result = 1;
                 }
