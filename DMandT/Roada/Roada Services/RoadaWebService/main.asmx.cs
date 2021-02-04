@@ -6031,16 +6031,16 @@ namespace RoadaWebService
 
         private Pond fillPond(SqlStmt stmt)
         {
-            Pond b = new Pond();
-            b.pond = stmt.fetch("pond");
-            b.location = stmt.fetch("location");
-            b.name = stmt.fetch("name");
-            b.latitude = stmt.dfetch("latitude");
-            b.longitude = stmt.dfetch("longitude");
-            b.notes = stmt.fetch("notes");
-            b.date = stmt.dtfetch("date");
+            Pond p = new Pond();
+            p.structure = stmt.fetch("structure");
+            p.location = stmt.fetch("location");
+            p.name = stmt.fetch("name");
+            p.latitude = stmt.dfetch("latitude");
+            p.longitude = stmt.dfetch("longitude");
+            p.notes = stmt.fetch("notes");
+            p.date = stmt.dtfetch("date");
 
-            return b;
+            return p;
         }
 
         [WebMethod(Description = "Retrieve Ponds")]
@@ -6057,7 +6057,7 @@ namespace RoadaWebService
                     if (GetStmt(connStr, out stmt))
                     {
                         List<Pond> Ponds = new List<Pond>();
-                        bool rc = stmt.DoSQL("SELECT * FROM asset_pond ORDER BY pond");
+                        bool rc = stmt.DoSQL("SELECT * FROM asset_pond ORDER BY structure");
                         while (rc)
                         {
                             Ponds.Add(fillPond(stmt));
@@ -6102,16 +6102,16 @@ namespace RoadaWebService
                         if (lat == 0 && lon == 0)
                         {
                             if (searchStr == string.Empty)
-                                sqlStr = string.Format("SELECT TOP {0} * FROM asset_pond ORDER BY pond", maxRows + startRow);
+                                sqlStr = string.Format("SELECT TOP {0} * FROM asset_pond ORDER BY structure", maxRows + startRow);
                             else
-                                sqlStr = string.Format("SELECT TOP {0} * FROM asset_pond WHERE pond LIKE '{1}' ORDER BY pond", maxRows + startRow, SqlHelper.FixUp(searchStr));
+                                sqlStr = string.Format("SELECT TOP {0} * FROM asset_pond WHERE structure LIKE '{1}' ORDER BY structure", maxRows + startRow, SqlHelper.FixUp(searchStr));
                         }
                         else
                         {
                             if (searchStr == string.Empty)
                                 sqlStr = string.Format("SELECT TOP {0} *, geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326)) as dist FROM asset_pond WHERE latitude is not null and longitude is not null ORDER BY geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326))", maxRows + startRow, lat, lon);
                             else
-                                sqlStr = string.Format("SELECT TOP {0} *, geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326)) as dist FROM asset_pond WHERE latitude is not null and longitude is not null and pond LIKE '{3}' ORDER BY geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326))", maxRows + startRow, lat, lon, SqlHelper.FixUp(searchStr));
+                                sqlStr = string.Format("SELECT TOP {0} *, geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326)) as dist FROM asset_pond WHERE latitude is not null and longitude is not null and structure LIKE '{3}' ORDER BY geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326))", maxRows + startRow, lat, lon, SqlHelper.FixUp(searchStr));
                         }
 
                         bool rc = stmt.DoSQL(sqlStr);
@@ -6152,7 +6152,7 @@ namespace RoadaWebService
         }
 
         // first string is name in class, second is name in database
-        string[,] beaverLayout = { { "beaver", "beaver" },
+        string[,] beaverLayout = { { "structure", "structure" },
                                    { "road", "road" },
                                    { "location", "location" },
                                    { "area","area" },
@@ -6178,11 +6178,11 @@ namespace RoadaWebService
                     Result = -3;
                     if (GetStmt(connStr, out stmt))
                     {
-                        if (bdata != null && bdata.beaver != string.Empty)
+                        if (bdata != null && bdata.structure != string.Empty)
                         {
                             Result = -2;
                             // currently, we are only adding a beaver pond, no UPDATES
-                            if (!stmt.DoSQLFormat("SELECT id FROM asset_beaver WHERE beaver='{0}'", bdata.beaver))
+                            if (!stmt.DoSQLFormat("SELECT id FROM asset_beaver WHERE structure='{0}'", bdata.structure))
                             {
                                 Result = -1;
 
@@ -6215,7 +6215,7 @@ namespace RoadaWebService
         private Beaver fillBeaver(SqlStmt stmt)
         {
             Beaver b = new Beaver();
-            b.beaver = stmt.fetch("beaver");
+            b.structure = stmt.fetch("structure");
             b.location = stmt.fetch("location");
             b.name = stmt.fetch("name");
             b.latitude = stmt.dfetch("latitude");
@@ -6240,7 +6240,7 @@ namespace RoadaWebService
                     if (GetStmt(connStr, out stmt))
                     {
                         List<Beaver> Beavers = new List<Beaver>();
-                        bool rc = stmt.DoSQL("SELECT * FROM asset_beaver ORDER BY beaver");
+                        bool rc = stmt.DoSQL("SELECT * FROM asset_beaver ORDER BY structure");
                         while (rc)
                         {
                             Beavers.Add(fillBeaver(stmt));
@@ -6285,16 +6285,16 @@ namespace RoadaWebService
                         if (lat == 0 && lon == 0)
                         {
                             if (searchStr == string.Empty)
-                                sqlStr = string.Format("SELECT TOP {0} * FROM asset_beaver ORDER BY beaver", maxRows + startRow);
+                                sqlStr = string.Format("SELECT TOP {0} * FROM asset_beaver ORDER BY structure", maxRows + startRow);
                             else
-                                sqlStr = string.Format("SELECT TOP {0} * FROM asset_beaver WHERE beaver LIKE '{1}' ORDER BY beaver", maxRows + startRow, SqlHelper.FixUp(searchStr));
+                                sqlStr = string.Format("SELECT TOP {0} * FROM asset_beaver WHERE structure LIKE '{1}' ORDER BY structure", maxRows + startRow, SqlHelper.FixUp(searchStr));
                         }
                         else
                         {
                             if (searchStr == string.Empty)
                                 sqlStr = string.Format("SELECT TOP {0} *, geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326)) as dist FROM asset_beaver WHERE latitude is not null and longitude is not null ORDER BY geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326))", maxRows + startRow, lat, lon);
                             else
-                                sqlStr = string.Format("SELECT TOP {0} *, geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326)) as dist FROM asset_beaver WHERE latitude is not null and longitude is not null and beaver LIKE '{3}' ORDER BY geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326))", maxRows + startRow, lat, lon, SqlHelper.FixUp(searchStr));
+                                sqlStr = string.Format("SELECT TOP {0} *, geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326)) as dist FROM asset_beaver WHERE latitude is not null and longitude is not null and structure LIKE '{3}' ORDER BY geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326))", maxRows + startRow, lat, lon, SqlHelper.FixUp(searchStr));
                         }
 
                         bool rc = stmt.DoSQL(sqlStr);
@@ -6334,18 +6334,83 @@ namespace RoadaWebService
             return Result;
         }
 
+        // first string is name in class, second is name in database
+        string[,] fenceLayout = { { "structure", "structure" },
+                                  { "road", "road" },
+                                  { "location", "location" },
+                                  { "name", "name" },
+                                  { "site", "site" },
+                                  { "area","area" },
+                                  { "length", "length" },
+                                  { "latitude", "latitude" },
+                                  { "longitude", "longitude" },
+                                  { "notes", "notes" } };
+
+        [WebMethod(Description = "Add a Bridge")]
+        public int AddFence(Request request, Fence fdata)
+        {
+            int Result = -5;
+
+            if (LowSecurityCheck(request, "AddFence"))
+            {
+                Result = -4;
+                string connStr = CustConnectionString(request);
+                SqlStmt stmt = null;
+                try
+                {
+                    Result = -3;
+                    if (GetStmt(connStr, out stmt))
+                    {
+                        if (fdata != null && fdata.structure != string.Empty)
+                        {
+                            Result = -2;
+                            // currently, we are only adding a bridge, no UPDATES
+                            if (!stmt.DoSQLFormat("SELECT id FROM asset_fence WHERE structure='{0}'", fdata.structure))
+                            {
+                                Result = -1;
+
+                                SqlHelper sql = procData.fillQuery(fdata, fenceLayout);
+                                sql.AddNow("date");
+
+                                if (stmt.DoSQL(sql.BuildCmd("asset_fence", true)))
+                                    Result = 1;
+                            }
+                        }
+                    }
+                }
+                catch (Exception x)
+                {
+                    Global.messLog.Flush("AddFence() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
+                    InsertErrorRecord(request.CustCode, string.Format("AddFence() Failed to receive HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message), request);
+                }
+                finally
+                {
+                    if (stmt != null)
+                    {
+                        stmt.Close();
+                        stmt = null;
+                    }
+                }
+            }
+            return Result;
+        }
+
         private Fence fillFence(SqlStmt stmt)
         {
-            Fence b = new Fence();
-            b.fence = stmt.fetch("fence");
-            b.location = stmt.fetch("location");
-            b.name = stmt.fetch("name");
-            b.latitude = stmt.dfetch("latitude");
-            b.longitude = stmt.dfetch("longitude");
-            b.notes = stmt.fetch("notes");
-            b.date = stmt.dtfetch("date");
+            Fence f = new Fence();
+            f.structure = stmt.fetch("structure");
+            f.name = stmt.fetch("name");
+            f.road = stmt.fetch("road");
+            f.site = stmt.fetch("site");
+            f.area = stmt.fetch("area");
+            f.length = stmt.fetch("length");
+            f.location = stmt.fetch("location");
+            f.latitude = stmt.dfetch("latitude");
+            f.longitude = stmt.dfetch("longitude");
+            f.notes = stmt.fetch("notes");
+            f.date = stmt.dtfetch("date");
 
-            return b;
+            return f;
         }
 
         [WebMethod(Description = "Retrieve Fence and Fencing")]
@@ -6362,7 +6427,7 @@ namespace RoadaWebService
                     if (GetStmt(connStr, out stmt))
                     {
                         List<Fence> Fences = new List<Fence>();
-                        bool rc = stmt.DoSQL("SELECT * FROM asset_fence ORDER BY fence");
+                        bool rc = stmt.DoSQL("SELECT * FROM asset_fence ORDER BY structure");
                         while (rc)
                         {
                             Fences.Add(fillFence(stmt));
@@ -6407,16 +6472,16 @@ namespace RoadaWebService
                         if (lat == 0 && lon == 0)
                         {
                             if (searchStr == string.Empty)
-                                sqlStr = string.Format("SELECT TOP {0} * FROM asset_fence ORDER BY fence", maxRows + startRow);
+                                sqlStr = string.Format("SELECT TOP {0} * FROM asset_fence ORDER BY structure", maxRows + startRow);
                             else
-                                sqlStr = string.Format("SELECT TOP {0} * FROM asset_fence WHERE fence LIKE '{1}' ORDER BY fence", maxRows + startRow, SqlHelper.FixUp(searchStr));
+                                sqlStr = string.Format("SELECT TOP {0} * FROM asset_fence WHERE structure LIKE '{1}' ORDER BY structure", maxRows + startRow, SqlHelper.FixUp(searchStr));
                         }
                         else
                         {
                             if (searchStr == string.Empty)
                                 sqlStr = string.Format("SELECT TOP {0} *, geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326)) as dist FROM asset_fence WHERE latitude is not null and longitude is not null ORDER BY geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326))", maxRows + startRow, lat, lon);
                             else
-                                sqlStr = string.Format("SELECT TOP {0} *, geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326)) as dist FROM asset_fence WHERE latitude is not null and longitude is not null and fence LIKE '{3}' ORDER BY geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326))", maxRows + startRow, lat, lon, SqlHelper.FixUp(searchStr));
+                                sqlStr = string.Format("SELECT TOP {0} *, geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326)) as dist FROM asset_fence WHERE latitude is not null and longitude is not null and structure LIKE '{3}' ORDER BY geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326))", maxRows + startRow, lat, lon, SqlHelper.FixUp(searchStr));
                         }
 
                         bool rc = stmt.DoSQL(sqlStr);
@@ -6846,6 +6911,7 @@ namespace RoadaWebService
                         if (item.issue > 0)
                         {
                             sql.Add("bridge", bdata.bridge);
+                            sql.Add("structure", bdata.structure);
                             sql.Add("date", bdata.date);
 
                             sql.Add("issue", item.issue);
@@ -6894,7 +6960,7 @@ namespace RoadaWebService
                     SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
                     DateTime now = DateTime.Now.ToLocalTime();
 
-                    sql.Add("pond", bdata.pond);
+                    sql.Add("structure", bdata.structure);
                     sql.Add("latitude", bdata.latitude);
                     sql.Add("longitude", bdata.longitude);
                     sql.Add("other", bdata.other);
@@ -6914,7 +6980,7 @@ namespace RoadaWebService
                         // MUST have an issue # 
                         if (item.issue > 0)
                         {
-                            sql.Add("pond", bdata.pond);
+                            sql.Add("structure", bdata.structure);
                             sql.Add("date", bdata.date);
 
                             sql.Add("issue", item.issue);
@@ -7027,7 +7093,7 @@ namespace RoadaWebService
                     SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
                     DateTime now = DateTime.Now.ToLocalTime();
 
-                    sql.Add("beaver", bdata.beaver);
+                    sql.Add("structure", bdata.structure);
                     sql.Add("latitude", bdata.latitude);
                     sql.Add("longitude", bdata.longitude);
                     sql.Add("other", bdata.other);
@@ -7047,7 +7113,7 @@ namespace RoadaWebService
                         // MUST have an issue # 
                         if (item.issue > 0)
                         {
-                            sql.Add("beaver", bdata.beaver);
+                            sql.Add("structure", bdata.structure);
                             sql.Add("date", bdata.date);
 
                             sql.Add("issue", item.issue);
@@ -7095,7 +7161,7 @@ namespace RoadaWebService
                     SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
                     DateTime now = DateTime.Now.ToLocalTime();
 
-                    sql.Add("fence", bdata.fence);
+                    sql.Add("structure", bdata.structure);
                     sql.Add("latitude", bdata.latitude);
                     sql.Add("longitude", bdata.longitude);
                     sql.Add("other", bdata.other);
@@ -7115,7 +7181,7 @@ namespace RoadaWebService
                         // MUST have an issue # 
                         if (item.issue > 0)
                         {
-                            sql.Add("fence", bdata.fence);
+                            sql.Add("structure", bdata.structure);
                             sql.Add("date", bdata.date);
 
                             sql.Add("issue", item.issue);
@@ -7426,13 +7492,13 @@ namespace RoadaWebService
 
                         foreach (var item in ponds)
                         {
-                            if (item.pond != null && item.pond.Length > 0)
+                            if (item.structure != null && item.structure.Length > 0)
                             {
-                                bool brc = stmt.DoSQLFormat("SELECT TOP {0} * FROM inspection_pond WHERE pond='{1}' ORDER BY date desc", maxInsp, SqlHelper.FixUp(item.pond));
+                                bool brc = stmt.DoSQLFormat("SELECT TOP {0} * FROM inspection_pond WHERE structure='{1}' ORDER BY date desc", maxInsp, SqlHelper.FixUp(item.structure));
                                 while (brc)
                                 {
                                     PondInspectionData b = new PondInspectionData();
-                                    b.pond = stmt.fetch("pond");
+                                    b.structure = stmt.fetch("structure");
                                     b.location = stmt.fetch("location");
                                     b.name = stmt.fetch("name");
                                     b.site = stmt.fetch("site");
@@ -7465,11 +7531,11 @@ namespace RoadaWebService
                                     }
 
                                     // the DATEADD(ms, -DATEPART(ms, date), date) is because some older inspections had millisecs in the date, this makes sure to ignore that
-                                    rc = stmt2.DoSQLFormat("SELECT * FROM inspection_pond_item WHERE pond='{0}' and DATEADD(ms, -DATEPART(ms, date), date)={1}", SqlHelper.FixUp(b.pond), SqlHelper.timeStamp(b.date));
+                                    rc = stmt2.DoSQLFormat("SELECT * FROM inspection_pond_item WHERE structure='{0}' and DATEADD(ms, -DATEPART(ms, date), date)={1}", SqlHelper.FixUp(b.structure), SqlHelper.timeStamp(b.date));
                                     while (rc)
                                     {
                                         PondItem bi = new PondItem();
-                                        bi.pond = b.pond;
+                                        bi.structure = b.structure;
                                         bi.date = b.date;
                                         bi.issue = stmt2.ifetch("issue");
                                         bi.defect = stmt2.bfetch("defect");
@@ -7644,13 +7710,13 @@ namespace RoadaWebService
 
                         foreach (var item in beavers)
                         {
-                            if (item.beaver != null && item.beaver.Length > 0)
+                            if (item.structure != null && item.structure.Length > 0)
                             {
-                                bool brc = stmt.DoSQLFormat("SELECT TOP {0} * FROM inspection_beaver WHERE beaver='{1}' ORDER BY date desc", maxInsp, SqlHelper.FixUp(item.beaver));
+                                bool brc = stmt.DoSQLFormat("SELECT TOP {0} * FROM inspection_beaver WHERE structure='{1}' ORDER BY date desc", maxInsp, SqlHelper.FixUp(item.structure));
                                 while (brc)
                                 {
                                     BeaverInspectionData b = new BeaverInspectionData();
-                                    b.beaver = stmt.fetch("beaver");
+                                    b.structure = stmt.fetch("structure");
                                     b.location = stmt.fetch("location");
                                     b.name = stmt.fetch("name");
                                     b.site = stmt.fetch("site");
@@ -7683,12 +7749,13 @@ namespace RoadaWebService
                                     }
 
                                     // the DATEADD(ms, -DATEPART(ms, date), date) is because some older inspections had millisecs in the date, this makes sure to ignore that
-                                    rc = stmt2.DoSQLFormat("SELECT * FROM inspection_beaver_item WHERE beaver='{0}' and DATEADD(ms, -DATEPART(ms, date), date)={1}", SqlHelper.FixUp(b.beaver), SqlHelper.timeStamp(b.date));
+                                    rc = stmt2.DoSQLFormat("SELECT * FROM inspection_beaver_item WHERE structure='{0}' and DATEADD(ms, -DATEPART(ms, date), date)={1}", SqlHelper.FixUp(b.structure), SqlHelper.timeStamp(b.date));
                                     while (rc)
                                     {
                                         BeaverItem bi = new BeaverItem();
-                                        bi.beaver = b.beaver;
+                                        bi.structure = b.structure;
                                         bi.date = b.date;
+
                                         bi.issue = stmt2.ifetch("issue");
                                         bi.defect = stmt2.bfetch("defect");
                                         bi.note = stmt2.fetch("note");
@@ -7751,13 +7818,13 @@ namespace RoadaWebService
 
                         foreach (var item in fences)
                         {
-                            if (item.fence != null && item.fence.Length > 0)
+                            if (item.structure != null && item.structure.Length > 0)
                             {
-                                bool brc = stmt.DoSQLFormat("SELECT TOP {0} * FROM inspection_fence WHERE fence='{1}' ORDER BY date desc", maxInsp, SqlHelper.FixUp(item.fence));
+                                bool brc = stmt.DoSQLFormat("SELECT TOP {0} * FROM inspection_fence WHERE structure='{1}' ORDER BY date desc", maxInsp, SqlHelper.FixUp(item.structure));
                                 while (brc)
                                 {
                                     FenceInspectionData b = new FenceInspectionData();
-                                    b.fence = stmt.fetch("fence");
+                                    b.structure = stmt.fetch("structure");
                                     b.location = stmt.fetch("location");
                                     b.name = stmt.fetch("name");
                                     b.site = stmt.fetch("site");
@@ -7790,11 +7857,11 @@ namespace RoadaWebService
                                     }
 
                                     // the DATEADD(ms, -DATEPART(ms, date), date) is because some older inspections had millisecs in the date, this makes sure to ignore that
-                                    rc = stmt2.DoSQLFormat("SELECT * FROM inspection_fence_item WHERE fence='{0}' and DATEADD(ms, -DATEPART(ms, date), date)={1}", SqlHelper.FixUp(b.fence), SqlHelper.timeStamp(b.date));
+                                    rc = stmt2.DoSQLFormat("SELECT * FROM inspection_fence_item WHERE structure='{0}' and DATEADD(ms, -DATEPART(ms, date), date)={1}", SqlHelper.FixUp(b.structure), SqlHelper.timeStamp(b.date));
                                     while (rc)
                                     {
                                         FenceItem bi = new FenceItem();
-                                        bi.fence = b.fence;
+                                        bi.structure = b.structure;
                                         bi.date = b.date;
                                         bi.issue = stmt2.ifetch("issue");
                                         bi.defect = stmt2.bfetch("defect");
@@ -8306,6 +8373,13 @@ namespace RoadaWebService
         public int AddCulvertJson(Request req, Culvert cdata)
         {
             return AddCulvert(req, cdata);
+        }
+
+        [WebMethod(Description = "Add a Fence")]
+        [ScriptMethod(UseHttpGet = false, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public int AddFenceJson(Request req, Fence fdata)
+        {
+            return AddFence(req, fdata);
         }
 
         [WebMethod(Description = "Retrieve Bridge list as JSON")]

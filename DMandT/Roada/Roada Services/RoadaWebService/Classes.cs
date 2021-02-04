@@ -920,6 +920,8 @@ namespace RoadaWebService
             this.photos = new List<PhotoData>();
         }
         [DataMember]
+        public string structure { get; set; }
+        [DataMember]
         public DateTime date { get; set; }
         [DataMember]
         public string road { get; set; }
@@ -927,8 +929,6 @@ namespace RoadaWebService
         public string location { get; set; }
         [DataMember]
         public string inspector { get; set; }
-        [DataMember]
-        public string pond { get; set; }
         [DataMember]
         public string name { get; set; }
         [DataMember]
@@ -949,7 +949,25 @@ namespace RoadaWebService
         public string repKey { get; set; }
         [DataMember]
         public List<PhotoData> photos { get; set; }
+    }
 
+    [DataContract]
+    public class PondItem
+    {
+        [DataMember]
+        public string structure { get; set; }
+        [DataMember]
+        public DateTime date { get; set; }
+        [DataMember]
+        public int issue { get; set; }
+        [DataMember]
+        public bool defect { get; set; }
+        [DataMember]
+        public string note { get; set; }
+        [DataMember]
+        public int tstate { get; set; }
+        [DataMember]
+        public bool groupEnabled { get; set; }
     }
 
     [DataContract]
@@ -1022,25 +1040,6 @@ namespace RoadaWebService
     }
 
     [DataContract]
-    public class PondItem
-    {
-        [DataMember]
-        public DateTime date { get; set; }
-        [DataMember]
-        public int issue { get; set; }
-        [DataMember]
-        public bool defect { get; set; }
-        [DataMember]
-        public string note { get; set; }
-        [DataMember]
-        public int tstate { get; set; }
-        [DataMember]
-        public bool groupEnabled { get; set; }
-        [DataMember]
-        public string pond { get; set; }
-    }
-
-    [DataContract]
     public class BeaverInspectionData
     {
 
@@ -1058,7 +1057,7 @@ namespace RoadaWebService
         [DataMember]
         public string inspector { get; set; }
         [DataMember]
-        public string beaver { get; set; }
+        public string structure { get; set; }
         [DataMember]
         public string name { get; set; }
         [DataMember]
@@ -1086,7 +1085,7 @@ namespace RoadaWebService
     public class BeaverItem
     {
         [DataMember]
-        public DateTime date { get; set; }
+        public string structure { get; set; }
         [DataMember]
         public int issue { get; set; }
         [DataMember]
@@ -1098,7 +1097,7 @@ namespace RoadaWebService
         [DataMember]
         public bool groupEnabled { get; set; }
         [DataMember]
-        public string beaver { get; set; }
+        public DateTime date { get; set; }
     }
 
     [DataContract]
@@ -1119,7 +1118,7 @@ namespace RoadaWebService
         [DataMember]
         public string inspector { get; set; }
         [DataMember]
-        public string fence { get; set; }
+        public string structure { get; set; }
         [DataMember]
         public string name { get; set; }
         [DataMember]
@@ -1147,7 +1146,7 @@ namespace RoadaWebService
     public class FenceItem
     {
         [DataMember]
-        public DateTime date { get; set; }
+        public string structure { get; set; }
         [DataMember]
         public int issue { get; set; }
         [DataMember]
@@ -1159,7 +1158,7 @@ namespace RoadaWebService
         [DataMember]
         public bool groupEnabled { get; set; }
         [DataMember]
-        public string fence { get; set; }
+        public DateTime date { get; set; }
     }
 
     [DataContract]
@@ -1252,7 +1251,7 @@ namespace RoadaWebService
     public class Pond
     {
         [DataMember]
-        public string pond { get; set; }
+        public string structure { get; set; }
         [DataMember]
         public string road { get; set; }
         [DataMember]
@@ -1273,7 +1272,7 @@ namespace RoadaWebService
     public class Beaver
     {
         [DataMember]
-        public string beaver { get; set; }
+        public string structure { get; set; }
         [DataMember]
         public string road { get; set; }
         [DataMember]
@@ -1294,13 +1293,19 @@ namespace RoadaWebService
     public class Fence
     {
         [DataMember]
-        public string fence { get; set; }
+        public string structure { get; set; }
         [DataMember]
         public string road { get; set; }
         [DataMember]
         public string location { get; set; }
         [DataMember]
+        public string site { get; set; }
+        [DataMember]
         public string name { get; set; }
+        [DataMember]
+        public string area { get; set; }
+        [DataMember]
+        public string length { get; set; }
         [DataMember]
         public double latitude { get; set; }
         [DataMember]
