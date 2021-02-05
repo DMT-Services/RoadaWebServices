@@ -913,7 +913,6 @@ namespace RoadaWebService
     [DataContract]
     public class PondInspectionData
     {
-
         public PondInspectionData()
         {
             this.pondItems = new List<PondItem>();
@@ -1257,6 +1256,12 @@ namespace RoadaWebService
         [DataMember]
         public string location { get; set; }
         [DataMember]
+        public string site { get; set; }
+        [DataMember]
+        public string area { get; set; }
+        [DataMember]
+        public string size { get; set; }
+        [DataMember]
         public string name { get; set; }
         [DataMember]
         public double latitude { get; set; }
@@ -1320,8 +1325,6 @@ namespace RoadaWebService
     public class Sign
     {
         [DataMember]
-        public DateTime date { get; set; }
-        [DataMember]
         public int type { get; set; }
         [DataMember]
         public string structure { get; set; }
@@ -1353,6 +1356,8 @@ namespace RoadaWebService
         public string size { get; set; }
         [DataMember]
         public string sign_text { get; set; }
+        [DataMember]
+        public DateTime date { get; set; }
         [DataMember]
         public double distance { get; set; }
     }

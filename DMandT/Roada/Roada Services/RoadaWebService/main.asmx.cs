@@ -6029,11 +6029,75 @@ namespace RoadaWebService
             return Result;
         }
 
+        // first string is name in class, second is name in database
+        string[,] pondLayout = { { "structure", "structure" },
+                                 { "road", "road" },
+                                 { "location", "location" },
+                                 { "name", "name" },
+                                 { "site", "site" },
+                                 { "area","area" },
+                                 { "size", "size" },
+                                 { "latitude", "latitude" },
+                                 { "longitude", "longitude" },
+                                 { "notes", "notes" } };
+
+        [WebMethod(Description = "Add a Mngmt Pond")]
+        public int AddPond(Request request, Pond pdata)
+        {
+            int Result = -5;
+
+            if (LowSecurityCheck(request, "AddPond"))
+            {
+                Result = -4;
+                string connStr = CustConnectionString(request);
+                SqlStmt stmt = null;
+                try
+                {
+                    Result = -3;
+                    if (GetStmt(connStr, out stmt))
+                    {
+                        if (pdata != null && pdata.structure != string.Empty)
+                        {
+                            Result = -2;
+                            // currently, we are only adding a bridge, no UPDATES
+                            if (!stmt.DoSQLFormat("SELECT id FROM asset_pond WHERE structure='{0}'", pdata.structure))
+                            {
+                                Result = -1;
+
+                                SqlHelper sql = procData.fillQuery(pdata, pondLayout);
+                                sql.AddNow("date");
+
+                                if (stmt.DoSQL(sql.BuildCmd("asset_pond", true)))
+                                    Result = 1;
+                            }
+                        }
+                    }
+                }
+                catch (Exception x)
+                {
+                    Global.messLog.Flush("AddPond() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
+                    InsertErrorRecord(request.CustCode, string.Format("AddPond() Failed to receive HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message), request);
+                }
+                finally
+                {
+                    if (stmt != null)
+                    {
+                        stmt.Close();
+                        stmt = null;
+                    }
+                }
+            }
+            return Result;
+        }
+
         private Pond fillPond(SqlStmt stmt)
         {
             Pond p = new Pond();
             p.structure = stmt.fetch("structure");
             p.location = stmt.fetch("location");
+            p.site = stmt.fetch("site");
+            p.area = stmt.fetch("area");
+            p.size = stmt.fetch("size");
             p.name = stmt.fetch("name");
             p.latitude = stmt.dfetch("latitude");
             p.longitude = stmt.dfetch("longitude");
@@ -6595,10 +6659,75 @@ namespace RoadaWebService
             return Result;
         }
 
+        // first string is name in class, second is name in database
+        string[,] signLayout = { { "type", "type" },
+                                 { "structure", "structure" },
+                                 { "location", "location" },
+                                 { "road", "road" },
+                                 { "spot", "spot" },
+                                 { "site", "site" },
+                                 { "struct_type","struct_type" },
+                                 { "panels", "panels"},
+                                 { "foot_type_l", "foot_type_l"},
+                                 { "foot_type_r", "foot_type_r"},
+                                 { "size", "size" },
+                                 { "sign_text", "sign_text" },
+                                 { "latitude", "latitude" },
+                                 { "longitude", "longitude" } };
+                                 //{ "notes", "notes" } };
+
+        [WebMethod(Description = "Add a Sign")]
+        public int AddSign(Request request, Sign sdata)
+        {
+            int Result = -5;
+
+            if (LowSecurityCheck(request, "AddSign"))
+            {
+                Result = -4;
+                string connStr = CustConnectionString(request);
+                SqlStmt stmt = null;
+                try
+                {
+                    Result = -3;
+                    if (GetStmt(connStr, out stmt))
+                    {
+                        if (sdata != null && sdata.structure != string.Empty)
+                        {
+                            Result = -2;
+                            // currently, we are only adding a bridge, no UPDATES
+                            if (!stmt.DoSQLFormat("SELECT id FROM asset_sign WHERE structure='{0}'", sdata.structure))
+                            {
+                                Result = -1;
+
+                                SqlHelper sql = procData.fillQuery(sdata, signLayout);
+                                sql.AddNow("date");
+
+                                if (stmt.DoSQL(sql.BuildCmd("asset_sign", true)))
+                                    Result = 1;
+                            }
+                        }
+                    }
+                }
+                catch (Exception x)
+                {
+                    Global.messLog.Flush("AddSign() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
+                    InsertErrorRecord(request.CustCode, string.Format("AddSign() Failed to receive HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message), request);
+                }
+                finally
+                {
+                    if (stmt != null)
+                    {
+                        stmt.Close();
+                        stmt = null;
+                    }
+                }
+            }
+            return Result;
+        }
+
         private Sign FillSign(SqlStmt stmt)
         {
             Sign s = new Sign();
-            s.date = stmt.dtfetch("date");
             s.type = stmt.ifetch("type");
             s.structure = stmt.fetch("structure");
             s.location = stmt.fetch("location");
@@ -6615,6 +6744,7 @@ namespace RoadaWebService
             s.longitude = stmt.dfetch("longitude");
             s.size = stmt.fetch("size");
             s.sign_text = stmt.fetch("sign_text");
+            s.date = stmt.dtfetch("date");
             s.distance = stmt.dfetch("dist");
             return s;
         }
@@ -7671,11 +7801,11 @@ namespace RoadaWebService
                         string sqlStr;
                         if (lat == 0 && lon == 0)
                         {
-                            sqlStr = string.Format("SELECT TOP {0} * FROM rock_inspections ORDER BY date DESC", maxRows + startRow);
+                            sqlStr = string.Format("SELECT TOP {0} * FROM inspection_rockfall ORDER BY date DESC", maxRows + startRow);
                         }
                         else
                         {
-                            sqlStr = string.Format("SELECT TOP {0} *, geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326)) as dist FROM rock_inspections WHERE latitude is not null and longitude is not null ORDER BY geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326))", maxRows + startRow, lat, lon);
+                            sqlStr = string.Format("SELECT TOP {0} *, geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326)) as dist FROM inspection_rockfall WHERE latitude is not null and longitude is not null ORDER BY geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326))", maxRows + startRow, lat, lon);
                         }
 
                         bool rc = stmt.DoSQL(sqlStr);
@@ -8435,6 +8565,13 @@ namespace RoadaWebService
             return AddBridge(req, bdata);
         }
 
+        [WebMethod(Description = "Add a Sign")]
+        [ScriptMethod(UseHttpGet = false, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public int AddSignJson(Request req, Sign sdata)
+        {
+            return AddSign(req, sdata);
+        }
+
         [WebMethod(Description = "Add a Beaver Pond")]
         [ScriptMethod(UseHttpGet = false, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
         public int AddBeaverJson(Request req, Beaver bdata)
@@ -8456,6 +8593,13 @@ namespace RoadaWebService
             return AddFence(req, fdata);
         }
 
+        [WebMethod(Description = "Add a Pond")]
+        [ScriptMethod(UseHttpGet = false, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public int AddPondJson(Request req, Pond pdata)
+        {
+            return AddPond(req, pdata);
+        }
+        
         [WebMethod(Description = "Retrieve Bridge list as JSON")]
         [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
         public Bridge[] GetBridgesJson(Request req)
