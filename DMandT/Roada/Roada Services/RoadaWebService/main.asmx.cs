@@ -6521,6 +6521,80 @@ namespace RoadaWebService
             return Result;
         }
 
+        [WebMethod(Description = "Retrieve Sidewalk closest to lat/lon pair for maxRows")]
+        public SideWalkData[] GetSidewalkListNear(Request request, double lat, double lon, int startRow, int maxRows)
+        {
+            SideWalkData[] Result = null;
+
+            if (LowSecurityCheck(request, "GetSidewalkListNear"))
+            {
+                string connStr = CustConnectionString(request);
+                SqlStmt stmt = null;
+                try
+                {
+                    if (GetStmt(connStr, out stmt))
+                    {
+                        string sqlStr;
+                        if (lat == 0 && lon == 0)
+                        {
+                            sqlStr = string.Format("SELECT TOP {0} * FROM sidewalk_report ORDER BY report_time DESC", maxRows + startRow);
+                        }
+                        else
+                        {
+                            sqlStr = string.Format("SELECT TOP {0} *, geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326)) as dist FROM sidewalk_report WHERE latitude is not null and longitude is not null ORDER BY geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326))", maxRows + startRow, lat, lon);
+                        }
+
+                        bool rc = stmt.DoSQL(sqlStr);
+                        // scroll to the beginning of the rows we call
+                        while (rc && startRow > 0)
+                        {
+                            startRow--;
+                            rc = stmt.dbSkip();
+                        }
+
+                        // now get the data we want
+                        List<SideWalkData> Sidewalks = new List<SideWalkData>();
+                        while (rc)
+                        {
+                            SideWalkData data = new SideWalkData();
+                            data.reportId = stmt.fetch("report_id");
+                            data.handCode = stmt.ifetch("hand_code");
+                            data.address = stmt.fetch("address");
+                            data.UnitNum = stmt.fetch("unit_num");
+                            data.userName = stmt.fetch("user_name");
+                            data.Colour = stmt.ifetch("colour");
+                            data.reportTime = stmt.dtfetch("report_time");
+                            data.bays = stmt.ifetch("bays");
+                            data.blocks = stmt.ifetch("blocks");
+                            data.def1 = stmt.ifetch("def1");
+                            data.def2 = stmt.ifetch("def2");
+                            data.lon = stmt.dfetch("longitude");
+                            data.lat = stmt.dfetch("latitude");
+                            Sidewalks.Add(data);
+
+                            rc = stmt.dbSkip();
+                        }
+                        Result = Sidewalks.ToArray();
+                        Sidewalks.Clear();
+                    }
+                }
+                catch (Exception x)
+                {
+                    Global.messLog.Flush("GetSidewalkListNear() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
+                    InsertErrorRecord(request.CustCode, string.Format("GetSidewalkListNear() Failed to send HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message), request);
+                }
+                finally
+                {
+                    if (stmt != null)
+                    {
+                        stmt.Close();
+                        stmt = null;
+                    }
+                }
+            }
+            return Result;
+        }
+
         private Sign FillSign(SqlStmt stmt)
         {
             Sign s = new Sign();
@@ -8408,6 +8482,13 @@ namespace RoadaWebService
         public Pond[] GetPondsNearJson(Request req, string searchStr, double lat, double lon, int startRow, int maxRows)
         {
             return GetPondListNear(req, searchStr, lat, lon, startRow, maxRows);
+        }
+
+        [WebMethod(Description = "Retrieve Sidewalk list closest to lat/lon pair for maxRows")]
+        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public SideWalkData[] GetSidewalksNearJson(Request req, double lat, double lon, int startRow, int maxRows)
+        {
+            return GetSidewalkListNear(req, lat, lon, startRow, maxRows);
         }
 
         [WebMethod(Description = "Retrieve Rock list closest to lat/lon pair for maxRows")]
