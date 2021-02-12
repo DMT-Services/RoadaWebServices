@@ -6632,6 +6632,7 @@ namespace RoadaWebService
                             data.blocks = stmt.ifetch("blocks");
                             data.def1 = stmt.ifetch("def1");
                             data.def2 = stmt.ifetch("def2");
+                            data.notes = stmt.fetch("notes");
                             data.lon = stmt.dfetch("longitude");
                             data.lat = stmt.dfetch("latitude");
                             Sidewalks.Add(data);
