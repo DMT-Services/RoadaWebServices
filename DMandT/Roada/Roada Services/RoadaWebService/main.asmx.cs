@@ -3381,6 +3381,7 @@ namespace RoadaWebService
                         sql.Add("drifting", wdata.drifting);
                         sql.Add("road", wdata.roadCondition);
                         sql.Add("road2", wdata.road2ndCondition);
+                        sql.Add("sidewalk", wdata.sidewalkCondition);
                         sql.Add("latitude", wdata.CurrentLat);
                         sql.Add("longitude", wdata.CurrentLong);
                         sql.Add("calc_lat", wdata.calcLat);
@@ -3392,6 +3393,8 @@ namespace RoadaWebService
                         sql.Add("comment", wdata.comment);
                         sql.Add("action_taken", wdata.action);
                         sql.Add("work_order", wdata.workOrder);
+                        sql.Add("road_service", wdata.roadService);
+                        sql.Add("sidewalk_service", wdata.sidewalkService);
                         sql.AddNow("idate");
                         sql.Add("vehicle_id", getVehicleId(stmt, wdata.handCode, wdata.unitNum));
 
