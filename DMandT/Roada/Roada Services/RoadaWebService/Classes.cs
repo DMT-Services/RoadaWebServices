@@ -790,6 +790,8 @@ namespace RoadaWebService
         [DataMember]
         public int road2ndCondition { get; set; }
         [DataMember]
+        public int sidewalkCondition { get; set; }
+        [DataMember]
         public decimal CurrentLat { get; set; }
         [DataMember]
         public decimal CurrentLong { get; set; }
@@ -811,6 +813,10 @@ namespace RoadaWebService
         public string action { get; set; }
         [DataMember]
         public string workOrder { get; set; }
+        [DataMember]
+        public int roadService { get; set; }
+        [DataMember]
+        public int sidewalkService { get; set; }
     }
 
     public class WeatherLocation
