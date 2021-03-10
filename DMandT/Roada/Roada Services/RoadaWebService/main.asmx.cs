@@ -3503,6 +3503,7 @@ namespace RoadaWebService
                     else
                         sql.Add("sig_data", rdata.Signiture);   // this misspelled one is byte[], possibly for others?
                     sql.Add("Temp", rdata.Temp);
+                    sql.Add("Address", rdata.Address);
 
                     //adds and updates main report table 
                     if (stmt.DoSQL(string.Format("SELECT ci_id FROM collision_incident WHERE ci_id = '{0}'", rdata.reportTime)))
@@ -4964,6 +4965,76 @@ namespace RoadaWebService
                 Result = -3;
                 Global.messLog.Flush("sendSidewalkData() Failed to send HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, ex.Message);
                 InsertErrorRecord(req.CustCode, string.Format("sendSidewalkData() Failed to send HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, ex.Message), req);
+            }
+            finally
+            {
+                if (stmt != null)
+                    stmt.Close();
+            }
+
+            return Result;
+        }
+
+
+
+        [WebMethod(Description = "Puts wildlife inspection Data Away")]
+        public int SendWildlifeData(Request req, WildlifeData data)
+        {
+            int Result = -1;
+            // low security check, don't want hackers!
+            if (!LowSecurityCheck(req, "SendSidewalkData"))
+                return Result;
+
+            string connStr = CustConnectionString(req);
+
+            SqlStmt stmt = null;
+            try
+            {
+                Result = -2;
+                if (GetStmt(connStr, out stmt))
+                {
+                    SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
+                    DateTime now = DateTime.Now.ToLocalTime();
+
+                    sql.Add("reportId", data.reportID);
+                    sql.Add("hand_code", data.handcode);
+                    sql.Add("address", data.address);
+                    sql.Add("unit_num", data.unitnum);
+                    sql.Add("user_name", data.username);
+                    sql.Add("direction", data.direction);
+                    sql.Add("reportTime", data.reportTime);
+                    sql.Add("town", data.town);
+                    sql.Add("age", data.age);
+                    sql.Add("gender", data.gender);
+                    sql.Add("species", data.species);
+                    sql.Add("weahter", data.weather);
+                    sql.Add("highway", data.highway);
+                    sql.Add("rowt", data.rowt);
+                    sql.Add("comments", data.comments);
+                    sql.Add("lat", data.lat);
+                    sql.Add("lon", data.lon);
+
+                    if (stmt.DoSQL(String.Format("SELECT * FROM wildlife WHERE reportId = '{0}'", data.reportID)))
+                    {
+                        stmt.DoSQL(sql.BuildUpdate("UPDATE wildlife", String.Format("WHERE reportId = '{0}'", data.reportID)));
+
+                        Result = 1;
+                    }
+                    else
+                    {
+                        stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO wildlife"));
+
+                        Result = 2;
+                    }
+
+                    Result = 1;
+                }
+            }
+            catch (Exception ex)
+            {
+                Result = -3;
+                Global.messLog.Flush("sendWildlifeData() Failed to send HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, ex.Message);
+                InsertErrorRecord(req.CustCode, string.Format("sendWildlifeData() Failed to send HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, ex.Message), req);
             }
             finally
             {

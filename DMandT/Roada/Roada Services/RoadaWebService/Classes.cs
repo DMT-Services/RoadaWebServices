@@ -1458,6 +1458,49 @@ namespace RoadaWebService
     }
 
     [DataContract]
+    public class WildlifeData 
+    {
+        [DataMember]
+        public string reportID { get; set; }
+        [DataMember]
+        public string address { get; set; }
+        [DataMember]
+        public string handcode { get; set; }
+        [DataMember]
+        public string unitnum { get; set; }
+        [DataMember]
+        public string username { get; set; }
+        [DataMember]
+        public DateTime reportTime { get; set; }
+        [DataMember]
+        public int direction { get; set; }
+        [DataMember]
+        public string town { get; set; }
+        [DataMember]
+        public string age { get; set; }
+        [DataMember]
+        public int gender { get; set; }
+        [DataMember]
+        public int species { get; set; }
+        [DataMember]
+        public int weather { get; set; }
+        [DataMember]
+        public int highway { get; set; }
+        [DataMember]
+        public int rowt { get; set; }
+        [DataMember]
+        public string comments { get; set; }
+        [DataMember]
+        public string log { get; set; }
+        [DataMember]
+        public decimal lon { get; set; }
+        [DataMember]
+        public decimal lat { get; set; }
+
+
+    }
+
+    [DataContract]
     public class ReportData
     {
         [DataMember]
@@ -1517,6 +1560,8 @@ namespace RoadaWebService
         public string Physical { get; set; }
         [DataMember]
         public string Other { get; set; }
+        [DataMember]
+        public string Address { get; set; }
 
         // Chks for other documents
         [DataMember]
