@@ -1487,7 +1487,7 @@ namespace RoadaWebService
         [DataMember]
         public int gender { get; set; }
         [DataMember]
-        public int species { get; set; }
+        public string species { get; set; }
         [DataMember]
         public int weather { get; set; }
         [DataMember]

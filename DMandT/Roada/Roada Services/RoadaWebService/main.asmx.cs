@@ -4978,7 +4978,12 @@ namespace RoadaWebService
             return Result;
         }
 
-
+        [WebMethod(Description = "Save Wildlife Data from React App JSON")]
+        [ScriptMethod(UseHttpGet = false, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public int SendWildlifeDataJSon(Request req, WildlifeData data)
+        {
+            return SendWildlifeData(req, data);
+        }
 
         [WebMethod(Description = "Puts wildlife inspection Data Away")]
         public int SendWildlifeData(Request req, WildlifeData data)
@@ -5003,14 +5008,14 @@ namespace RoadaWebService
                     sql.Add("hand_code", data.handcode);
                     sql.Add("address", data.address);
                     sql.Add("unit_num", data.unitnum);
-                    sql.Add("user_name", data.username);
+                    sql.Add("userName", data.username);
                     sql.Add("direction", data.direction);
                     sql.Add("reportTime", data.reportTime);
                     sql.Add("town", data.town);
                     sql.Add("age", data.age);
                     sql.Add("gender", data.gender);
                     sql.Add("species", data.species);
-                    sql.Add("weahter", data.weather);
+                    sql.Add("weather", data.weather);
                     sql.Add("highway", data.highway);
                     sql.Add("rowt", data.rowt);
                     sql.Add("comments", data.comments);
