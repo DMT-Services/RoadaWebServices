@@ -5019,6 +5019,7 @@ namespace RoadaWebService
                     sql.Add("highway", data.highway);
                     sql.Add("rowt", data.rowt);
                     sql.Add("comments", data.comments);
+                    sql.Add("wLog", data.log);
                     sql.Add("lat", data.lat);
                     sql.Add("lon", data.lon);
 
