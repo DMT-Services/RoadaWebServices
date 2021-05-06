@@ -192,6 +192,8 @@ namespace RoadaWebService
         public double lon { get; set; }
         [DataMember]
         public double lat { get; set; }
+        [DataMember]
+        public List<PhotoData> photos { get; set; }
     }
 
     [DataContract]
@@ -990,7 +992,7 @@ namespace RoadaWebService
         [DataMember]
         public string area { get; set; }
         [DataMember]
-        public string side { get; set; }
+        public int side { get; set; }
         [DataMember]
         public string patrol { get; set; }
         [DataMember]
@@ -1502,8 +1504,8 @@ namespace RoadaWebService
         public decimal lon { get; set; }
         [DataMember]
         public decimal lat { get; set; }
-
-
+        [DataMember]
+        public List<PhotoData> photos;
     }
 
     [DataContract]

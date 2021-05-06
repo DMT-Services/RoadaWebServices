@@ -4990,7 +4990,7 @@ namespace RoadaWebService
         {
             int Result = -1;
             // low security check, don't want hackers!
-            if (!LowSecurityCheck(req, "SendSidewalkData"))
+            if (!LowSecurityCheck(req, "SendWildlifeData"))
                 return Result;
 
             string connStr = CustConnectionString(req);
@@ -6674,9 +6674,10 @@ namespace RoadaWebService
             {
                 string connStr = CustConnectionString(request);
                 SqlStmt stmt = null;
+                SqlStmt stmt2 = null;
                 try
                 {
-                    if (GetStmt(connStr, out stmt))
+                    if (GetStmt(connStr, out stmt) && GetStmt(connStr, out stmt2))
                     {
                         string sqlStr;
                         if (lat == 0 && lon == 0)
@@ -6715,6 +6716,24 @@ namespace RoadaWebService
                             data.notes = stmt.fetch("notes");
                             data.lon = stmt.dfetch("longitude");
                             data.lat = stmt.dfetch("latitude");
+                            data.photos = new List<PhotoData>();
+                            bool rc2;
+                            if (data.reportId != string.Empty)
+                            {
+                                rc2 = stmt2.DoSQLFormat("SELECT * FROM Img_events WHERE RepKey='{0}'", data.reportId);
+                                while (rc2)
+                                {
+                                    PhotoData pdata = new PhotoData();
+
+                                    pdata.repkey = data.reportId;
+                                    pdata.imgUrl = stmt2.fetch("img_url");
+
+                                    data.photos.Add(pdata);
+
+                                    rc2 = stmt2.dbSkip();
+                                }
+                            }
+
                             Sidewalks.Add(data);
 
                             rc = stmt.dbSkip();
@@ -6734,6 +6753,11 @@ namespace RoadaWebService
                     {
                         stmt.Close();
                         stmt = null;
+                    }
+                    if (stmt2 != null)
+                    {
+                        stmt2.Close();
+                        stmt2 = null;
                     }
                 }
             }
@@ -7333,6 +7357,9 @@ namespace RoadaWebService
                     sql.Add("vehicle_damage", bdata.vehicle);
                     sql.Add("closure", bdata.closure);
                     sql.Add("trimming", bdata.trimming);
+                    sql.Add("injuries", bdata.injuries);
+                    sql.Add("removal", bdata.removal);
+
                     sql.Add("remarks", bdata.remarks);
 
                     sql.Add("date", bdata.date);
@@ -7886,7 +7913,7 @@ namespace RoadaWebService
                         }
                         else
                         {
-                            sqlStr = string.Format("SELECT TOP {0} *, geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326)) as dist FROM inspection_rockfall WHERE latitude is not null and longitude is not null ORDER BY geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326))", maxRows + startRow, lat, lon);
+                            sqlStr = string.Format("SELECT TOP {0} *, geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326)) as dist FROM inspection_rockfall WHERE latitude is not null and longitude is not null and latitude > 0 ORDER BY geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326))", maxRows + startRow, lat, lon);
                         }
 
                         bool rc = stmt.DoSQL(sqlStr);
@@ -7896,7 +7923,6 @@ namespace RoadaWebService
                             startRow--;
                             rc = stmt.dbSkip();
                         }
-
                         // now get the data we want
                         List<RockInspectionData> Rocks = new List<RockInspectionData>();
                         while (rc)
@@ -7909,7 +7935,7 @@ namespace RoadaWebService
                             b.area = stmt.fetch("area");
                             b.hwy = stmt.fetch("hwy");
                             b.patrol = stmt.fetch("patrol");
-                            b.site = stmt.fetch("site");
+                            b.side = stmt.ifetch("side");
                             b.lhrs = stmt.fetch("lhrs");
                             b.os = stmt.fetch("os");
                             b.location = stmt.fetch("location");
@@ -7930,11 +7956,12 @@ namespace RoadaWebService
                             b.date = dt.AddTicks(-(dt.Ticks % TimeSpan.TicksPerSecond));
                             b.inspector = stmt.fetch("inspector");
                             b.repKey = stmt.fetch("repKey");
+                            b.photos = new List<PhotoData>();
 
                             bool rc2;
                             if (b.repKey != string.Empty)
                             {
-                                rc2 = stmt2.DoSQLFormat("SELECT * FROM Img_events WHERE RepKey='{0}'", b.repKey);
+                                rc2 = stmt2.DoSQLFormat("SELECT img_url FROM Img_events WHERE RepKey='{0}'", b.repKey);
                                 while (rc2)
                                 {
                                     PhotoData pdata = new PhotoData();
@@ -7944,10 +7971,10 @@ namespace RoadaWebService
 
                                     b.photos.Add(pdata);
 
-                                    rc = stmt2.dbSkip();
+                                    rc2 = stmt2.dbSkip();
                                 }
                             }
-
+                            Rocks.Add(b);
                             rc = stmt.dbSkip();
                         }
                         Result = Rocks.ToArray();
@@ -7958,6 +7985,107 @@ namespace RoadaWebService
                 {
                     Global.messLog.Flush("GetRockInspectionListNear() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
                     InsertErrorRecord(request.CustCode, string.Format("GetRockInspectionListNear() Failed to send HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message), request);
+                }
+                finally
+                {
+                    if (stmt != null)
+                    {
+                        stmt.Close();
+                        stmt = null;
+                    }
+                    if (stmt2 != null)
+                    {
+                        stmt2.Close();
+                        stmt2 = null;
+                    }
+                }
+            }
+            return Result;
+        }
+
+        [WebMethod(Description = "Retrieve Wildlife incident near")]
+        public WildlifeData[] GetWildlifeListNear(Request request, double lat, double lon, int startRow, int maxRows)
+        {
+            WildlifeData[] Result = null;
+
+            if (LowSecurityCheck(request, "GetWilelifeListNear"))
+            {
+                string connStr = CustConnectionString(request);
+                SqlStmt stmt = null;
+                SqlStmt stmt2 = null;
+                try
+                {
+                    if (GetStmt(connStr, out stmt) && GetStmt(connStr, out stmt2))
+                    {
+                        string sqlStr;
+                        if (lat == 0 && lon == 0)
+                        {
+                            sqlStr = string.Format("SELECT TOP {0} * FROM wildlife ORDER BY reportTime DESC", maxRows + startRow);
+                        }
+                        else
+                        {
+                            sqlStr = string.Format("SELECT TOP {0} *, geography::Point({1}, {2}, 4326).STDistance(geography::Point(lat, lon, 4326)) as dist FROM wildlife WHERE lat is not null and lon is not null and lat > 0 ORDER BY geography::Point({1}, {2}, 4326).STDistance(geography::Point(lat, lon, 4326))", maxRows + startRow, lat, lon);
+                        }
+
+                        bool rc = stmt.DoSQL(sqlStr);
+                        // scroll to the beginning of the rows we call
+                        while (rc && startRow > 0)
+                        {
+                            startRow--;
+                            rc = stmt.dbSkip();
+                        }
+                        // now get the data we want
+                        List<WildlifeData> Wild = new List<WildlifeData>();
+                        while (rc)
+                        {
+                            WildlifeData data = new WildlifeData();
+                            data.reportID = stmt.fetch("reportId");
+                            data.handcode = stmt.fetch("hand_code");
+                            data.address = stmt.fetch("address");
+                            data.unitnum = stmt.fetch("unit_num");
+                            data.username = stmt.fetch("username");
+                            data.direction = stmt.ifetch("direction");
+                            data.reportTime = stmt.dtfetch("reportTime");
+                            data.town = stmt.fetch("town");
+                            data.age = stmt.fetch("age");
+                            data.gender = stmt.ifetch("gender");
+                            data.species = stmt.fetch("species");
+                            data.weather = stmt.ifetch("weather");
+                            data.highway = stmt.ifetch("highway");
+                            data.rowt = stmt.ifetch("rowt");
+                            data.comments = stmt.fetch("comments");
+                            data.log = stmt.fetch("wlog");
+                            data.lat = stmt.cfetch("lat");
+                            data.lon = stmt.cfetch("lon");
+                            data.photos = new List<PhotoData>();
+
+                            bool rc2;
+                            if (data.reportID != string.Empty)
+                            {
+                                rc2 = stmt2.DoSQLFormat("SELECT img_url FROM Img_events WHERE RepKey='{0}'", data.reportID);
+                                while (rc2)
+                                {
+                                    PhotoData pdata = new PhotoData();
+
+                                    pdata.repkey = data.reportID;
+                                    pdata.imgUrl = stmt2.fetch("img_url");
+
+                                    data.photos.Add(pdata);
+
+                                    rc2 = stmt2.dbSkip();
+                                }
+                            }
+                            Wild.Add(data);
+                            rc = stmt.dbSkip();
+                        }
+                        Result = Wild.ToArray();
+                        Wild.Clear();
+                    }
+                }
+                catch (Exception x)
+                {
+                    Global.messLog.Flush("GetWildlifeListNear() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
+                    InsertErrorRecord(request.CustCode, string.Format("GetWildlifeListNear() Failed to send HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message), request);
                 }
                 finally
                 {
@@ -8721,6 +8849,13 @@ namespace RoadaWebService
         public RockInspectionData[] GetRocksNearJson(Request req, double lat, double lon, int startRow, int maxRows)
         {
             return GetRockInspectionListNear(req, lat, lon, startRow, maxRows);
+        }
+
+        [WebMethod(Description = "Retrieve Wild list closest to lat/lon pair for maxRows")]
+        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public WildlifeData[] GetWildNearJson(Request req, double lat, double lon, int startRow, int maxRows)
+        {
+            return GetWildlifeListNear(req, lat, lon, startRow, maxRows);
         }
 
         [WebMethod(Description = "Retrieve Pond list closest to lat/lon pair for maxRows")]
