@@ -4211,6 +4211,7 @@ namespace RoadaWebService
             sql.Add("degrees", pdata.degrees);
             sql.Add("speed", pdata.speed);
             sql.Add("RepKey", pdata.repkey);
+            sql.Add("issue", pdata.issue);
             sql.Add("username", pdata.username);
             sql.Add("img_url", pdata.imgUrl);
             sql.Add("cust_code", pdata.custCode);
@@ -4321,7 +4322,7 @@ namespace RoadaWebService
                     sql.Add("pic_q_count", pdata.picQCount);
                     sql.Add("event_q_count", pdata.eventQCount);
                     sql.Add("imei", pdata.imei);
-                    sql.Add("in_yard", pdata.inyard);
+                    //sql.Add("in_yard", pdata.inyard);
                     sql.AddNow("last_checkin");
 
                     // this should be changed to phandcode_GS (same as in SendEventRecord)
@@ -5421,7 +5422,7 @@ namespace RoadaWebService
                     sql.Add("net_type", evnt.net_type_GS);
                     sql.Add("event_q_count", evnt.EventQCount_GS);
                     sql.AddNow("last_checkin");
-                    sql.Add("in_yard", evnt.inYard);
+                    //sql.Add("in_yard", evnt.inYard);
                     sql.Add("imei", evnt.imei);
 
                     int hc = evnt.handcode_GS;      // some older phones may not send this, so have to use evnt.handcode
@@ -7727,6 +7728,7 @@ namespace RoadaWebService
 
                                             pdata.repkey = b.repKey;
                                             pdata.imgUrl = stmt2.fetch("img_url");
+                                            pdata.issue = stmt2.ifetch("issue");
 
                                             b.photos.Add(pdata);
 
@@ -7835,6 +7837,7 @@ namespace RoadaWebService
 
                                             pdata.repkey = b.repKey;
                                             pdata.imgUrl = stmt2.fetch("img_url");
+                                            pdata.issue = stmt2.ifetch("issue");
 
                                             b.photos.Add(pdata);
 
@@ -7968,6 +7971,7 @@ namespace RoadaWebService
 
                                     pdata.repkey = b.repKey;
                                     pdata.imgUrl = stmt2.fetch("img_url");
+                                    pdata.issue = stmt2.ifetch("issue");
 
                                     b.photos.Add(pdata);
 
@@ -8069,6 +8073,7 @@ namespace RoadaWebService
 
                                     pdata.repkey = data.reportID;
                                     pdata.imgUrl = stmt2.fetch("img_url");
+                                    pdata.issue = stmt2.ifetch("issue");
 
                                     data.photos.Add(pdata);
 
@@ -8154,6 +8159,7 @@ namespace RoadaWebService
 
                                             pdata.repkey = b.repKey;
                                             pdata.imgUrl = stmt2.fetch("img_url");
+                                            pdata.issue = stmt2.ifetch("issue");
 
                                             b.photos.Add(pdata);
 
@@ -8262,6 +8268,7 @@ namespace RoadaWebService
 
                                             pdata.repkey = b.repKey;
                                             pdata.imgUrl = stmt2.fetch("img_url");
+                                            pdata.issue = stmt2.ifetch("issue");
 
                                             b.photos.Add(pdata);
 
@@ -8368,6 +8375,7 @@ namespace RoadaWebService
 
                                             pdata.repkey = s.repKey;
                                             pdata.imgUrl = stmt3.fetch("img_url");
+                                            pdata.issue = stmt2.ifetch("issue");
 
                                             s.photos.Add(pdata);
 
@@ -8490,6 +8498,7 @@ namespace RoadaWebService
 
                                             pdata.repkey = c.repKey;
                                             pdata.imgUrl = stmt2.fetch("img_url");
+                                            pdata.issue = stmt2.ifetch("issue");
 
                                             c.photos.Add(pdata);
 

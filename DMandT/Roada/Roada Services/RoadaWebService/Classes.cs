@@ -1861,6 +1861,8 @@ namespace RoadaWebService
         [DataMember]
         public string repkey;
         [DataMember]
+        public int issue;
+        [DataMember]
         public string username;
         [DataMember]
         public string imgUrl;
