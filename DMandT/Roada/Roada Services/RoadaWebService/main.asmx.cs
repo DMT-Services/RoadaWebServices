@@ -7066,16 +7066,16 @@ namespace RoadaWebService
                         if (lat == 0 && lon == 0)
                         {
                             if (searchStr == string.Empty)
-                                sqlStr = string.Format("SELECT TOP {0} * FROM asset_culvert WHERE type = 3 or type = 4 ORDER BY structure", maxRows + startRow);
+                                sqlStr = string.Format("SELECT TOP {0} * FROM asset_culvert WHERE type in (3,4,6) ORDER BY structure", maxRows + startRow);
                             else
-                                sqlStr = string.Format("SELECT TOP {0} * FROM asset_culvert WHERE (type = 3 or type = 4) and structure LIKE '{1}' ORDER BY structure", maxRows + startRow, SqlHelper.FixUp(searchStr));
+                                sqlStr = string.Format("SELECT TOP {0} * FROM asset_culvert WHERE (type in (3,4,6)) and structure LIKE '{1}' ORDER BY structure", maxRows + startRow, SqlHelper.FixUp(searchStr));
                         }
                         else
                         {
                             if (searchStr == string.Empty)
-                                sqlStr = string.Format("SELECT TOP {0} *, geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326)) as dist FROM asset_culvert WHERE (type = 3 or type = 4) and latitude is not null and longitude is not null ORDER BY geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326))", maxRows + startRow, lat, lon);
+                                sqlStr = string.Format("SELECT TOP {0} *, geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326)) as dist FROM asset_culvert WHERE type in (3,4,6) and latitude is not null and longitude is not null ORDER BY geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326))", maxRows + startRow, lat, lon);
                             else
-                                sqlStr = string.Format("SELECT TOP {0} *, geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326)) as dist FROM asset_culvert WHERE (type = 3 or type = 4) and latitude is not null and longitude is not null and structure LIKE '{3}' ORDER BY geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326))", maxRows + startRow, lat, lon, SqlHelper.FixUp(searchStr));
+                                sqlStr = string.Format("SELECT TOP {0} *, geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326)) as dist FROM asset_culvert WHERE (type in (3,4,6)) and latitude is not null and longitude is not null and structure LIKE '{3}' ORDER BY geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326))", maxRows + startRow, lat, lon, SqlHelper.FixUp(searchStr));
                         }
 
                         bool rc = stmt.DoSQL(sqlStr);
