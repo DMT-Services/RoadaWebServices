@@ -848,7 +848,6 @@ namespace RoadaWebService
     [DataContract]
     public class BridgeInspectionData
     {
-
         public BridgeInspectionData()
         {
             this.bridgeItems = new List<BridgeItem>();
@@ -889,12 +888,13 @@ namespace RoadaWebService
         [DataMember]
         public List<short> sigData { get; set; }
         [DataMember]
+        public string sigBase64 { get; set; }
+        [DataMember]
         public List<BridgeItem> bridgeItems { get; set; }
         [DataMember]
         public string repKey { get; set; }
         [DataMember]
         public List<PhotoData> photos { get; set; }
-
     }
 
     [DataContract]

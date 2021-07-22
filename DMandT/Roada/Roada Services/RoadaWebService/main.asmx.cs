@@ -12,6 +12,8 @@ using System.Web.Configuration;
 using System.Web.Script.Services;
 
 using DMTServices;
+using System.Drawing;
+using System.Drawing.Imaging;
 
 namespace RoadaWebService
 {
@@ -7173,6 +7175,68 @@ namespace RoadaWebService
             return Result;
         }
 
+        private Bitmap ChangeToMonochrome(Image image)
+        {
+            Bitmap newBitmap = null;
+            using (Bitmap destImage = new Bitmap(image.Width, image.Height))
+            {
+                var destRect = new Rectangle(0, 0, image.Width, image.Height);
+                using (var graphics = Graphics.FromImage(destImage))
+                    graphics.DrawImage(image, destRect, 0, 0, image.Width, image.Height, GraphicsUnit.Pixel);
+
+                BitmapData bmpData = destImage.LockBits(new Rectangle(0, 0, destImage.Width, destImage.Height), System.Drawing.Imaging.ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format1bppIndexed);
+                newBitmap = new Bitmap(destImage.Width, destImage.Height, bmpData.Stride, System.Drawing.Imaging.PixelFormat.Format1bppIndexed, bmpData.Scan0);
+            }
+            return newBitmap;
+        }
+
+        private Image LoadBase64(byte[] bytes)
+        {
+            Image image = null;
+            try
+            {
+                using (MemoryStream ms = new MemoryStream(bytes))
+                {
+                    image = Image.FromStream(ms);
+                }
+            }
+            catch (Exception ex)
+            {
+                Global.messLog.Flush("LoadBase64() Excp '{0}'", ex.Message);
+            }
+            return image;
+        }
+
+        private Bitmap base64SigToBmp(string sigString)
+        {
+            Bitmap rc = null;
+            byte[] sigData;
+            int p = sigString.IndexOf(',');     // remove the 'data:image/png;base64,' at the start of base64 data
+            if (p > 0)
+            {
+                sigData = Convert.FromBase64String(sigString.Substring(p + 1));
+                Image img = LoadBase64(sigData);
+                if (img != null)
+                {
+                    try
+                    {
+                        rc = ChangeToMonochrome(img);
+                    }
+                    catch (Exception ex)
+                    {
+                        Global.messLog.Flush("base64SigToBmp() Excp: {0}", ex.Message);
+                    }
+                    finally
+                    {
+                        img.Dispose();
+                        img = null;
+                    }
+                }
+            }
+            
+            return rc;
+        }
+
         [WebMethod(Description = "Push SendBridgeData Report")]
         public int SendBridgeData(Request req, BridgeInspectionData bdata)
         {
@@ -7208,7 +7272,12 @@ namespace RoadaWebService
                     sql.Add("road", bdata.road);
                     sql.Add("inspector", bdata.inspector);
                     sql.Add("repKey", bdata.repKey);
-                    sql.Add("sig_data", bdata.sigData);
+
+                    if (!string.IsNullOrEmpty(bdata.sigBase64))
+                        sql.Add("sig_data", myConvert.ToByteArray(base64SigToBmp(bdata.sigBase64)));
+                    else
+                        sql.Add("sig_data", bdata.sigData);
+
                     sql.AddNow("idate");
 
                     stmt.DoSQL(sql.BuildInsert("INSERT INTO inspection_bridge"));
