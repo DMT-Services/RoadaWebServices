@@ -5124,6 +5124,8 @@ namespace RoadaWebService
                                        { "WO_Id", "workorderid" },
                                        { "WO_No", "workorderno" } };
 
+
+
         // these are only used when sending data TO tablets and MUST be removed when receiving...
         string[] defSendOnly = new string[] { "id", "requestid", "closed", "workorderid", "workorderno" };
 
@@ -5340,6 +5342,113 @@ namespace RoadaWebService
             return result.ToArray();
         }
         #endregion
+
+         [WebMethod(Description = "Return Deficiency Data as JSON")]
+        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public DefiPicData[] GetDeficiencyPictureJson(Request req, DeficiencyData[] data)
+        {
+            return GetDeficiencyPictureData(req, data);
+        }
+
+        [WebMethod(Description = "Returns all Deficiency pic Data")]
+         public DefiPicData[] GetDeficiencyPictureData(Request req, DeficiencyData[] data)
+        {
+            List<DefiPicData> result = new List<DefiPicData>();
+
+            // low security check, don't want hackers!
+            if (LowSecurityCheck(req, "GetDeficiencyPictureData"))
+            {
+                string connStr = CustConnectionString(req);
+                SqlStmt stmt = null;
+                try
+                {
+                    if (GetStmt(connStr, out stmt))
+                    {
+                        foreach (var item in data)
+                        {
+                            if (item.ReportId != null && item.ReportId.Length > 0)
+                            {
+                                DefiPicData pdata = new DefiPicData();
+                                List<string> templ = new List<string>();
+                                bool rc = stmt.DoSQLFormat("select * from img_events where repkey = '{0}'", item.ReportId);
+                                while (rc)
+                                {
+                                    string repkey = "";
+                                    repkey = stmt.fetch("repkey");                                    
+                                    templ.Add(repkey);
+                                    rc = stmt.dbSkip();
+                                }
+                                pdata.photos = templ.ToArray();
+                                result.Add(pdata);
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Global.messLog.Flush("GetDeficiencyPictureData() data failed to retrieve: " + ex.Message);
+                    InsertErrorRecord(req.CustCode, string.Format("GetDeficiencyPictureData() data failed to retrieve HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, ex.Message), req);
+                }
+                finally
+                {
+                    if (stmt != null)
+                        stmt.Close();
+                }
+            }
+            return result.ToArray();
+        }
+
+
+        [WebMethod(Description = "Return Deficiency Data as JSON")]
+        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public int SendNoteDeficiencyJson(Request req, DeficiencyData data)
+        {
+            return SendNoteDeficiency(req, data);
+        }
+
+        [WebMethod(Description = "Returns all Deficiency pic Data")]
+        public int SendNoteDeficiency(Request req, DeficiencyData data)
+        {
+            int result = -1;
+
+            // low security check, don't want hackers!
+            if (LowSecurityCheck(req, "SendNoteDeficiency"))
+            {
+                string connStr = CustConnectionString(req);
+                SqlStmt stmt = null;
+                try
+                {
+                    if (GetStmt(connStr, out stmt))
+                    {
+                        result = -2;
+
+                        if (stmt.DoSQL(String.Format("SELECT * FROM deficiencies WHERE report_id = '{0}'", data.ReportId)))
+                        {
+                            SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
+                            sql.Add("add_notes", data.addNotes);
+                            stmt.DoSQL(sql.BuildUpdate("UPDATE deficiencies with (rowlock)", string.Format(" WHERE report_id = '{0}'", data.ReportId)));
+                            result = 1;
+
+                        }
+                            
+                        
+                    }
+                }
+                catch (Exception ex)
+                {
+                    result = -4;
+                    Global.messLog.Flush("SendNoteDeficiency() data failed to retrieve: " + ex.Message);
+                    InsertErrorRecord(req.CustCode, string.Format("SendNoteDeficiency() data failed to retrieve HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, ex.Message), req);
+                }
+                finally
+                {
+                    if (stmt != null)
+                        stmt.Close();
+                }
+            }
+            return result;
+        }
+     
 
         [WebMethod(Description = "Comissions Installer app")]
         public int ComissionInstaller(Request req, string imei, out bool commissioned, out string Customers)

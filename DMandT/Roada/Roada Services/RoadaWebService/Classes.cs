@@ -196,6 +196,16 @@ namespace RoadaWebService
         public List<PhotoData> photos { get; set; }
     }
 
+
+    [DataContract]
+    public class DefiPicData
+    {      
+        [DataMember]
+        public string reportId { get; set; }       
+        [DataMember]
+        public string[] photos { get; set; }
+    }
+
     [DataContract]
     public class DeficiencyData
     {
@@ -209,6 +219,8 @@ namespace RoadaWebService
         public int RequestId { get; set; }
         [DataMember]
         public int HandCode { get; set; }
+        [DataMember]
+        public string addNotes { get; set; }
         [DataMember]
         public string UnitNum { get; set; }
         [DataMember]
