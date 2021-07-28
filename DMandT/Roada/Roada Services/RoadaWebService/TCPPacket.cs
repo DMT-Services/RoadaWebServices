@@ -128,6 +128,14 @@ namespace DMTServices
             return WriteCmd(cmd, null, 0);
         }
 
+        public int WriteCmd(byte[] bytes)
+        {
+            Array.Copy(bytes, this.SendBuf, bytes.Length);
+            this.SendEventArgs.SetBuffer(this.SendBuf, 0, bytes.Length);
+            this.Client.SendAsync(this.SendEventArgs);
+            return bytes.Length;
+        }
+
         public int WriteATrackACK(UInt64 imei, UInt16 seqId)
         {
             this.SendBuf[0] = 0xfe; // SOH 1st byte
