@@ -7850,6 +7850,40 @@ namespace RoadaWebService
             return Result;
         }
 
+        [WebMethod(Description = "Retrieve FormLayout for inspection app")]
+        public FormHelper GetFormLayout(Request request)
+        {
+            FormHelper Result = new FormHelper();
+
+            if (LowSecurityCheck(request, "GetBridgeInspectionList"))
+            {
+                string connStr = CustConnectionString(request);
+                SqlStmt stmt = null;
+                try
+                {
+                    if (GetStmt(connStr, out stmt))
+                    {
+                        string errMess;
+                        Result.Export(stmt, out errMess);
+                        if (errMess != string.Empty)
+                            Global.messLog.Flush("GetFormLayout() Export error: {0}", errMess);
+                    }
+                }
+                catch (Exception x)
+                {
+                    Global.messLog.Flush("GetFormLayout() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
+                }
+                finally
+                {
+                    if (stmt != null)
+                    {
+                        stmt.Close();
+                        stmt = null;
+                    }
+                }
+            }
+            return Result;
+        }
 
         [WebMethod(Description = "Retrieve Bridges inspections")]
         public BridgeInspectionData[] GetBridgeInsectionList(Request request, Bridge[] bridges, int maxInsp)
@@ -9092,6 +9126,13 @@ namespace RoadaWebService
         public Culvert[] GetCulvertJson(Request req)
         {
             return GetCulvertList(req);
+        }
+
+        [WebMethod(Description = "Retrieve Bridge Data as JSON")]
+        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public FormHelper GetFormLayoutJson(Request req)
+        {
+            return GetFormLayout(req);
         }
 
         [WebMethod(Description = "Retrieve Bridge Data as JSON")]
