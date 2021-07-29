@@ -37,67 +37,47 @@ namespace DMTServices
             return flist;
         }
 
-        public int Import(SqlConn cConn, string inFile, out string errMess)
+        public int Import(SqlStmt stmt, string inFile, out string errMess)
         {
             int cnt = -1;
             errMess = string.Empty;
-            SqlStmt stmt = new SqlStmt(cConn);
             try
             {
-                // read JSON directly from a file
-                using (StreamReader file = File.OpenText(inFile))
-                using (JsonTextReader reader = new JsonTextReader(file))
+                List<FormLayout> flay = ReadList(inFile);
+                stmt.DoSQL("DELETE FROM FormsLayout");
+                SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
+                foreach (FormLayout f in flay)
                 {
-                    JObject o2 = (JObject)JToken.ReadFrom(reader);
-                    JArray a = (JArray)o2["FormLayout"];
-
-                    List<FormLayout> flay = a.ToObject<List<FormLayout>>();
-
-                    if (flay.Count == 0)
-                        errMess = "json file is likely invalid. No FormLayout objects were found";
-                    else
+                    sql.Clear();
+                    sql.AddNow("idate");
+                    sql.Add("name", f.name);
+                    sql.Add("deficiencyid", f.deficiencyId);
+                    sql.Add("displayOrder", f.displayOrder);
+                    sql.Add("problemSid", f.problemSid);
+                    sql.Add("notes", f.notes);
+                    sql.Add("tooltip", f.toolTip);
+                    stmt.DoSQL(sql.BuildInsert("INSERT INTO FormsLayout"));
+                    if (stmt.LastError != string.Empty)
                     {
-                        stmt.DoSQL("DELETE FROM FormsLayout");
-                        SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
-                        foreach (FormLayout f in flay)
-                        {
-                            sql.Clear();
-                            sql.AddNow("idate");
-                            sql.Add("name", f.name);
-                            sql.Add("deficiencyid", f.deficiencyId);
-                            sql.Add("displayOrder", f.displayOrder);
-                            sql.Add("problemSid", f.problemSid);
-                            sql.Add("notes", f.notes);
-                            sql.Add("tooltip", f.toolTip);
-                            stmt.DoSQL(sql.BuildInsert("INSERT INTO FormsLayout"));
-                            if (stmt.LastError != string.Empty)
-                            {
-                                errMess = string.Format("Error inserting {0}", stmt.LastError);
-                                break;
-                            }
-                        }
-                        cnt = flay.Count;
+                        errMess = string.Format("Error inserting {0}", stmt.LastError);
+                        break;
                     }
                 }
+                cnt = flay.Count;
             }
             catch (Exception ex)
             {
                 errMess = string.Format("ImportJson Excp: {0}", ex.Message);
 
             }
-            finally
-            {
-                stmt.Close();
-            }
             return cnt;
         }
 
 
-        public string Export(SqlConn cConn, out string errMess)
+        public string Export(SqlStmt stmt, out string errMess)
         {
             errMess = string.Empty;
             string jsonStr = string.Empty;
-            SqlStmt stmt = new SqlStmt(cConn);
             try
             {
                 bool rc = stmt.DoSQL("SELECT * FROM FormsLayout ORDER BY deficiencyid");
@@ -127,10 +107,6 @@ namespace DMTServices
             catch (Exception ex)
             {
                 errMess = string.Format("BuildJson() Excp: {0}", ex.Message);
-            }
-            finally
-            {
-                stmt.Close();
             }
             return jsonStr;
         }
