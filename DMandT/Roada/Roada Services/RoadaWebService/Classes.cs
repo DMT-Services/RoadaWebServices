@@ -196,7 +196,6 @@ namespace RoadaWebService
         public List<PhotoData> photos { get; set; }
     }
 
-
     [DataContract]
     public class DefiPicData
     {      
@@ -963,6 +962,8 @@ namespace RoadaWebService
         [DataMember]
         public List<short> sigData { get; set; }
         [DataMember]
+        public string sigBase64 { get; set; }
+        [DataMember]
         public List<PondItem> pondItems { get; set; }
         [DataMember]
         public string repKey { get; set; }
@@ -1092,6 +1093,8 @@ namespace RoadaWebService
         [DataMember]
         public List<short> sigData { get; set; }
         [DataMember]
+        public string sigBase64 { get; set; }
+        [DataMember]
         public List<BeaverItem> beaverItems { get; set; }
         [DataMember]
         public string repKey { get; set; }
@@ -1153,6 +1156,8 @@ namespace RoadaWebService
         [DataMember]
         public List<short> sigData { get; set; }
         [DataMember]
+        public string sigBase64 { get; set; }
+        [DataMember]
         public List<FenceItem> fenceItems { get; set; }
         [DataMember]
         public string repKey { get; set; }
@@ -1203,6 +1208,8 @@ namespace RoadaWebService
         public double longitude { get; set; }
         [DataMember]
         public List<short> sigData { get; set; }
+        [DataMember]
+        public string sigBase64 { get; set; }
         [DataMember]
         public string repKey { get; set; }
         [DataMember]
@@ -1445,6 +1452,8 @@ namespace RoadaWebService
         public string other { get; set; }
         [DataMember]
         public List<short> sigData { get; set; }
+        [DataMember]
+        public string sigBase64 { get; set; }
         [DataMember]
         public List<CulvertItem> culvertItems { get; set; }
         [DataMember]

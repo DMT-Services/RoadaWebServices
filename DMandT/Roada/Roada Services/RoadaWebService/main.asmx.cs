@@ -10,10 +10,10 @@ using System.Diagnostics;
 using System.Xml;
 using System.Web.Configuration;
 using System.Web.Script.Services;
-
-using DMTServices;
 using System.Drawing;
 using System.Drawing.Imaging;
+
+using DMTServices;
 
 namespace RoadaWebService
 {
@@ -5124,8 +5124,6 @@ namespace RoadaWebService
                                        { "WO_Id", "workorderid" },
                                        { "WO_No", "workorderno" } };
 
-
-
         // these are only used when sending data TO tablets and MUST be removed when receiving...
         string[] defSendOnly = new string[] { "id", "requestid", "closed", "workorderid", "workorderno" };
 
@@ -5343,7 +5341,7 @@ namespace RoadaWebService
         }
         #endregion
 
-         [WebMethod(Description = "Return Deficiency Data as JSON")]
+        [WebMethod(Description = "Return Deficiency Data as JSON")]
         [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
         public DefiPicData[] GetDeficiencyPictureJson(Request req, DeficiencyData[] data)
         {
@@ -5449,7 +5447,6 @@ namespace RoadaWebService
             return result;
         }
      
-
         [WebMethod(Description = "Comissions Installer app")]
         public int ComissionInstaller(Request req, string imei, out bool commissioned, out string Customers)
         {
@@ -7293,8 +7290,8 @@ namespace RoadaWebService
                 using (var graphics = Graphics.FromImage(destImage))
                     graphics.DrawImage(image, destRect, 0, 0, image.Width, image.Height, GraphicsUnit.Pixel);
 
-                BitmapData bmpData = destImage.LockBits(new Rectangle(0, 0, destImage.Width, destImage.Height), System.Drawing.Imaging.ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format1bppIndexed);
-                newBitmap = new Bitmap(destImage.Width, destImage.Height, bmpData.Stride, System.Drawing.Imaging.PixelFormat.Format1bppIndexed, bmpData.Scan0);
+                BitmapData bmpData = destImage.LockBits(new Rectangle(0, 0, destImage.Width, destImage.Height), ImageLockMode.ReadOnly, PixelFormat.Format1bppIndexed);
+                newBitmap = new Bitmap(destImage.Width, destImage.Height, bmpData.Stride, PixelFormat.Format1bppIndexed, bmpData.Scan0);
             }
             return newBitmap;
         }
@@ -7456,7 +7453,10 @@ namespace RoadaWebService
                     sql.Add("date", bdata.date);
                     sql.Add("inspector", bdata.inspector);
                     sql.Add("repKey", bdata.repKey);
-                    sql.Add("sig_data", bdata.sigData);
+                    if (!string.IsNullOrEmpty(bdata.sigBase64))
+                        sql.Add("sig_data", myConvert.ToByteArray(base64SigToBmp(bdata.sigBase64)));
+                    else
+                        sql.Add("sig_data", bdata.sigData);
                     sql.AddNow("idate");
 
                     stmt.DoSQL(sql.BuildInsert("INSERT INTO inspection_pond"));
@@ -7592,7 +7592,10 @@ namespace RoadaWebService
                     sql.Add("date", bdata.date);
                     sql.Add("inspector", bdata.inspector);
                     sql.Add("repKey", bdata.repKey);
-                    sql.Add("sig_data", bdata.sigData);
+                    if (!string.IsNullOrEmpty(bdata.sigBase64))
+                        sql.Add("sig_data", myConvert.ToByteArray(base64SigToBmp(bdata.sigBase64)));
+                    else
+                        sql.Add("sig_data", bdata.sigData);
                     sql.AddNow("idate");
 
                     stmt.DoSQL(sql.BuildInsert("INSERT INTO inspection_beaver"));
@@ -7660,7 +7663,10 @@ namespace RoadaWebService
                     sql.Add("date", bdata.date);
                     sql.Add("inspector", bdata.inspector);
                     sql.Add("repKey", bdata.repKey);
-                    sql.Add("sig_data", bdata.sigData);
+                    if (!string.IsNullOrEmpty(bdata.sigBase64))
+                        sql.Add("sig_data", myConvert.ToByteArray(base64SigToBmp(bdata.sigBase64)));
+                    else
+                        sql.Add("sig_data", bdata.sigData);
                     sql.AddNow("idate");
 
                     stmt.DoSQL(sql.BuildInsert("INSERT INTO inspection_fence"));
@@ -7728,7 +7734,10 @@ namespace RoadaWebService
                     sql.Add("date", bdata.date);
                     sql.Add("inspector", bdata.inspector);
                     sql.Add("repKey", bdata.repKey);
-                    sql.Add("sig_data", bdata.sigData);
+                    if (!string.IsNullOrEmpty(bdata.sigBase64))
+                        sql.Add("sig_data", myConvert.ToByteArray(base64SigToBmp(bdata.sigBase64)));
+                    else
+                        sql.Add("sig_data", bdata.sigData);
                     sql.Add("uni_code", 99);
                     sql.AddNow("idate");
 
@@ -7808,7 +7817,10 @@ namespace RoadaWebService
                     sql.Add("road", bdata.road);
                     sql.Add("inspector", bdata.inspector);
                     sql.Add("repKey", bdata.repKey);
-                    sql.Add("sig_data", bdata.sigData);
+                    if (!string.IsNullOrEmpty(bdata.sigBase64))
+                        sql.Add("sig_data", myConvert.ToByteArray(base64SigToBmp(bdata.sigBase64)));
+                    else
+                        sql.Add("sig_data", bdata.sigData);
                     sql.Add("idate", DateTime.UtcNow);
 
 
@@ -7855,7 +7867,7 @@ namespace RoadaWebService
         {
             FormHelper Result = new FormHelper();
 
-            if (LowSecurityCheck(request, "GetBridgeInspectionList"))
+            if (LowSecurityCheck(request, "GetFormLayout"))
             {
                 string connStr = CustConnectionString(request);
                 SqlStmt stmt = null;
@@ -9134,7 +9146,7 @@ namespace RoadaWebService
         {
             return GetFormLayout(req);
         }
-
+        
         [WebMethod(Description = "Retrieve Bridge Data as JSON")]
         [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
         public BridgeInspectionData[] GetBridgeDataJson(Request req, Bridge[] bridges, int maxInsp)
