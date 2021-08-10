@@ -113,7 +113,6 @@ using System.Globalization;
 using System.Security.Cryptography;
 using System.IO;
 using System.Threading;
-using System.Drawing;
 
 
 #if NET20
@@ -3021,11 +3020,12 @@ namespace DMTServices
             {
                 if (o != null && !(o is DBNull))
                 {
+#if DRAWING
                     if (o is System.Drawing.Image)
                     {
                         try
                         {
-                            ImageConverter converter = new ImageConverter();
+                            System.Drawing.ImageConverter converter = new System.Drawing.ImageConverter();
                             return (byte[])converter.ConvertTo(o, typeof(byte[]));
                         }
                         catch
@@ -3033,6 +3033,7 @@ namespace DMTServices
                             return (byte[])o;
                         }
                     }
+#endif
                     return (byte[])o;
                 }
                 else
