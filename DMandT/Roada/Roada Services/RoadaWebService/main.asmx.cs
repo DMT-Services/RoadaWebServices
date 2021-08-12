@@ -3437,7 +3437,7 @@ namespace RoadaWebService
         [ScriptMethod(UseHttpGet = false, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
         public int SendCollisionDataJson(Request req, ReportData data)
         {
-            return SendReportNew(req, data);
+            return SendReportSig(req, data);
         }
 
         private UInt32 GetUInt32BigEndian(byte[] buf)
@@ -3507,6 +3507,128 @@ namespace RoadaWebService
                         sql.Add("sig_data", rdata.Signature);
                     else
                         sql.Add("sig_data", rdata.Signiture);   // this misspelled one is byte[], possibly for others?
+                    sql.Add("Temp", rdata.Temp);
+                    sql.Add("Address", rdata.Address);
+
+                    //adds and updates main report table 
+                    if (stmt.DoSQL(string.Format("SELECT ci_id FROM collision_incident WHERE ci_id = '{0}'", rdata.reportTime)))
+                    {
+                        stmt.DoSQL(sql.BuildUpdate("UPDATE collision_incident", string.Format("WHERE ci_id = '{0}'", rdata.reportTime)));
+                        Result = 1;
+                    }
+                    else
+                    {
+                        sql.Add("ci_id", rdata.reportTime);
+
+                        stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO collision_incident"));
+                        Result = 2;
+                    }
+
+                    // updates adds update files to update table 
+                    int ndx = 0;
+                    foreach (DateTime record in rdata.updateTime)
+                    {
+                        if (stmt.DoSQL(String.Format("SELECT ci_id FROM collision_updates WHERE ci_id = '{0}' AND update_time = '{1}.000'", rdata.reportTime, rdata.updateTime[ndx].ToString("yyyy-MM-dd HH:mm:ss"))))
+                        {
+                            sql.Clear();
+                            sql.Add("description", rdata.upDesc[ndx]);
+                            stmt.DoSQL(sql.BuildUpdate("UPDATE collision_updates", string.Format("WHERE ci_id = '{0}' AND update_time = '{1}.000'", rdata.reportTime, rdata.updateTime[ndx].ToString("yyyy-MM-dd HH:mm:ss"))));
+                            ndx++;
+                            Result = 5;
+                        }
+                        else
+                        {
+                            if (rdata.updateTime[ndx].Year > 1000)
+                            {
+                                sql.Clear();
+                                sql.Add("ci_id", rdata.reportTime);
+                                sql.Add("update_time", rdata.updateTime[ndx]);
+                                sql.Add("description", rdata.upDesc[ndx]);
+                                stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO collision_updates"));
+                                ndx++;
+                                Result = 6;
+                            }
+                        }
+                    }
+                    ndx = 0;
+
+                    stmt.DoSQLFormat("DELETE FROM report_ppl WHERE ci_id = '{0}'", rdata.reportTime);
+                    for (int pplNdx = 0; pplNdx < rdata.name.Count; pplNdx++)
+                    {
+                        sql.Clear();
+                        sql.Add("ci_id", rdata.reportTime);
+                        sql.Add("name", rdata.name[pplNdx]);
+                        sql.Add("title", rdata.title[pplNdx]);
+                        sql.Add("equip", rdata.equip[pplNdx]);
+                        stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO report_ppl"));
+                        Result = 6;
+                    }
+                }
+            }
+            catch (Exception x)
+            {
+                Result = -4;
+                Global.messLog.Flush("SendRptNew() HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, x.Message);
+                InsertErrorRecord(req.CustCode, "SendRptNew() " + x.Message, req);
+            }
+            finally
+            {
+                if (stmt != null)
+                    stmt.Close();
+            }
+            return Result;
+        }
+
+        [WebMethod(Description = "Push Collision Report")]
+        public int SendReportSig(Request req, ReportData rdata)
+        {
+
+            int Result = 0;
+            // low security check, don't want hackers!
+            if (!LowSecurityCheck(req, "SendReportNew (Collision)"))
+                return -2;
+
+            string connStr = CustConnectionString(req);
+            SqlStmt stmt = null;
+            try
+            {
+                Result = -3;
+                if (GetStmt(connStr, out stmt))
+                {
+                    SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
+                    //DateTime now = DateTime.Now.ToLocalTime();
+
+                    sql.Add("ci_date", rdata.DateCol);
+                    sql.Add("hwy", rdata.hwy);
+                    sql.Add("loc_direction", rdata.locDirection);
+                    sql.Add("loc_details", rdata.locDetails);
+                    sql.Add("detour", rdata.Detour);
+                    sql.Add("description", rdata.ColDesc);
+                    sql.Add("fatal", rdata.Fatal);
+                    sql.Add("injuries", rdata.injuries);
+                    sql.Add("features", rdata.Physical);
+                    sql.Add("other_info", rdata.Other);
+                    sql.Add("report_by", rdata.repPrep);
+                    sql.Add("report_phone", rdata.repPhone);
+                    sql.Add("report_datetime", rdata.repDate);
+                    sql.Add("opp_reports", rdata.chkOpp);
+                    sql.Add("fatal_report", rdata.chkFatal);
+                    sql.Add("other_report", rdata.chkOther);
+                    sql.Add("message_sign", rdata.chkSign);
+                    sql.Add("latitude", rdata.CurrentLat);
+                    sql.Add("longitude", rdata.CurrentLong);
+                    sql.Add("date_cleared", rdata.clearDate);
+                    sql.Add("damage", rdata.chkDmg);
+                    sql.Add("loc_inter", rdata.locIntersection);
+                    sql.Add("submit_time", DateTime.UtcNow);
+                    sql.Add("title", rdata.repTitle);
+                    sql.Add("equipment", rdata.equipment);
+
+                    if (!string.IsNullOrEmpty(rdata.sigbase64))
+                        sql.Add("sig_data", myConvert.ToByteArray(base64SigToBmp(rdata.sigbase64)));
+                    else
+                        sql.Add("sig_data", rdata.sigbase64);
+
                     sql.Add("Temp", rdata.Temp);
                     sql.Add("Address", rdata.Address);
 
