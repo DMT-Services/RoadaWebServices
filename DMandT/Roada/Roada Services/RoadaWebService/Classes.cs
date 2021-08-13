@@ -1551,6 +1551,8 @@ namespace RoadaWebService
         [DataMember]
         public byte[] Signiture { get; set; }         // stores the Signiture Array
         [DataMember]
+        public string sigbase64 { get; set; }
+        [DataMember]
         public List<short> Signature { get; set; }
         [DataMember]
         public bool Sent { get; set; }
