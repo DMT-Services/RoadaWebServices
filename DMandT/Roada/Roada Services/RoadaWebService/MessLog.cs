@@ -334,7 +334,12 @@ namespace DMTServices
         /// <summary>
         /// The lock used when accessing the list
         /// </summary>
+#if NET20
+        private const int DEF_TIMEOUT = 30000;      // 30 second default timeout
+        private readonly ReaderWriterLock LockList = new ReaderWriterLock();
+#else
         private readonly ReaderWriterLockSlim LockList = new ReaderWriterLockSlim();
+#endif
 
         // Variables
         #endregion
@@ -397,7 +402,11 @@ namespace DMTServices
             List<T> localList;
 
             // init enumerator
+#if NET20
+            LockList.AcquireReaderLock(DEF_TIMEOUT);
+#else
             LockList.EnterReadLock();
+#endif
             try
             {
                 // create a copy of m_TList
@@ -405,7 +414,11 @@ namespace DMTServices
             }
             finally
             {
+#if NET20
+                LockList.ReleaseReaderLock();
+#else
                 LockList.ExitReadLock();
+#endif
             }
 
             // get the enumerator
@@ -427,7 +440,11 @@ namespace DMTServices
             List<T> localList;
 
             // init enumerator
+#if NET20
+            LockList.AcquireReaderLock(DEF_TIMEOUT);
+#else
             LockList.EnterReadLock();
+#endif
             try
             {
                 // create a copy of m_TList
@@ -435,7 +452,11 @@ namespace DMTServices
             }
             finally
             {
+#if NET20
+                LockList.ReleaseReaderLock();
+#else
                 LockList.ExitReadLock();
+#endif
             }
 
             // get the enumerator
@@ -511,7 +532,11 @@ namespace DMTServices
         /// <param name="item">the item to add to the end of the collection</param>
         public void Add(T item)
         {
+#if NET20
+            LockList.AcquireWriterLock(DEF_TIMEOUT);
+#else
             LockList.EnterWriteLock();
+#endif
             try
             {
                 m_TList.Add(item);
@@ -519,7 +544,11 @@ namespace DMTServices
 
             finally
             {
+#if NET20
+                LockList.ReleaseWriterLock();
+#else
                 LockList.ExitWriteLock();
+#endif
             }
         }
 
@@ -534,7 +563,11 @@ namespace DMTServices
         /// <param name="collection">the collection to add to the end of the list</param>
         public void AddRange(IEnumerable<T> collection)
         {
+#if NET20
+            LockList.AcquireWriterLock(DEF_TIMEOUT);
+#else
             LockList.EnterWriteLock();
+#endif
             try
             {
                 m_TList.AddRange(collection);
@@ -542,7 +575,11 @@ namespace DMTServices
 
             finally
             {
+#if NET20
+                LockList.ReleaseWriterLock();
+#else
                 LockList.ExitWriteLock();
+#endif
             }
         }
 
@@ -559,7 +596,11 @@ namespace DMTServices
         /// <param name="item">the item to add to the end of the collection</param>
         public bool AddIfNotExist(T item)
         {
+#if NET20
+            LockList.AcquireWriterLock(DEF_TIMEOUT);
+#else
             LockList.EnterWriteLock();
+#endif
             try
             {
                 // check if it exists already
@@ -573,7 +614,11 @@ namespace DMTServices
 
             finally
             {
+#if NET20
+                LockList.ReleaseWriterLock();
+#else
                 LockList.ExitWriteLock();
+#endif
             }
         }
 
@@ -587,7 +632,11 @@ namespace DMTServices
         /// </summary>
         public ReadOnlyCollection<T> AsReadOnly()
         {
+#if NET20
+            LockList.AcquireReaderLock(DEF_TIMEOUT);
+#else
             LockList.EnterReadLock();
+#endif
             try
             {
                 return m_TList.AsReadOnly();
@@ -595,7 +644,11 @@ namespace DMTServices
 
             finally
             {
+#if NET20
+                LockList.ReleaseReaderLock();
+#else
                 LockList.ExitReadLock();
+#endif
             }
         }
 
@@ -610,14 +663,22 @@ namespace DMTServices
         /// <param name="item">the item to search for</param>
         public int BinarySearch(T item)
         {
+#if NET20
+            LockList.AcquireReaderLock(DEF_TIMEOUT);
+#else
             LockList.EnterReadLock();
+#endif
             try
             {
                 return m_TList.BinarySearch(item);
             }
             finally
             {
+#if NET20
+                LockList.ReleaseReaderLock();
+#else
                 LockList.ExitReadLock();
+#endif
             }
         }
 
@@ -628,14 +689,22 @@ namespace DMTServices
         /// <param name="comparer">the IComparer to use when searching, or null to use the default</param>
         public int BinarySearch(T item, IComparer<T> comparer)
         {
+#if NET20
+            LockList.AcquireReaderLock(DEF_TIMEOUT);
+#else
             LockList.EnterReadLock();
+#endif
             try
             {
                 return m_TList.BinarySearch(item, comparer);
             }
             finally
             {
+#if NET20
+                LockList.ReleaseReaderLock();
+#else
                 LockList.ExitReadLock();
+#endif
             }
         }
 
@@ -648,14 +717,22 @@ namespace DMTServices
         /// <param name="comparer">the IComparer to use when searching, or null to use the default</param>
         public int BinarySearch(int index, int count, T item, IComparer<T> comparer)
         {
+#if NET20
+            LockList.AcquireReaderLock(DEF_TIMEOUT);
+#else
             LockList.EnterReadLock();
+#endif
             try
             {
                 return m_TList.BinarySearch(index, count, item, comparer);
             }
             finally
             {
+#if NET20
+                LockList.ReleaseReaderLock();
+#else
                 LockList.ExitReadLock();
+#endif
             }
         }
 
@@ -671,7 +748,11 @@ namespace DMTServices
         {
             get
             {
-                LockList.EnterReadLock();
+#if NET20
+                LockList.AcquireReaderLock(DEF_TIMEOUT);
+#else
+            LockList.EnterReadLock();
+#endif
                 try
                 {
                     return m_TList.Capacity;
@@ -679,12 +760,20 @@ namespace DMTServices
 
                 finally
                 {
-                    LockList.ExitReadLock();
+#if NET20
+                    LockList.ReleaseReaderLock();
+#else
+                LockList.ExitReadLock();
+#endif
                 }
             }
             set
             {
-                LockList.EnterWriteLock();
+#if NET20
+                LockList.AcquireWriterLock(DEF_TIMEOUT);
+#else
+            LockList.EnterWriteLock();
+#endif
                 try
                 {
                     m_TList.Capacity = value;
@@ -692,7 +781,11 @@ namespace DMTServices
 
                 finally
                 {
-                    LockList.ExitWriteLock();
+#if NET20
+                    LockList.ReleaseWriterLock();
+#else
+                LockList.ExitWriteLock();
+#endif
                 }
             }
         }
@@ -707,7 +800,11 @@ namespace DMTServices
         /// </summary>
         public void Clear()
         {
+#if NET20
+            LockList.AcquireReaderLock(DEF_TIMEOUT);
+#else
             LockList.EnterReadLock();
+#endif
             try
             {
                 m_TList.Clear();
@@ -715,7 +812,11 @@ namespace DMTServices
 
             finally
             {
+#if NET20
+                LockList.ReleaseReaderLock();
+#else
                 LockList.ExitReadLock();
+#endif
             }
         }
 
@@ -730,7 +831,11 @@ namespace DMTServices
         /// <param name="item">the item to find in the collection</param>
         public bool Contains(T item)
         {
+#if NET20
+            LockList.AcquireReaderLock(DEF_TIMEOUT);
+#else
             LockList.EnterReadLock();
+#endif
             try
             {
                 return m_TList.Contains(item);
@@ -738,7 +843,11 @@ namespace DMTServices
 
             finally
             {
+#if NET20
+                LockList.ReleaseReaderLock();
+#else
                 LockList.ExitReadLock();
+#endif
             }
         }
 
@@ -754,7 +863,11 @@ namespace DMTServices
         /// <param name="converter">delegate to convert the items to a new type</param>
         public List<TOutput> ConvertAll<TOutput>(Converter<T, TOutput> converter)
         {
+#if NET20
+            LockList.AcquireReaderLock(DEF_TIMEOUT);
+#else
             LockList.EnterReadLock();
+#endif
             try
             {
                 return m_TList.ConvertAll(converter);
@@ -762,7 +875,11 @@ namespace DMTServices
 
             finally
             {
+#if NET20
+                LockList.ReleaseReaderLock();
+#else
                 LockList.ExitReadLock();
+#endif
             }
         }
 
@@ -778,7 +895,11 @@ namespace DMTServices
         /// <param name="arrayIndex">index at which copying begins</param>
         public void CopyTo(T[] array, int arrayIndex)
         {
+#if NET20
+            LockList.AcquireReaderLock(DEF_TIMEOUT);
+#else
             LockList.EnterReadLock();
+#endif
             try
             {
                 m_TList.CopyTo(array, arrayIndex);
@@ -786,7 +907,11 @@ namespace DMTServices
 
             finally
             {
+#if NET20
+                LockList.ReleaseReaderLock();
+#else
                 LockList.ExitReadLock();
+#endif
             }
         }
 
@@ -802,7 +927,11 @@ namespace DMTServices
         {
             get
             {
-                LockList.EnterReadLock();
+#if NET20
+                LockList.AcquireReaderLock(DEF_TIMEOUT);
+#else
+            LockList.EnterReadLock();
+#endif
                 try
                 {
                     return m_TList.Count;
@@ -810,7 +939,11 @@ namespace DMTServices
 
                 finally
                 {
-                    LockList.ExitReadLock();
+#if NET20
+                    LockList.ReleaseReaderLock();
+#else
+                LockList.ExitReadLock();
+#endif
                 }
             }
         }
@@ -826,14 +959,22 @@ namespace DMTServices
         /// <param name="match">delegate that defines the conditions to search for</param>
         public bool Exists(Predicate<T> match)
         {
+#if NET20
+            LockList.AcquireReaderLock(DEF_TIMEOUT);
+#else
             LockList.EnterReadLock();
+#endif
             try
             {
                 return m_TList.Exists(match);
             }
             finally
             {
+#if NET20
+                LockList.ReleaseReaderLock();
+#else
                 LockList.ExitReadLock();
+#endif
             }
         }
 
@@ -848,14 +989,22 @@ namespace DMTServices
         /// <param name="match">delegate that defines the conditions to search for</param>
         public T Find(Predicate<T> match)
         {
+#if NET20
+            LockList.AcquireReaderLock(DEF_TIMEOUT);
+#else
             LockList.EnterReadLock();
+#endif
             try
             {
                 return m_TList.Find(match);
             }
             finally
             {
+#if NET20
+                LockList.ReleaseReaderLock();
+#else
                 LockList.ExitReadLock();
+#endif
             }
         }
 
@@ -870,14 +1019,22 @@ namespace DMTServices
         /// <param name="match">delegate that defines the conditions to search for</param>
         public List<T> FindAll(Predicate<T> match)
         {
+#if NET20
+            LockList.AcquireReaderLock(DEF_TIMEOUT);
+#else
             LockList.EnterReadLock();
+#endif
             try
             {
                 return m_TList.FindAll(match);
             }
             finally
             {
+#if NET20
+                LockList.ReleaseReaderLock();
+#else
                 LockList.ExitReadLock();
+#endif
             }
         }
 
@@ -892,14 +1049,22 @@ namespace DMTServices
         /// <param name="match">delegate that defines the conditions to search for</param>
         public int FindIndex(Predicate<T> match)
         {
+#if NET20
+            LockList.AcquireReaderLock(DEF_TIMEOUT);
+#else
             LockList.EnterReadLock();
+#endif
             try
             {
                 return m_TList.FindIndex(match);
             }
             finally
             {
+#if NET20
+                LockList.ReleaseReaderLock();
+#else
                 LockList.ExitReadLock();
+#endif
             }
         }
 
@@ -910,14 +1075,22 @@ namespace DMTServices
         /// <param name="match">delegate that defines the conditions to search for</param>
         public int FindIndex(int startIndex, Predicate<T> match)
         {
+#if NET20
+            LockList.AcquireReaderLock(DEF_TIMEOUT);
+#else
             LockList.EnterReadLock();
+#endif
             try
             {
                 return m_TList.FindIndex(startIndex, match);
             }
             finally
             {
+#if NET20
+                LockList.ReleaseReaderLock();
+#else
                 LockList.ExitReadLock();
+#endif
             }
         }
 
@@ -929,14 +1102,22 @@ namespace DMTServices
         /// <param name="match">delegate that defines the conditions to search for</param>
         public int FindIndex(int startIndex, int count, Predicate<T> match)
         {
+#if NET20
+            LockList.AcquireReaderLock(DEF_TIMEOUT);
+#else
             LockList.EnterReadLock();
+#endif
             try
             {
                 return m_TList.FindIndex(startIndex, count, match);
             }
             finally
             {
+#if NET20
+                LockList.ReleaseReaderLock();
+#else
                 LockList.ExitReadLock();
+#endif
             }
         }
 
@@ -951,14 +1132,22 @@ namespace DMTServices
         /// <param name="match">delegate that defines the conditions to search for</param>
         public T FindLast(Predicate<T> match)
         {
+#if NET20
+            LockList.AcquireReaderLock(DEF_TIMEOUT);
+#else
             LockList.EnterReadLock();
+#endif
             try
             {
                 return m_TList.FindLast(match);
             }
             finally
             {
+#if NET20
+                LockList.ReleaseReaderLock();
+#else
                 LockList.ExitReadLock();
+#endif
             }
         }
 
@@ -973,14 +1162,22 @@ namespace DMTServices
         /// <param name="match">delegate that defines the conditions to search for</param>
         public int FindLastIndex(Predicate<T> match)
         {
+#if NET20
+            LockList.AcquireReaderLock(DEF_TIMEOUT);
+#else
             LockList.EnterReadLock();
+#endif
             try
             {
                 return m_TList.FindLastIndex(match);
             }
             finally
             {
+#if NET20
+                LockList.ReleaseReaderLock();
+#else
                 LockList.ExitReadLock();
+#endif
             }
         }
 
@@ -991,14 +1188,22 @@ namespace DMTServices
         /// <param name="match">delegate that defines the conditions to search for</param>
         public int FindLastIndex(int startIndex, Predicate<T> match)
         {
+#if NET20
+            LockList.AcquireReaderLock(DEF_TIMEOUT);
+#else
             LockList.EnterReadLock();
+#endif
             try
             {
                 return m_TList.FindLastIndex(startIndex, match);
             }
             finally
             {
+#if NET20
+                LockList.ReleaseReaderLock();
+#else
                 LockList.ExitReadLock();
+#endif
             }
         }
 
@@ -1010,14 +1215,22 @@ namespace DMTServices
         /// <param name="match">delegate that defines the conditions to search for</param>
         public int FindLastIndex(int startIndex, int count, Predicate<T> match)
         {
+#if NET20
+            LockList.AcquireReaderLock(DEF_TIMEOUT);
+#else
             LockList.EnterReadLock();
+#endif
             try
             {
                 return m_TList.FindLastIndex(startIndex, count, match);
             }
             finally
             {
+#if NET20
+                LockList.ReleaseReaderLock();
+#else
                 LockList.ExitReadLock();
+#endif
             }
         }
 
@@ -1032,14 +1245,22 @@ namespace DMTServices
         /// <param name="action">the action to perfom</param>
         public void ForEach(Action<T> action)
         {
+#if NET20
+            LockList.AcquireWriterLock(DEF_TIMEOUT);
+#else
             LockList.EnterWriteLock();
+#endif
             try
             {
                 m_TList.ForEach(action);
             }
             finally
             {
+#if NET20
+                LockList.ReleaseWriterLock();
+#else
                 LockList.ExitWriteLock();
+#endif
             }
         }
 
@@ -1054,14 +1275,22 @@ namespace DMTServices
         /// <returns></returns>
         public List<T> GetRange(int index, int count)
         {
+#if NET20
+            LockList.AcquireReaderLock(DEF_TIMEOUT);
+#else
             LockList.EnterReadLock();
+#endif
             try
             {
                 return m_TList.GetRange(index, count);
             }
             finally
             {
+#if NET20
+                LockList.ReleaseReaderLock();
+#else
                 LockList.ExitReadLock();
+#endif
             }
         }
 
@@ -1069,26 +1298,42 @@ namespace DMTServices
         {
             get
             {
-                LockList.EnterReadLock();
+#if NET20
+                LockList.AcquireReaderLock(DEF_TIMEOUT);
+#else
+            LockList.EnterReadLock();
+#endif
                 try
                 {
                     return m_TList[ndx];
                 }
                 finally
                 {
-                    LockList.ExitReadLock();
+#if NET20
+                    LockList.ReleaseReaderLock();
+#else
+                LockList.ExitReadLock();
+#endif
                 }
             }
             set
             {
-                LockList.EnterReadLock();
+#if NET20
+                LockList.AcquireReaderLock(DEF_TIMEOUT);
+#else
+            LockList.EnterReadLock();
+#endif
                 try
                 {
                     m_TList[ndx] = value;
                 }
                 finally
                 {
-                    LockList.ExitReadLock();
+#if NET20
+                    LockList.ReleaseReaderLock();
+#else
+                LockList.ExitReadLock();
+#endif
                 }
             }
         }
@@ -1099,14 +1344,22 @@ namespace DMTServices
         /// <param name="item">the item to find</param>
         public int IndexOf(T item)
         {
+#if NET20
+            LockList.AcquireReaderLock(DEF_TIMEOUT);
+#else
             LockList.EnterReadLock();
+#endif
             try
             {
                 return m_TList.IndexOf(item);
             }
             finally
             {
+#if NET20
+                LockList.ReleaseReaderLock();
+#else
                 LockList.ExitReadLock();
+#endif
             }
         }
 
@@ -1117,14 +1370,22 @@ namespace DMTServices
         /// <param name="index">the zero-based index to begin searching from</param>
         public int IndexOf(T item, int index)
         {
+#if NET20
+            LockList.AcquireReaderLock(DEF_TIMEOUT);
+#else
             LockList.EnterReadLock();
+#endif
             try
             {
                 return m_TList.IndexOf(item, index);
             }
             finally
             {
+#if NET20
+                LockList.ReleaseReaderLock();
+#else
                 LockList.ExitReadLock();
+#endif
             }
         }
 
@@ -1136,14 +1397,22 @@ namespace DMTServices
         /// <param name="count">the number of elements to search</param>
         public int IndexOf(T item, int index, int count)
         {
+#if NET20
+            LockList.AcquireReaderLock(DEF_TIMEOUT);
+#else
             LockList.EnterReadLock();
+#endif
             try
             {
                 return m_TList.IndexOf(item, index, count);
             }
             finally
             {
+#if NET20
+                LockList.ReleaseReaderLock();
+#else
                 LockList.ExitReadLock();
+#endif
             }
         }
 
@@ -1154,14 +1423,22 @@ namespace DMTServices
         /// <param name="item">the item to insert</param>
         public void Insert(int index, T item)
         {
-            LockList.ExitWriteLock();
+#if NET20
+            LockList.AcquireWriterLock(DEF_TIMEOUT);
+#else
+            LockList.EnterWriteLock();
+#endif
             try
             {
                 m_TList.Insert(index, item);
             }
             finally
             {
+#if NET20
+                LockList.ReleaseWriterLock();
+#else
                 LockList.ExitWriteLock();
+#endif
             }
         }
 
@@ -1172,14 +1449,22 @@ namespace DMTServices
         /// <param name="range">range of values to insert</param>
         public void InsertRange(int index, IEnumerable<T> range)
         {
+#if NET20
+            LockList.AcquireWriterLock(DEF_TIMEOUT);
+#else
             LockList.EnterWriteLock();
+#endif
             try
             {
                 m_TList.InsertRange(index, range);
             }
             finally
             {
+#if NET20
+                LockList.ReleaseWriterLock();
+#else
                 LockList.ExitWriteLock();
+#endif
             }
         }
 
@@ -1194,14 +1479,22 @@ namespace DMTServices
         /// <param name="item">the item to find</param>
         public int LastIndexOf(T item)
         {
+#if NET20
+            LockList.AcquireReaderLock(DEF_TIMEOUT);
+#else
             LockList.EnterReadLock();
+#endif
             try
             {
                 return m_TList.LastIndexOf(item);
             }
             finally
             {
+#if NET20
+                LockList.ReleaseReaderLock();
+#else
                 LockList.ExitReadLock();
+#endif
             }
         }
 
@@ -1212,14 +1505,22 @@ namespace DMTServices
         /// <param name="index">the index at which to start searching</param>
         public int LastIndexOf(T item, int index)
         {
+#if NET20
+            LockList.AcquireReaderLock(DEF_TIMEOUT);
+#else
             LockList.EnterReadLock();
+#endif
             try
             {
                 return m_TList.LastIndexOf(item, index);
             }
             finally
             {
+#if NET20
+                LockList.ReleaseReaderLock();
+#else
                 LockList.ExitReadLock();
+#endif
             }
         }
 
@@ -1231,14 +1532,22 @@ namespace DMTServices
         /// <param name="count">number of elements to search</param>
         public int LastIndexOf(T item, int index, int count)
         {
+#if NET20
+            LockList.AcquireReaderLock(DEF_TIMEOUT);
+#else
             LockList.EnterReadLock();
+#endif
             try
             {
                 return m_TList.LastIndexOf(item, index, count);
             }
             finally
             {
+#if NET20
+                LockList.ReleaseReaderLock();
+#else
                 LockList.ExitReadLock();
+#endif
             }
         }
 
@@ -1248,14 +1557,22 @@ namespace DMTServices
         /// <param name="item">the item to remove</param>
         public bool Remove(T item)
         {
+#if NET20
+            LockList.AcquireWriterLock(DEF_TIMEOUT);
+#else
             LockList.EnterWriteLock();
+#endif
             try
             {
                 return m_TList.Remove(item);
             }
             finally
             {
+#if NET20
+                LockList.ReleaseWriterLock();
+#else
                 LockList.ExitWriteLock();
+#endif
             }
         }
 
@@ -1267,7 +1584,11 @@ namespace DMTServices
         public bool RemoveSafely(T item)
         {
             bool Result = false;
+#if NET20
+            LockList.AcquireWriterLock(DEF_TIMEOUT);
+#else
             LockList.EnterWriteLock();
+#endif
             try
             {
                 int ndx = m_TList.IndexOf(item);
@@ -1279,7 +1600,11 @@ namespace DMTServices
             }
             finally
             {
+#if NET20
+                LockList.ReleaseWriterLock();
+#else
                 LockList.ExitWriteLock();
+#endif
             }
             return Result;
         }
@@ -1290,14 +1615,22 @@ namespace DMTServices
         /// <param name="match">the pattern to search on</param>
         public int RemoveAll(Predicate<T> match)
         {
+#if NET20
+            LockList.AcquireWriterLock(DEF_TIMEOUT);
+#else
             LockList.EnterWriteLock();
+#endif
             try
             {
                 return m_TList.RemoveAll(match);
             }
             finally
             {
+#if NET20
+                LockList.ReleaseWriterLock();
+#else
                 LockList.ExitWriteLock();
+#endif
             }
         }
 
@@ -1307,14 +1640,22 @@ namespace DMTServices
         /// <param name="index">the index of the item to remove</param>
         public void RemoveAt(int index)
         {
+#if NET20
+            LockList.AcquireWriterLock(DEF_TIMEOUT);
+#else
             LockList.EnterWriteLock();
+#endif
             try
             {
                 m_TList.RemoveAt(index);
             }
             finally
             {
+#if NET20
+                LockList.ReleaseWriterLock();
+#else
                 LockList.ExitWriteLock();
+#endif
             }
         }
 
@@ -1325,14 +1666,22 @@ namespace DMTServices
         /// <param name="count">the number of items to remove</param>
         public void RemoveRange(int index, int count)
         {
+#if NET20
+            LockList.AcquireWriterLock(DEF_TIMEOUT);
+#else
             LockList.EnterWriteLock();
+#endif
             try
             {
                 m_TList.RemoveRange(index, count);
             }
             finally
             {
+#if NET20
+                LockList.ReleaseWriterLock();
+#else
                 LockList.ExitWriteLock();
+#endif
             }
         }
 
@@ -1341,14 +1690,22 @@ namespace DMTServices
         /// </summary>
         public void Reverse()
         {
+#if NET20
+            LockList.AcquireWriterLock(DEF_TIMEOUT);
+#else
             LockList.EnterWriteLock();
+#endif
             try
             {
                 m_TList.Reverse();
             }
             finally
             {
+#if NET20
+                LockList.ReleaseWriterLock();
+#else
                 LockList.ExitWriteLock();
+#endif
             }
         }
 
@@ -1359,14 +1716,22 @@ namespace DMTServices
         /// <param name="count">the number of elements to reverse</param>
         public void Reverse(int index, int count)
         {
+#if NET20
+            LockList.AcquireWriterLock(DEF_TIMEOUT);
+#else
             LockList.EnterWriteLock();
+#endif
             try
             {
                 m_TList.Reverse(index, count);
             }
             finally
             {
+#if NET20
+                LockList.ReleaseWriterLock();
+#else
                 LockList.ExitWriteLock();
+#endif
             }
         }
 
@@ -1375,14 +1740,22 @@ namespace DMTServices
         /// </summary>
         public void Sort()
         {
+#if NET20
+            LockList.AcquireWriterLock(DEF_TIMEOUT);
+#else
             LockList.EnterWriteLock();
+#endif
             try
             {
                 m_TList.Sort();
             }
             finally
             {
+#if NET20
+                LockList.ReleaseWriterLock();
+#else
                 LockList.ExitWriteLock();
+#endif
             }
         }
 
@@ -1392,14 +1765,22 @@ namespace DMTServices
         /// <param name="comparison">the comparison to use when comparing elements</param>
         public void Sort(Comparison<T> comparison)
         {
+#if NET20
+            LockList.AcquireWriterLock(DEF_TIMEOUT);
+#else
             LockList.EnterWriteLock();
+#endif
             try
             {
                 m_TList.Sort(comparison);
             }
             finally
             {
+#if NET20
+                LockList.ReleaseWriterLock();
+#else
                 LockList.ExitWriteLock();
+#endif
             }
         }
 
@@ -1409,14 +1790,22 @@ namespace DMTServices
         /// <param name="comparer">the comparer to use when comparing elements</param>
         public void Sort(IComparer<T> comparer)
         {
+#if NET20
+            LockList.AcquireWriterLock(DEF_TIMEOUT);
+#else
             LockList.EnterWriteLock();
+#endif
             try
             {
                 m_TList.Sort(comparer);
             }
             finally
             {
+#if NET20
+                LockList.ReleaseWriterLock();
+#else
                 LockList.ExitWriteLock();
+#endif
             }
         }
 
@@ -1428,14 +1817,22 @@ namespace DMTServices
         /// <param name="comparer">the comparer to use when sorting</param>
         public void Sort(int index, int count, IComparer<T> comparer)
         {
+#if NET20
+            LockList.AcquireWriterLock(DEF_TIMEOUT);
+#else
             LockList.EnterWriteLock();
+#endif
             try
             {
                 m_TList.Sort(index, count, comparer);
             }
             finally
             {
+#if NET20
+                LockList.ReleaseWriterLock();
+#else
                 LockList.ExitWriteLock();
+#endif
             }
         }
 
@@ -1444,14 +1841,22 @@ namespace DMTServices
         /// </summary>
         public T[] ToArray()
         {
+#if NET20
+            LockList.AcquireReaderLock(DEF_TIMEOUT);
+#else
             LockList.EnterReadLock();
+#endif
             try
             {
                 return m_TList.ToArray();
             }
             finally
             {
+#if NET20
+                LockList.ReleaseReaderLock();
+#else
                 LockList.ExitReadLock();
+#endif
             }
         }
 
@@ -1461,14 +1866,22 @@ namespace DMTServices
         /// </summary>
         public void TrimExcess()
         {
+#if NET20
+            LockList.AcquireWriterLock(DEF_TIMEOUT);
+#else
             LockList.EnterWriteLock();
+#endif
             try
             {
                 m_TList.TrimExcess();
             }
             finally
             {
+#if NET20
+                LockList.ReleaseWriterLock();
+#else
                 LockList.ExitWriteLock();
+#endif
             }
         }
 
@@ -1478,14 +1891,22 @@ namespace DMTServices
         /// <param name="match">the delegate which defines the conditions for the search</param>
         public bool TrueForAll(Predicate<T> match)
         {
+#if NET20
+            LockList.AcquireWriterLock(DEF_TIMEOUT);
+#else
             LockList.EnterWriteLock();
+#endif
             try
             {
                 return m_TList.TrueForAll(match);
             }
             finally
             {
+#if NET20
+                LockList.ReleaseWriterLock();
+#else
                 LockList.ExitWriteLock();
+#endif
             }
         }
     }

@@ -1556,7 +1556,7 @@ namespace DMTServices
                         {
                             string paraName = (string)parms.Key;
                             string paraType = string.Empty;
-                            if (paraName.Contains('|'))
+                            if (paraName.Contains("|"))
                             {
                                 string[] p = paraName.Split('|');
                                 if (p.Length > 1)
