@@ -9843,7 +9843,7 @@ namespace RoadaWebService
             return Result;
         }
 
-        [WebMethod(Description = "Prepare Frequency Page")]
+        [WebMethod(Description = "Prepare Frequency Page for Auto-Login")]
         public string setupFreqPage(Request req, string data, string mdata)
         {
             string Result = string.Empty;
@@ -9877,6 +9877,66 @@ namespace RoadaWebService
                 }
             }
             return Result;
+        }
+
+        [WebMethod(Description = "Retrieve comment list, optionally filtered by DC Name, as JSON")]
+        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public CommentData[] getCommentsJson(Request req, string Area)
+        {
+            return getComments(req, Area);
+        }
+
+        [WebMethod(Description = "send back all comments for past 24hrs for the given DC Name")]
+        public CommentData[] getComments(Request req, string Area)
+        {
+            List<CommentData> Result = new List<CommentData>();
+
+            if (LowSecurityCheck(req, "getComments"))
+            {
+                string connStr = CustConnectionString(req);
+
+                SqlStmt stmt = null;
+                try
+                {
+                    if (GetStmt(connStr, out stmt))
+                    {
+                        string sql = "select w.*,r.seg_id,u.first_name,u.last_name from weather_condition w";
+                        string where = " where isnull(w.comment, '')<>'' and w.start_time>=getdate()-1.25";
+                        if (!string.IsNullOrEmpty(Area))
+                            where += string.Format(" and w.vehicle_id in (select vehicle from vehicles where fleet in (select id from fleet where distribution_id in (select id from distribution_center where name='{0}')))", Area);
+
+                        string join = " left join roadSegments r on (w.start_time between r.start_time and r.end_time) and w.hand_code=r.hand_code";
+                        join += " left join users u on u.username=w.driver";
+                        
+                        //Global.messLog.Flush("Cmd: " + sql + join + where + " order by w.start_time desc");
+                        bool rc = stmt.DoSQL(sql + join + where + " order by w.start_time desc");
+                        //Global.messLog.Flush("Error: " + stmt.LastError);
+                        while(rc)
+                        {
+                            CommentData com = new CommentData();
+                            com.comment = stmt.fetch("comment");
+                            com.roadSegment = stmt.fetch("seg_id");
+                            com.sent = stmt.dtfetch("start_time");
+                            com.user = (stmt.fetch("first_name") + " " + stmt.fetch("last_name")).Trim();
+                            if (com.user == string.Empty)
+                                com.user = stmt.fetch("driver");
+                            
+                            Result.Add(com);
+
+                            rc = stmt.dbSkip();
+                        }
+                    }
+                }
+                finally
+                {
+                    if (stmt != null)
+                    {
+                        stmt.Close();
+                        stmt = null;
+                    }
+                }
+            }
+            return Result.ToArray();
         }
 
         private bool GetStmt(string connStr, out SqlStmt stmt)

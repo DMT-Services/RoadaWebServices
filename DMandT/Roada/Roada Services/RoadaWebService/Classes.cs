@@ -21,6 +21,7 @@ namespace RoadaWebService
         public DateTime EndDate;
         public int TripNumber;
     }
+
     [DataContract]
     public class AmazonURL
     {
@@ -198,9 +199,9 @@ namespace RoadaWebService
 
     [DataContract]
     public class DefiPicData
-    {      
+    {
         [DataMember]
-        public string reportId { get; set; }       
+        public string reportId { get; set; }
         [DataMember]
         public string[] photos { get; set; }
     }
@@ -464,6 +465,7 @@ namespace RoadaWebService
         [DataMember]
         public string title { get; set; }
     }
+
     [DataContract]
     public class ServerIDs
     {
@@ -830,6 +832,19 @@ namespace RoadaWebService
         public int roadService { get; set; }
         [DataMember]
         public int sidewalkService { get; set; }
+    }
+
+    [DataContract]
+    public class CommentData
+    {
+        [DataMember]
+        public string comment { get; set; }
+        [DataMember]
+        public DateTime sent { get; set; }
+        [DataMember]
+        public string user { get; set; }
+        [DataMember]
+        public string roadSegment { get; set; }
     }
 
     public class WeatherLocation
@@ -1487,7 +1502,7 @@ namespace RoadaWebService
     }
 
     [DataContract]
-    public class WildlifeData 
+    public class WildlifeData
     {
         [DataMember]
         public string reportID { get; set; }
@@ -2283,7 +2298,7 @@ namespace RoadaWebService
         public int ACFogAN;
         public int ACDrifting;
         public int ACDriftingAN;
-        
+
 
         public int RoadConditions;
         public int RoadConditionsAN;
