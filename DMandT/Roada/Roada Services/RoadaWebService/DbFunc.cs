@@ -1483,157 +1483,171 @@ namespace DMTServices
         /// <param name="select">set to false for NonQuery type statements</param>
         private myDataReader DoSql(string selectStr, bool select)
         {
-            try
+            // try again once when transport-level errors occur
+            int retry = 1;
+            while (true)
             {
-                TimeSpan ts = new TimeSpan(DateTime.Now.Ticks);
-                // clear out any previous error message
-                LastError = string.Empty;
+                try
+                {
+                    TimeSpan ts = new TimeSpan(DateTime.Now.Ticks);
+                    // clear out any previous error message
+                    LastError = string.Empty;
 
-                // if you call DoSql in a loop, you need to .Close the previous result set...
-                rdrClose();
-                rdrEOF = true;
+                    // if you call DoSql in a loop, you need to .Close the previous result set...
+                    rdrClose();
+                    rdrEOF = true;
 
-                // this is here to support older versions...
-                //if (createdSqlConn)
-                // Actually, we should always do this as it can
-                // get you re-connected after a connection problem...
-                fParent.dbConnect();
+                    // this is here to support older versions...
+                    //if (createdSqlConn)
+                    // Actually, we should always do this as it can
+                    // get you re-connected after a connection problem...
+                    fParent.dbConnect();
 
 #if QUESTIONMARK_PARAMS
-                // for OLEDB stuff (and some Database engines like FireBird), you only pass "?" for each param,
-                // so here we change all "@xxx"'s to "?"'s
-                // ALSO NOTE: since we only pass "?"'s, the order of the
-                //            params MUST MATCH the order in the select statement,
-                //            so we will make sure to use ParamKeys order when doing cmd.Parameters.Add()
-                if (SQLParams.Count > 0)
-                {
-                    // first, fill an ArrayList with all the 'keys' (@xxx) in lowercase from the 
-                    // select string and replace them with "?" in the select...
-                    ParamKeys.Clear();
-                    selectStr = ParseKeys(selectStr, ParamKeys);
-                    // now get the values in the arraylist to 'exactly' match the keys in the SQLParams
-                    // so when you do 'SQLParams[ParamKeys[i]]' it will find the value...
-                    string ky = "";
-                    foreach (DictionaryEntry parms in SQLParams)
-                    {
-                        ky = (string)parms.Key;
-                        // the @ sign is 'optional' in the .Add() but we filled our ArrayList
-                        // from the SELECT so they all DO start with '@', so make sure here...
-                        if (!ky.StartsWith("@"))
-                            ky = "@" + ky;
-                        int i = ParamKeys.IndexOf(ky.ToLower());
-                        if (i >= 0)
-                            ParamKeys[i] = (string)parms.Key;
-                    }
-                }
-#endif
-                if (cmd == null)
-                    if (fParent.dbConnection != null)
-                        cmd = fParent.dbConnection.CreateCommand();
-
-                if (cmd != null)
-                {
-                    cmd.Parameters.Clear();
-                    cmd.CommandText = selectStr;
-#if !(ORACLEDB  || ORACLEDB20)
-                    // if we are in 'transaction mode' we must set this here...
-                    if (fParent.InTransaction())
-                        cmd.Transaction = fParent.GetTransaction();
-#endif
+                    // for OLEDB stuff (and some Database engines like FireBird), you only pass "?" for each param,
+                    // so here we change all "@xxx"'s to "?"'s
+                    // ALSO NOTE: since we only pass "?"'s, the order of the
+                    //            params MUST MATCH the order in the select statement,
+                    //            so we will make sure to use ParamKeys order when doing cmd.Parameters.Add()
                     if (SQLParams.Count > 0)
                     {
-#if QUESTIONMARK_PARAMS
-                        // by skipping thru in ParamKeys[i] order, we make sure the params
-                        // are added in the same order as they show in select... (critical since we only pass '?')
-                        for (int i = 0; i < ParamKeys.Count; i++)
-                        {
-                            string name = (string)ParamKeys[i];
-                            if (SQLParams.ContainsKey(name))
-                                cmd.Parameters.Add(new myParameter(name, SQLParams[name]));
-                        }
-#else
+                        // first, fill an ArrayList with all the 'keys' (@xxx) in lowercase from the 
+                        // select string and replace them with "?" in the select...
+                        ParamKeys.Clear();
+                        selectStr = ParseKeys(selectStr, ParamKeys);
+                        // now get the values in the arraylist to 'exactly' match the keys in the SQLParams
+                        // so when you do 'SQLParams[ParamKeys[i]]' it will find the value...
+                        string ky = "";
                         foreach (DictionaryEntry parms in SQLParams)
                         {
-                            string paraName = (string)parms.Key;
-                            string paraType = string.Empty;
-                            if (paraName.Contains("|"))
-                            {
-                                string[] p = paraName.Split('|');
-                                if (p.Length > 1)
-                                {
-                                    paraName = p[0];
-                                    paraType = p[1];
-                                }
-                            }
-                            cmd.Parameters.Add(new myParameter(paraName, parms.Value));
-#if SQLSERVER
-                            if (paraType != string.Empty)
-                                cmd.Parameters[cmd.Parameters.Count - 1].UdtTypeName = paraType;
-#endif
+                            ky = (string)parms.Key;
+                            // the @ sign is 'optional' in the .Add() but we filled our ArrayList
+                            // from the SELECT so they all DO start with '@', so make sure here...
+                            if (!ky.StartsWith("@"))
+                                ky = "@" + ky;
+                            int i = ParamKeys.IndexOf(ky.ToLower());
+                            if (i >= 0)
+                                ParamKeys[i] = (string)parms.Key;
                         }
+                    }
+#endif
+                    if (cmd == null)
+                        if (fParent.dbConnection != null)
+                            cmd = fParent.dbConnection.CreateCommand();
+
+                    if (cmd != null)
+                    {
+                        cmd.Parameters.Clear();
+                        cmd.CommandText = selectStr;
+#if !(ORACLEDB || ORACLEDB20)
+                        // if we are in 'transaction mode' we must set this here...
+                        if (fParent.InTransaction())
+                            cmd.Transaction = fParent.GetTransaction();
+#endif
+                        if (SQLParams.Count > 0)
+                        {
+#if QUESTIONMARK_PARAMS
+                            // by skipping thru in ParamKeys[i] order, we make sure the params
+                            // are added in the same order as they show in select... (critical since we only pass '?')
+                            for (int i = 0; i < ParamKeys.Count; i++)
+                            {
+                                string name = (string)ParamKeys[i];
+                                if (SQLParams.ContainsKey(name))
+                                    cmd.Parameters.Add(new myParameter(name, SQLParams[name]));
+                            }
+#else
+                            foreach (DictionaryEntry parms in SQLParams)
+                            {
+                                string paraName = (string)parms.Key;
+                                string paraType = string.Empty;
+                                if (paraName.Contains("|"))
+                                {
+                                    string[] p = paraName.Split('|');
+                                    if (p.Length > 1)
+                                    {
+                                        paraName = p[0];
+                                        paraType = p[1];
+                                    }
+                                }
+                                cmd.Parameters.Add(new myParameter(paraName, parms.Value));
+#if SQLSERVER
+                                if (paraType != string.Empty)
+                                    cmd.Parameters[cmd.Parameters.Count - 1].UdtTypeName = paraType;
+#endif
+                            }
 #endif
 
-                        SQLParams.Clear();
-                    }
+                            SQLParams.Clear();
+                        }
 #if !SQL_CE
-                    cmd.CommandTimeout = fParent.defTimeOut;
+                        cmd.CommandTimeout = fParent.defTimeOut;
 #endif
-                    RowsAffected = 0;
-                    if (select)
-                        rdr = cmd.ExecuteReader();
-                    else
-                    {
-                        RowsAffected = cmd.ExecuteNonQuery();
-                        rdr = null;
+                        RowsAffected = 0;
+                        if (select)
+                            rdr = cmd.ExecuteReader();
+                        else
+                        {
+                            RowsAffected = cmd.ExecuteNonQuery();
+                            rdr = null;
 #if REPLICATE_DB
+                            try
+                            {
+                                // for replication, fire an event
+                                if (ReplicationEvent != null && !IgnoreReplicate)
+                                    ReplicationEvent(this, cmd);
+                            }
+                            catch { }
+#endif
+                        }
                         try
                         {
-                            // for replication, fire an event
-                            if (ReplicationEvent != null && !IgnoreReplicate)
-                                ReplicationEvent(this, cmd);
+                            if (timeOverEvent != null)
+                                timeOverEvent(this, new TimeSpan(DateTime.Now.Ticks).Subtract(ts).TotalSeconds, "DoSQL", selectStr);
                         }
                         catch { }
-#endif
                     }
-                    try
-                    {
-                        if (timeOverEvent != null)
-                            timeOverEvent(this, new TimeSpan(DateTime.Now.Ticks).Subtract(ts).TotalSeconds, "DoSQL", selectStr);
-                    }
-                    catch { }
+                    else
+                        throw new Exception("Not Connected to DataSource!");
                 }
-                else
-                    throw new Exception("Not Connected to DataSource!");
-            }
-            catch (Exception e)
-            {
+                catch (Exception e)
+                {
+                    if(retry-- > 0 && e.Message.Contains("transport-level error"))
+                    {
+                        if (fParent.Mess != null)
+                            fParent.Mess.Flush("transport-level error, retrying... " + e.Message);
+                        continue;
+                    }
+
 #if !NO_MESSLOG
-                if (fParent.Mess != null)
-                {
-                    if (!fParent.ignoreDupErr || !e.Message.StartsWith("Cannot insert duplicate key row"))
+                    if (fParent.Mess != null)
                     {
-                        string pfx = "            ";
-                        if (fParent.maxErrMess == 0)    // don't write out the sql that caused the error
-                            pfx = "SQL Error - ";
-                        else
-                            fParent.Mess.Flush("SQL Error - " + ((fParent.maxErrMess > 0 && selectStr.Length > fParent.maxErrMess) ? (selectStr.Substring(0, fParent.maxErrMess) + "...") : selectStr));
+                        if (!fParent.ignoreDupErr || !e.Message.StartsWith("Cannot insert duplicate key row"))
+                        {
+                            string pfx = "            ";
+                            if (fParent.maxErrMess == 0)    // don't write out the sql that caused the error
+                                pfx = "SQL Error - ";
+                            else
+                                fParent.Mess.Flush("SQL Error - " + ((fParent.maxErrMess > 0 && selectStr.Length > fParent.maxErrMess) ? (selectStr.Substring(0, fParent.maxErrMess) + "...") : selectStr));
 
-                        fParent.Mess.Flush(pfx + e.Message);
+                            fParent.Mess.Flush(pfx + e.Message);
+                        }
                     }
-                }
 #endif
-                LastError = e.Message;
-                if (transportErrorEvent != null)
-                {
-                    if (e.Message.Contains("transport-level error") || e.Message.Contains("forcibly closed"))
-                        transportErrorEvent(this);
-                }
-                rdrClose();
+                    rdrClose();
 
+                    LastError = e.Message;
+
+                    if (transportErrorEvent != null)
+                    {
+                        if (e.Message.Contains("transport-level error") || e.Message.Contains("forcibly closed"))
+                            transportErrorEvent(this);
+                    }
 #if THROW_SQL_EXCP
-                if (!fParent.ignoreDupErr || !e.Message.StartsWith("Cannot insert duplicate key row"))
-                    throw new System.Exception(e.Message, e.InnerException);
+                    if (!fParent.ignoreDupErr || !e.Message.StartsWith("Cannot insert duplicate key row"))
+                        throw new System.Exception(e.Message, e.InnerException);
 #endif
+                }
+                break;
             }
 
             if (rdr != null)
