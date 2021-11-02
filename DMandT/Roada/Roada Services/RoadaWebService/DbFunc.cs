@@ -894,7 +894,7 @@ namespace DMTServices
                 foreach (string field in fields)
                     if (nFields.Contains(field.ToLower()))
                     {
-                        if (nFields.Count() <= nFound || nFields[nFound] != field)
+                        if (nFields.Count <= nFound || nFields[nFound] != field)
                             order = false;
                         nFound++;
                     }
@@ -906,12 +906,12 @@ namespace DMTServices
 
 
                 if (ok)
-                    if (nFound == nFields.Count())
+                    if (nFound == nFields.Count)
                         rc = (order) ? 1 : 3;
                     else
                     {
                         // if there is one 'extra' field and it's 'id', allow that as a match (but return 2 to indicate this)
-                        if (nFound == nFields.Count() - 1 && (nFields.Contains("id") && !fields.Contains("id")))
+                        if (nFound == nFields.Count - 1 && (nFields.Contains("id") && !fields.Contains("id")))
                             rc = 2;
                     }
             }
