@@ -2164,6 +2164,8 @@ namespace RoadaWebService
         public int Type { get; set; }
         [DataMember(IsRequired = false, EmitDefaultValue = false)]
         public double Odom { get; set; }
+        [DataMember(IsRequired = false, EmitDefaultValue = false)]
+        public bool HHFlag { get; set; }
     }
 
     [DataContract]

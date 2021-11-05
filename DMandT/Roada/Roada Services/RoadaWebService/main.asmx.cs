@@ -3331,6 +3331,115 @@ namespace RoadaWebService
             return dInfo;
         }
 
+        [WebMethod(Description = "Retrieve DCD device info for an array of vehicle's (POST)")]
+        [ScriptMethod(UseHttpGet = false, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public DeviceInfo[] GetDeviceInfoArrayJson(Request req, int[] devIds)
+        {
+            return GetDeviceInfoArray(req, devIds);
+        }
+
+        [WebMethod(Description = "Retrieve DCD device info for an array of vehicle's")]
+        public DeviceInfo[] GetDeviceInfoArray(Request request, int[] devIds)
+        {
+            DeviceInfo[] dInfos = null;
+
+            if (!LowSecurityCheck(request, "GetDeviceInfoArray"))
+                return dInfos;
+
+            string connStr = CustConnectionString(request);
+            SqlStmt stmt = null;
+            try
+            {
+                if (GetStmt(connStr, out stmt))
+                {
+                    TList<DeviceInfo> devList = new TList<DeviceInfo>();
+                    foreach (int devId in devIds)
+                    {
+                        if (stmt.DoSQLFormat("SELECT *, vehicles.unit_num as vunit FROM handheld left join vehicles on vehicles.vehicle = handheld.vehicle_id WHERE handheld.hand_code = {0} and vehicles.vehicle > 0", devId))
+                        {
+                            DeviceInfo dInfo = new DeviceInfo();
+                            dInfo.truck = stmt.fetch("vunit");
+                            dInfo.DevId = devId;
+                            dInfo.ServerDate = DateTime.UtcNow;
+                            dInfo.LoginDate = stmt.dtfetch("log_date");
+                            dInfo.GPSDate = stmt.dtfetch("last_date");
+                            dInfo.Latitude = stmt.dfetch("last_lat");
+                            dInfo.Longitude = stmt.dfetch("last_long");
+                            dInfo.Pdop = stmt.dfetch("pdop");
+                            dInfo.Hdop = stmt.dfetch("hdop");
+                            dInfo.Speed = stmt.ifetch("speed");
+                            dInfo.FirmVers = stmt.fetch("firmware_version");
+                            dInfo.ModemVers = stmt.fetch("modem_version");
+                            if (!stmt.IsNull("cell_strength"))
+                                dInfo.CellStrength = stmt.ifetch("cell_strength");
+                            if (devId > 0 && dInfo.GPSDate != DateTime.MinValue)
+                            {
+                                if (stmt.DoSQLFormat("SELECT TOP 1 * FROM messagein WHERE hand_code = {0} and rdate >= {1}", devId, SqlHelper.timeStamp(dInfo.GPSDate)))
+                                {
+                                    dInfo.WriteDate = stmt.dtfetch("idate");
+                                    dInfo.Degrees = stmt.ifetch("degrees");
+                                    dInfo.Plow = stmt.tfetch("plow");
+                                    dInfo.Wing = stmt.tfetch("wing");
+                                    dInfo.Tow = stmt.tfetch("tow");
+                                    dInfo.IOstatus = stmt.ifetch("io_status");
+                                    double roadTemp = stmt.dfetch("temp_road");
+                                    double airTemp = stmt.dfetch("temp_air");
+                                    if (roadTemp != 0 || airTemp != 0)     // if both zero, then not likely connected
+                                    {
+                                        dInfo.RoadTemp = roadTemp;
+                                        dInfo.AirTemp = airTemp;
+                                    }
+                                }
+                            }
+/*
+                            if (stmt.DoSQLFormat("SELECT Max(id) as maxid FROM spreader_activity WHERE hand_code = {0} and rdate >= {{ts '{1}'}}", devId, DateTime.UtcNow.AddMinutes(-30).ToString(LONG_DATE)))
+                            {
+                                if (!stmt.IsNull("maxid"))
+                                {
+                                    int maxId = stmt.ifetch("maxid");
+                                    stmt.DoSQLFormat("SELECT * FROM spreader_activity WHERE id = {0}", maxId);
+                                    dInfo.SpreadDate = stmt.dtfetch("rdate");
+                                    dInfo.SpreadDry = stmt.tfetch("start_spread_dry");
+                                    dInfo.SpreadWet = stmt.tfetch("start_spread_liq");
+                                    dInfo.DryRate = stmt.dfetch("dry_rate");
+                                    dInfo.WetRate = stmt.dfetch("wet_rate");
+                                }
+                            }
+
+                            bool rc = stmt.DoSQLFormat("SELECT TOP 5 * FROM img_events WHERE hand_code = {0} ORDER BY rdate DESC", devId);
+                            List<ImgInfo> imgs = new List<ImgInfo>();
+                            while (rc)
+                            {
+                                ImgInfo img = new ImgInfo();
+                                img.EvtType = stmt.ifetch("evt_type");
+                                img.rdate = stmt.dtfetch("rdate");
+                                img.ImgUrl = stmt.fetch("img_url");
+                                imgs.Add(img);
+                                rc = stmt.dbSkip();
+                            }
+                            dInfo.Images = imgs.ToArray();
+                            imgs.Clear(); */
+                            devList.Add(dInfo);
+
+                        }
+                    }
+                    dInfos = devList.ToArray();
+                    devList.Clear();
+                }
+            }
+            catch (Exception x)
+            {
+                Global.messLog.Flush("GetDeviceInfoArray() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
+                InsertErrorRecord(request.CustCode, "GetDeviceInfoArray() " + x.Message, request);
+            }
+            finally
+            {
+                if (stmt != null)
+                    stmt.Close();
+            }
+            return dInfos;
+        }
+
         [WebMethod(Description = "Push Weather Report Data Json")]
         [ScriptMethod(UseHttpGet = false, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
         public int SendWeatherReportJson(Request req, WeatherData wdata)
@@ -6082,9 +6191,9 @@ namespace RoadaWebService
                         List<Vehicle> vehicles = new List<Vehicle>();
                         bool rc;
                         if (fleetId != null)
-                            rc = stmt.DoSQLFormat("SELECT * FROM vehicles WHERE fleet = {0} ORDER BY unit_num", fleetId);
+                            rc = stmt.DoSQLFormat("SELECT vehicles.*, handheld.id as hid FROM vehicles LEFT JOIN handheld ON handheld.hand_code = vehicles.hand_code WHERE vehicles.fleet = {0} ORDER BY vehicles.unit_num", fleetId);
                         else
-                            rc = stmt.DoSQL("SELECT * FROM vehicles ORDER BY unit_num");
+                            rc = stmt.DoSQL("SELECT vehicles.*, handheld.id as hid FROM vehicles LEFT JOIN handheld ON handheld.hand_code = vehicles.hand_code ORDER BY vehicles.unit_num");
                         while (rc)
                         {
                             Vehicle v = new Vehicle();
@@ -6095,7 +6204,7 @@ namespace RoadaWebService
                             v.License = stmt.fetch("license");
                             v.Type = stmt.ifetch("type");
                             v.Odom = stmt.dfetch("gps_odom");
-
+                            v.HHFlag = ! stmt.IsNull("hid");        // new mobile viewer app needs to know if a handheld record exists, if not it ignores the vehicle
                             vehicles.Add(v);
 
                             rc = stmt.dbSkip();
