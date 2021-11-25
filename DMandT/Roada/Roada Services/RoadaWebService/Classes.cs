@@ -37,6 +37,8 @@ namespace RoadaWebService
     public class Yard
     {
         [DataMember]
+        public int Id { get; set; }
+        [DataMember]
         public string Name { get; set; }
         [DataMember]
         public string Address { get; set; }

@@ -1419,6 +1419,7 @@ namespace RoadaWebService
                         while (rc)
                         {
                             Yard y = new Yard();
+                            y.Id = stmt.ifetch("id");
                             y.Name = stmt.fetch("name");
                             y.Address = stmt.fetch("address");
                             y.Province = stmt.fetch("province");
