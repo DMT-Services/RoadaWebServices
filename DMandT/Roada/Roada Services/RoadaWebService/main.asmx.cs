@@ -3392,34 +3392,34 @@ namespace RoadaWebService
                                     }
                                 }
                             }
-/*
-                            if (stmt.DoSQLFormat("SELECT Max(id) as maxid FROM spreader_activity WHERE hand_code = {0} and rdate >= {{ts '{1}'}}", devId, DateTime.UtcNow.AddMinutes(-30).ToString(LONG_DATE)))
-                            {
-                                if (!stmt.IsNull("maxid"))
-                                {
-                                    int maxId = stmt.ifetch("maxid");
-                                    stmt.DoSQLFormat("SELECT * FROM spreader_activity WHERE id = {0}", maxId);
-                                    dInfo.SpreadDate = stmt.dtfetch("rdate");
-                                    dInfo.SpreadDry = stmt.tfetch("start_spread_dry");
-                                    dInfo.SpreadWet = stmt.tfetch("start_spread_liq");
-                                    dInfo.DryRate = stmt.dfetch("dry_rate");
-                                    dInfo.WetRate = stmt.dfetch("wet_rate");
-                                }
-                            }
+                            /*
+                                                        if (stmt.DoSQLFormat("SELECT Max(id) as maxid FROM spreader_activity WHERE hand_code = {0} and rdate >= {{ts '{1}'}}", devId, DateTime.UtcNow.AddMinutes(-30).ToString(LONG_DATE)))
+                                                        {
+                                                            if (!stmt.IsNull("maxid"))
+                                                            {
+                                                                int maxId = stmt.ifetch("maxid");
+                                                                stmt.DoSQLFormat("SELECT * FROM spreader_activity WHERE id = {0}", maxId);
+                                                                dInfo.SpreadDate = stmt.dtfetch("rdate");
+                                                                dInfo.SpreadDry = stmt.tfetch("start_spread_dry");
+                                                                dInfo.SpreadWet = stmt.tfetch("start_spread_liq");
+                                                                dInfo.DryRate = stmt.dfetch("dry_rate");
+                                                                dInfo.WetRate = stmt.dfetch("wet_rate");
+                                                            }
+                                                        }
 
-                            bool rc = stmt.DoSQLFormat("SELECT TOP 5 * FROM img_events WHERE hand_code = {0} ORDER BY rdate DESC", devId);
-                            List<ImgInfo> imgs = new List<ImgInfo>();
-                            while (rc)
-                            {
-                                ImgInfo img = new ImgInfo();
-                                img.EvtType = stmt.ifetch("evt_type");
-                                img.rdate = stmt.dtfetch("rdate");
-                                img.ImgUrl = stmt.fetch("img_url");
-                                imgs.Add(img);
-                                rc = stmt.dbSkip();
-                            }
-                            dInfo.Images = imgs.ToArray();
-                            imgs.Clear(); */
+                                                        bool rc = stmt.DoSQLFormat("SELECT TOP 5 * FROM img_events WHERE hand_code = {0} ORDER BY rdate DESC", devId);
+                                                        List<ImgInfo> imgs = new List<ImgInfo>();
+                                                        while (rc)
+                                                        {
+                                                            ImgInfo img = new ImgInfo();
+                                                            img.EvtType = stmt.ifetch("evt_type");
+                                                            img.rdate = stmt.dtfetch("rdate");
+                                                            img.ImgUrl = stmt.fetch("img_url");
+                                                            imgs.Add(img);
+                                                            rc = stmt.dbSkip();
+                                                        }
+                                                        dInfo.Images = imgs.ToArray();
+                                                        imgs.Clear(); */
                             devList.Add(dInfo);
 
                         }
@@ -5581,7 +5581,7 @@ namespace RoadaWebService
         }
 
         [WebMethod(Description = "Returns all Deficiency pic Data")]
-         public DefiPicData[] GetDeficiencyPictureData(Request req, DeficiencyData[] data)
+        public DefiPicData[] GetDeficiencyPictureData(Request req, DeficiencyData[] data)
         {
             List<DefiPicData> result = new List<DefiPicData>();
 
@@ -5604,7 +5604,7 @@ namespace RoadaWebService
                                 while (rc)
                                 {
                                     string repkey = "";
-                                    repkey = stmt.fetch("repkey");                                    
+                                    repkey = stmt.fetch("repkey");
                                     templ.Add(repkey);
                                     rc = stmt.dbSkip();
                                 }
@@ -5660,8 +5660,8 @@ namespace RoadaWebService
                             result = 1;
 
                         }
-                            
-                        
+
+
                     }
                 }
                 catch (Exception ex)
@@ -5678,7 +5678,7 @@ namespace RoadaWebService
             }
             return result;
         }
-     
+
         [WebMethod(Description = "Comissions Installer app")]
         public int ComissionInstaller(Request req, string imei, out bool commissioned, out string Customers)
         {
@@ -6205,7 +6205,7 @@ namespace RoadaWebService
                             v.License = stmt.fetch("license");
                             v.Type = stmt.ifetch("type");
                             v.Odom = stmt.dfetch("gps_odom");
-                            v.HHFlag = ! stmt.IsNull("hid");        // new mobile viewer app needs to know if a handheld record exists, if not it ignores the vehicle
+                            v.HHFlag = !stmt.IsNull("hid");        // new mobile viewer app needs to know if a handheld record exists, if not it ignores the vehicle
                             vehicles.Add(v);
 
                             rc = stmt.dbSkip();
@@ -7120,7 +7120,7 @@ namespace RoadaWebService
                                  { "sign_text", "sign_text" },
                                  { "latitude", "latitude" },
                                  { "longitude", "longitude" } };
-                                 //{ "notes", "notes" } };
+        //{ "notes", "notes" } };
 
         [WebMethod(Description = "Add a Sign")]
         public int AddSign(Request request, Sign sdata)
@@ -7553,30 +7553,30 @@ namespace RoadaWebService
         private Bitmap base64SigToBmp(string sigString)
         {
             Bitmap rc = null;
-            byte[] sigData;
+
             int p = sigString.IndexOf(',');     // remove the 'data:image/png;base64,' at the start of base64 data
             if (p > 0)
+                sigString = sigString.Substring(p + 1);
+
+            byte[] sigData = Convert.FromBase64String(sigString);
+            Image img = LoadBase64(sigData);
+            if (img != null)
             {
-                sigData = Convert.FromBase64String(sigString.Substring(p + 1));
-                Image img = LoadBase64(sigData);
-                if (img != null)
+                try
                 {
-                    try
-                    {
-                        rc = ChangeToMonochrome(img);
-                    }
-                    catch (Exception ex)
-                    {
-                        Global.messLog.Flush("base64SigToBmp() Excp: {0}", ex.Message);
-                    }
-                    finally
-                    {
-                        img.Dispose();
-                        img = null;
-                    }
+                    rc = ChangeToMonochrome(img);
+                }
+                catch (Exception ex)
+                {
+                    Global.messLog.Flush("base64SigToBmp() Excp: {0}", ex.Message);
+                }
+                finally
+                {
+                    img.Dispose();
+                    img = null;
                 }
             }
-            
+
             return rc;
         }
 
@@ -9278,7 +9278,7 @@ namespace RoadaWebService
         {
             return AddPond(req, pdata);
         }
-        
+
         [WebMethod(Description = "Retrieve Bridge list as JSON")]
         [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
         public Bridge[] GetBridgesJson(Request req)
@@ -9383,7 +9383,7 @@ namespace RoadaWebService
         {
             return GetFormLayout(req);
         }
-        
+
         [WebMethod(Description = "Retrieve Bridge Data as JSON")]
         [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
         public BridgeInspectionData[] GetBridgeDataJson(Request req, Bridge[] bridges, int maxInsp)
@@ -9665,8 +9665,15 @@ namespace RoadaWebService
                                   { "EndTime", "end_patrol" },
                                   { "EndLatitude", "end_latitude" },
                                   { "EndLongitude", "end_longitude" },
-                                  { "EndOdometer", "end_odo" },
-                                  { "Signature", "signature" } };
+                                  { "EndOdometer", "end_odo" } };
+                                  //{ "Signature", "signature" } };
+
+        [WebMethod(Description = "Receive Login Data as JSON")]
+        [ScriptMethod(UseHttpGet = false, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public int SendPhoneLoginJson(Request req, LoginData data)
+        {
+            return SendTabletLogin(req, data);
+        }
 
         [WebMethod(Description = "Receive Login Data as JSON")]
         [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
@@ -9696,6 +9703,10 @@ namespace RoadaWebService
                     if (GetStmt(connStr, out stmt))
                     {
                         SqlHelper sql = procData.fillQuery(data, loginLayout);
+                        if (!string.IsNullOrEmpty(data.strImgSig))
+                            sql.Add("signature", myConvert.ToByteArray(base64SigToBmp(data.strImgSig)));
+                        else
+                            sql.Add("signature", data.Signature);
 
                         string where = string.Format("WHERE hand_code={0} and start_patrol={1}", data.HandCode, SqlHelper.timeStamp(data.StartTime));
 
@@ -9710,7 +9721,6 @@ namespace RoadaWebService
                             stmt.DoSQLFormat("update patrol_log set end_patrol={0} where hand_code={1} and user_name='{2}' and end_patrol is null", SqlHelper.timeStamp(data.StartTime), data.HandCode, data.UserName);
 
                             sql.Add("vehicle_id", getVehicleId(stmt, data.HandCode, data.UnitNum));
-
                             // MUST set second param of DoSQL() to true as this makes it run the insert 
                             // as an ExecuteReader instead of ExecuteNonQuery so we can get back the inserted.id
                             stmt.DoSQL(sql.BuildInsert("INSERT INTO patrol_log", " output inserted.id VALUES "), true);
@@ -10022,11 +10032,11 @@ namespace RoadaWebService
 
                         string join = " left join roadSegments r on (w.start_time between r.start_time and r.end_time) and w.hand_code=r.hand_code";
                         join += " left join users u on u.username=w.driver";
-                        
+
                         //Global.messLog.Flush("Cmd: " + sql + join + where + " order by w.start_time desc");
                         bool rc = stmt.DoSQL(sql + join + where + " order by w.start_time desc");
                         //Global.messLog.Flush("Error: " + stmt.LastError);
-                        while(rc)
+                        while (rc)
                         {
                             CommentData com = new CommentData();
                             com.comment = stmt.fetch("comment");
@@ -10035,7 +10045,7 @@ namespace RoadaWebService
                             com.user = (stmt.fetch("first_name") + " " + stmt.fetch("last_name")).Trim();
                             if (com.user == string.Empty)
                                 com.user = stmt.fetch("driver");
-                            
+
                             Result.Add(com);
 
                             rc = stmt.dbSkip();

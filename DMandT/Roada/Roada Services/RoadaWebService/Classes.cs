@@ -333,6 +333,8 @@ namespace RoadaWebService
         public byte[] Signature { get; set; }
         [DataMember]
         public string strSignature { get; set; }
+        [DataMember]
+        public string strImgSig { get; set; }
     }
 
     public class ColumnCheckData
