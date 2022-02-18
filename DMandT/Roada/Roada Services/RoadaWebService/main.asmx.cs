@@ -5382,6 +5382,13 @@ namespace RoadaWebService
             return SendDefAddNote(req, id, addNote, 0);
         }
 
+        [WebMethod(Description = "Receive Deficiency Additional Note as JSON")]
+        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public int SendDefAddNoteJson(Request req, int id, string addNote)
+        {
+            return SendDefAddNote(req, id, addNote, 0);
+        }
+
         [WebMethod(Description = "Receive Deficiency Additional Note")]
         public int SendDefAddNote(Request req, int id, string addNote, int finish)
         {
@@ -5437,6 +5444,14 @@ namespace RoadaWebService
         [WebMethod(Description = "Receive Deficiency Data as JSON")]
         [ScriptMethod(UseHttpGet = false, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
         public int SendDeficiencyJsonP(Request req, DeficiencyData data)
+        {
+            return SendDeficiencyData(req, data);
+        }
+
+        // created this to allow using POST as the one below has UseHttpGet = true and is already in use by other programs
+        [WebMethod(Description = "Receive Deficiency Data as JSON")]
+        [ScriptMethod(UseHttpGet = false, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public int SendDeficiencyJsonReact(Request req, DeficiencyData data)
         {
             return SendDeficiencyData(req, data);
         }
@@ -5656,6 +5671,7 @@ namespace RoadaWebService
                         {
                             SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
                             sql.Add("add_notes", data.addNotes);
+                            sql.Add("finished", data.Finished);
                             stmt.DoSQL(sql.BuildUpdate("UPDATE deficiencies with (rowlock)", string.Format(" WHERE report_id = '{0}'", data.ReportId)));
                             result = 1;
 
