@@ -5382,13 +5382,6 @@ namespace RoadaWebService
             return SendDefAddNote(req, id, addNote, 0);
         }
 
-        [WebMethod(Description = "Receive Deficiency Additional Note as JSON")]
-        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
-        public int SendDefAddNoteJson(Request req, int id, string addNote)
-        {
-            return SendDefAddNote(req, id, addNote, 0);
-        }
-
         [WebMethod(Description = "Receive Deficiency Additional Note")]
         public int SendDefAddNote(Request req, int id, string addNote, int finish)
         {
@@ -5643,7 +5636,6 @@ namespace RoadaWebService
             return result.ToArray();
         }
 
-
         [WebMethod(Description = "Return Deficiency Data as JSON")]
         [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
         public int SendNoteDeficiencyJson(Request req, DeficiencyData data)
@@ -5671,7 +5663,8 @@ namespace RoadaWebService
                         {
                             SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
                             sql.Add("add_notes", data.addNotes);
-                            sql.Add("finished", data.Finished);
+                            if (data.Finished)
+                                sql.Add("finished", data.Finished);
                             stmt.DoSQL(sql.BuildUpdate("UPDATE deficiencies with (rowlock)", string.Format(" WHERE report_id = '{0}'", data.ReportId)));
                             result = 1;
 
