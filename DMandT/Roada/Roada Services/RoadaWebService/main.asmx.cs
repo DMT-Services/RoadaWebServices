@@ -7891,7 +7891,7 @@ namespace RoadaWebService
                     sql.Add("repKey", wdata.repKey);
 
                     if (!string.IsNullOrEmpty(wdata.sigBase64))
-                        sql.Add("sig_data", ImageToBytes(base64SigToBmp(wdata.sigBase64)));
+                        sql.Add("sig_data", myConvert.ToByteArray(base64SigToBmp(wdata.sigBase64)));
                     else
                         sql.Add("sig_data", wdata.sigData);
 
