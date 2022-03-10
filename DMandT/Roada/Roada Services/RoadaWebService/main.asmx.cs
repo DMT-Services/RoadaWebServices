@@ -6459,6 +6459,191 @@ namespace RoadaWebService
             return Result;
         }
 
+        private Wall fillWall(SqlStmt stmt)
+        {
+            Wall p = new Wall();
+            p.location = stmt.fetch("location");
+            p.site = stmt.fetch("structure");
+            p.name = stmt.fetch("name");
+            p.road = stmt.fetch("road");
+            p.latitude = stmt.dfetch("latitude");
+            p.longitude = stmt.dfetch("longitude");
+            p.notes = stmt.fetch("notes");
+            p.date = stmt.dtfetch("date");
+
+            return p;
+        }
+
+        [WebMethod(Description = "Retrieve Walls")]
+        public Wall[] GetWallList(Request request)
+        {
+            Wall[] Result = null;
+
+            if (LowSecurityCheck(request, "GetWallList"))
+            {
+                string connStr = CustConnectionString(request);
+                SqlStmt stmt = null;
+                try
+                {
+                    if (GetStmt(connStr, out stmt))
+                    {
+                        List<Wall> Walls = new List<Wall>();
+                        bool rc = stmt.DoSQL("SELECT * FROM asset_wall ORDER BY structure");
+                        while (rc)
+                        {
+                            Walls.Add(fillWall(stmt));
+
+                            rc = stmt.dbSkip();
+                        }
+                        Result = Walls.ToArray();
+                        Walls.Clear();
+                    }
+                }
+                catch (Exception x)
+                {
+                    Global.messLog.Flush("GetWallList() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
+                    InsertErrorRecord(request.CustCode, string.Format("GetWallList() Failed to send HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message), request);
+                }
+                finally
+                {
+                    if (stmt != null)
+                    {
+                        stmt.Close();
+                        stmt = null;
+                    }
+                }
+            }
+            return Result;
+        }
+
+        [WebMethod(Description = "Retrieve Walls closest to lat/lon pair for maxRows")]
+        public Wall[] GetWallListNear(Request request, string searchStr, double lat, double lon, int startRow, int maxRows)
+        {
+            Wall[] Result = null;
+
+            if (LowSecurityCheck(request, "GetWallListNear"))
+            {
+                string connStr = CustConnectionString(request);
+                SqlStmt stmt = null;
+                try
+                {
+                    if (GetStmt(connStr, out stmt))
+                    {
+                        string sqlStr;
+                        if (lat == 0 && lon == 0)
+                        {
+                            if (searchStr == string.Empty)
+                                sqlStr = string.Format("SELECT TOP {0} * FROM asset_wall ORDER BY structure", maxRows + startRow);
+                            else
+                                sqlStr = string.Format("SELECT TOP {0} * FROM asset_wall WHERE structure LIKE '{1}' ORDER BY structure", maxRows + startRow, SqlHelper.FixUp(searchStr));
+                        }
+                        else
+                        {
+                            if (searchStr == string.Empty)
+                                sqlStr = string.Format("SELECT TOP {0} *, geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326)) as dist FROM asset_wall WHERE latitude is not null and longitude is not null ORDER BY geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326))", maxRows + startRow, lat, lon);
+                            else
+                                sqlStr = string.Format("SELECT TOP {0} *, geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326)) as dist FROM asset_wall WHERE latitude is not null and longitude is not null and structure LIKE '{3}' ORDER BY geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326))", maxRows + startRow, lat, lon, SqlHelper.FixUp(searchStr));
+                        }
+
+                        bool rc = stmt.DoSQL(sqlStr);
+                        // scroll to the beginning of the rows we call
+                        while (rc && startRow > 0)
+                        {
+                            startRow--;
+                            rc = stmt.dbSkip();
+                        }
+
+                        // now get the data we want
+                        List<Wall> Walls = new List<Wall>();
+                        while (rc)
+                        {
+                            Walls.Add(fillWall(stmt));
+
+                            rc = stmt.dbSkip();
+                        }
+                        Result = Walls.ToArray();
+                        Walls.Clear();
+                    }
+                }
+                catch (Exception x)
+                {
+                    Global.messLog.Flush("GetWallListNear() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
+                    InsertErrorRecord(request.CustCode, string.Format("GetWallListNear() Failed to send HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message), request);
+                }
+                finally
+                {
+                    if (stmt != null)
+                    {
+                        stmt.Close();
+                        stmt = null;
+                    }
+                }
+            }
+            return Result;
+        }
+
+        // first string is name in class, second is name in database
+        string[,] wallLayout = { { "site", "structure" },
+                                 { "road", "road" },
+                                 { "location", "location" },
+                                 { "name", "name" },
+                                 { "length", "length" },
+                                 { "latitude", "latitude" },
+                                 { "longitude", "longitude" },
+                                 { "notes", "notes" } };
+
+        [WebMethod(Description = "Add a Retaining Wall")]
+        public int AddWall(Request request, Wall wdata)
+        {
+            int Result = -5;
+
+            if (LowSecurityCheck(request, "AddWall"))
+            {
+                Result = -4;
+                string connStr = CustConnectionString(request);
+                SqlStmt stmt = null;
+                try
+                {
+                    Result = -3;
+                    if (GetStmt(connStr, out stmt))
+                    {
+                        if (wdata != null && wdata.site != string.Empty)
+                        {
+                            Result = -2;
+                            // currently, we are only adding a bridge, no UPDATES
+                            if (!stmt.DoSQLFormat("SELECT id FROM asset_wall WHERE structure='{0}'", wdata.site))
+                            {
+                                Result = -1;
+
+                                SqlHelper sql = procData.fillQuery(wdata, wallLayout);
+                                sql.AddNow("date");
+
+                                if (stmt.DoSQL(sql.BuildCmd("asset_wall", true)))
+                                    Result = 1;
+                            }
+                        }
+                        else
+                            Global.messLog.Flush("AddWall() HandCode:{0} wdata or wdata.site are empty", request.Handcode);
+                    }
+                }
+                catch (Exception x)
+                {
+                    Global.messLog.Flush("AddWall() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
+                    InsertErrorRecord(request.CustCode, string.Format("AddWall() Failed to receive HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message), request);
+                }
+                finally
+                {
+                    if (stmt != null)
+                    {
+                        stmt.Close();
+                        stmt = null;
+                    }
+                }
+            }
+            return Result;
+        }
+
+
         // first string is name in class, second is name in database
         string[,] pondLayout = { { "structure", "structure" },
                                  { "road", "road" },
@@ -7542,6 +7727,12 @@ namespace RoadaWebService
             return newBitmap;
         }
 
+        private byte[] ImageToBytes(Image img)
+        {
+            ImageConverter converter = new ImageConverter();
+            return (byte[])converter.ConvertTo(img, typeof(byte[]));
+        }
+
         private Image LoadBase64(byte[] bytes)
         {
             Image image = null;
@@ -7566,7 +7757,6 @@ namespace RoadaWebService
             int p = sigString.IndexOf(',');     // remove the 'data:image/png;base64,' at the start of base64 data
             if (p > 0)
                 sigString = sigString.Substring(p + 1);
-
             byte[] sigData = Convert.FromBase64String(sigString);
             Image img = LoadBase64(sigData);
             if (img != null)
@@ -7664,6 +7854,79 @@ namespace RoadaWebService
                 Result = -4;
                 Global.messLog.Flush("SendBridgeData() HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, x.Message);
                 InsertErrorRecord(req.CustCode, "SendBridgeData() " + x.Message, req);
+            }
+            finally
+            {
+                if (stmt != null)
+                    stmt.Close();
+            }
+            return Result;
+        }
+
+        [WebMethod(Description = "Push Wall Inspection Report")]
+        public int SendWallData(Request req, WallInspectionData wdata)
+        {
+            int Result = 0;
+            // low security check, don't want hackers!
+            if (!LowSecurityCheck(req, "SendWallData"))
+                return -2;
+
+            string connStr = CustConnectionString(req);
+            SqlStmt stmt = null;
+            try
+            {
+                Result = -3;
+                if (GetStmt(connStr, out stmt))
+                {
+                    SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
+                    DateTime now = DateTime.Now.ToLocalTime();
+
+                    sql.Add("structure", wdata.site);
+                    sql.Add("latitude", wdata.latitude);
+                    sql.Add("longitude", wdata.longitude);
+                    sql.Add("notes", wdata.other);
+                    sql.Add("reco", wdata.reco);
+                    sql.Add("date", wdata.date);
+                    sql.Add("inspector", wdata.inspector);
+                    sql.Add("repKey", wdata.repKey);
+
+                    if (!string.IsNullOrEmpty(wdata.sigBase64))
+                        sql.Add("sig_data", ImageToBytes(base64SigToBmp(wdata.sigBase64)));
+                    else
+                        sql.Add("sig_data", wdata.sigData);
+
+                    sql.AddNow("idate");
+
+                    stmt.DoSQL(sql.BuildInsert("INSERT INTO inspection_wall"));
+
+                    foreach (var item in wdata.wallItems)
+                    {
+                        sql.Clear();
+
+                        // MUST have an issue # 
+                        if (item.issue > 0)
+                        {
+                            sql.Add("structure", wdata.site);
+                            sql.Add("date", wdata.date);
+
+                            sql.Add("issue", item.issue);
+                            sql.Add("defect", item.defect);
+                            sql.Add("note", item.note);
+                            sql.Add("tstate", item.tstate);
+                            sql.Add("group_enabled", item.groupEnabled);
+                            sql.AddNow("idate");
+
+                            stmt.DoSQL(sql.BuildInsert("INSERT INTO inspection_wall_item"));
+                        }
+                    }
+                    Result = 1;
+                }
+            }
+            catch (Exception x)
+            {
+                Result = -4;
+                Global.messLog.Flush("SendWallData() HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, x.Message);
+                InsertErrorRecord(req.CustCode, "SendWallData() " + x.Message, req);
             }
             finally
             {
@@ -8239,6 +8502,116 @@ namespace RoadaWebService
                 {
                     Global.messLog.Flush("GetBridgeInspectionList() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
                     InsertErrorRecord(request.CustCode, string.Format("GetBridgeInspectionList() Failed to send HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message), request);
+                }
+                finally
+                {
+                    if (stmt2 != null)
+                    {
+                        stmt2.Close();
+                        stmt2 = null;
+                    }
+                    if (stmt != null)
+                    {
+                        stmt.Close();
+                        stmt = null;
+                    }
+                }
+            }
+            return Result;
+        }
+
+        [WebMethod(Description = "Retrieve Wall inspections")]
+        public WallInspectionData[] GetWallInspectionList(Request request, Wall[] walls, int maxInsp)
+        {
+            WallInspectionData[] Result = null;
+
+            if (LowSecurityCheck(request, "GetWallInspectionList"))
+            {
+                string connStr = CustConnectionString(request);
+                SqlStmt stmt = null;
+                SqlStmt stmt2 = null;
+                try
+                {
+                    if (GetStmt(connStr, out stmt) && GetStmt(connStr, out stmt2))
+                    {
+                        maxInsp = Math.Max(1, maxInsp);
+                        List<WallInspectionData> Walls = new List<WallInspectionData>();
+
+                        foreach (var item in walls)
+                        {
+                            if (item.site != null && item.site.Length > 0)
+                            {
+                                bool brc = stmt.DoSQLFormat("SELECT TOP {0} * FROM inspection_wall LEFT JOIN asset_wall ON asset_wall.structure = inspection_wall.structure WHERE asset_wall.structure='{1}' ORDER BY inspection_wall.date desc", maxInsp, SqlHelper.FixUp(item.site));
+                                while (brc)
+                                {
+                                    WallInspectionData b = new WallInspectionData();
+                                    b.location = stmt.fetch("location");
+                                    b.name = stmt.fetch("name");
+                                    b.site = stmt.fetch("structure");
+                                    b.type = stmt.fetch("type");
+                                    b.length = stmt.dfetch("length");
+                                    b.latitude = stmt.dfetch("latitude");
+                                    b.longitude = stmt.dfetch("longitude");
+                                    b.other = stmt.fetch("notes");
+                                    b.reco = stmt.fetch("reco");
+                                    // remove millisecs which some older reports have
+                                    DateTime dt = stmt.dtfetch("date");
+                                    b.date = dt.AddTicks(-(dt.Ticks % TimeSpan.TicksPerSecond));
+                                    b.road = stmt.fetch("road");
+                                    b.inspector = stmt.fetch("inspector");
+                                    b.repKey = stmt.fetch("repKey");
+
+                                    bool rc;
+                                    if (b.repKey != string.Empty)
+                                    {
+                                        rc = stmt2.DoSQLFormat("SELECT * FROM Img_events WHERE RepKey='{0}'", b.repKey);
+                                        while (rc)
+                                        {
+                                            PhotoData pdata = new PhotoData();
+
+                                            pdata.repkey = b.repKey;
+                                            pdata.imgUrl = stmt2.fetch("img_url");
+                                            pdata.issue = stmt2.ifetch("issue");
+
+                                            b.photos.Add(pdata);
+
+                                            rc = stmt2.dbSkip();
+                                        }
+                                    }
+
+                                    // the DATEADD(ms, -DATEPART(ms, date), date) is because some older inspections had millisecs in the date, this makes sure to ignore that
+                                    rc = stmt2.DoSQLFormat("SELECT * FROM inspection_wall_item WHERE structure='{0}' and DATEADD(ms, -DATEPART(ms, date), date)={1}", SqlHelper.FixUp(b.site), SqlHelper.timeStamp(b.date));
+                                    while (rc)
+                                    {
+                                        WallItem bi = new WallItem();
+                                        bi.site = b.site;
+                                        bi.date = b.date;
+                                        bi.issue = stmt2.ifetch("issue");
+                                        bi.defect = stmt2.bfetch("defect");
+                                        bi.note = stmt2.fetch("note");
+                                        bi.tstate = stmt2.ifetch("tstate");
+                                        bi.groupEnabled = stmt2.bfetch("group_enabled");
+                                        bi.severity = stmt2.ifetch("severity");
+
+                                        b.wallItems.Add(bi);
+
+                                        rc = stmt2.dbSkip();
+                                    }
+
+                                    Walls.Add(b);
+
+                                    brc = stmt.dbSkip();
+                                }
+                            }
+                        }
+                        Result = Walls.ToArray();
+                        Walls.Clear();
+                    }
+                }
+                catch (Exception x)
+                {
+                    Global.messLog.Flush("GetWallInspectionList() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
+                    InsertErrorRecord(request.CustCode, string.Format("GetWallInspectionList() Failed to send HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message), request);
                 }
                 finally
                 {
@@ -9211,6 +9584,13 @@ namespace RoadaWebService
             return SendPondData(req, bdata);
         }
 
+        [WebMethod(Description = "Send WallInspectionData as JSON")]
+        [ScriptMethod(UseHttpGet = false, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public int SendWallDataJson(Request req, WallInspectionData wdata)
+        {
+            return SendWallData(req, wdata);
+        }
+
         [WebMethod(Description = "Send Rockdata as JSON")]
         [ScriptMethod(UseHttpGet = false, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
         public int SendRockDataJson(Request req, RockInspectionData bdata)
@@ -9288,6 +9668,13 @@ namespace RoadaWebService
             return AddPond(req, pdata);
         }
 
+        [WebMethod(Description = "Add a Wall")]
+        [ScriptMethod(UseHttpGet = false, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public int AddWallJson(Request req, Wall wdata)
+        {
+            return AddWall(req, wdata);
+        }
+
         [WebMethod(Description = "Retrieve Bridge list as JSON")]
         [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
         public Bridge[] GetBridgesJson(Request req)
@@ -9300,6 +9687,20 @@ namespace RoadaWebService
         public Bridge[] GetBridgesNearJson(Request req, string searchStr, double lat, double lon, int startRow, int maxRows)
         {
             return GetBridgeListNear(req, searchStr, lat, lon, startRow, maxRows);
+        }
+
+        [WebMethod(Description = "Retrieve Wall list as JSON")]
+        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public Wall[] GetWallsJson(Request req)
+        {
+            return GetWallList(req);
+        }
+
+        [WebMethod(Description = "Retrieve Wall list closest to lat/lon pair for maxRows")]
+        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public Wall[] GetWallsNearJson(Request req, string searchStr, double lat, double lon, int startRow, int maxRows)
+        {
+            return GetWallListNear(req, searchStr, lat, lon, startRow, maxRows);
         }
 
         [WebMethod(Description = "Retrieve Pond list as JSON")]
@@ -9398,6 +9799,13 @@ namespace RoadaWebService
         public BridgeInspectionData[] GetBridgeDataJson(Request req, Bridge[] bridges, int maxInsp)
         {
             return GetBridgeInsectionList(req, bridges, maxInsp);
+        }
+
+        [WebMethod(Description = "Retrieve Bridge Data as JSON")]
+        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public WallInspectionData[] GetWallDataJson(Request req, Wall[] walls, int maxInsp)
+        {
+            return GetWallInspectionList(req, walls, maxInsp);
         }
 
         [WebMethod(Description = "Retrieve Pond Data as JSON")]

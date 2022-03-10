@@ -949,6 +949,71 @@ namespace RoadaWebService
     }
 
     [DataContract]
+    public class WallInspectionData
+    {
+        public WallInspectionData()
+        {
+            this.wallItems = new List<WallItem>();
+            this.photos = new List<PhotoData>();
+        }
+        [DataMember]
+        public DateTime date { get; set; }
+        [DataMember]
+        public string road { get; set; }
+        [DataMember]
+        public string location { get; set; }
+        [DataMember]
+        public string inspector { get; set; }
+        [DataMember]
+        public string name { get; set; }
+        [DataMember]
+        public string site { get; set; }
+        [DataMember]
+        public string type { get; set; }
+        [DataMember]
+        public double length { get; set; }
+        [DataMember]
+        public double latitude { get; set; }
+        [DataMember]
+        public double longitude { get; set; }
+        [DataMember]
+        public string other { get; set; }
+        [DataMember]
+        public string reco { get; set; }
+        [DataMember]
+        public List<short> sigData { get; set; }
+        [DataMember]
+        public string sigBase64 { get; set; }
+        [DataMember]
+        public List<WallItem> wallItems { get; set; }
+        [DataMember]
+        public string repKey { get; set; }
+        [DataMember]
+        public List<PhotoData> photos { get; set; }
+    }
+
+    [DataContract]
+    public class WallItem
+    {
+        [DataMember]
+        public DateTime date { get; set; }
+        [DataMember]
+        public int issue { get; set; }
+        [DataMember]
+        public bool defect { get; set; }
+        [DataMember]
+        public string note { get; set; }
+        [DataMember]
+        public int tstate { get; set; }
+        [DataMember]
+        public bool groupEnabled { get; set; }
+        [DataMember]
+        public int severity { get; set; }
+        [DataMember]
+        public string site { get; set; }
+    }
+
+    [DataContract]
     public class PondInspectionData
     {
         public PondInspectionData()
@@ -1282,6 +1347,31 @@ namespace RoadaWebService
         public double length { get; set; }
         [DataMember]
         public double width { get; set; }
+        [DataMember]
+        public double latitude { get; set; }
+        [DataMember]
+        public double longitude { get; set; }
+        [DataMember]
+        public string notes { get; set; }
+        [DataMember]
+        public DateTime date { get; set; }
+    }
+
+    [DataContract]
+    public class Wall
+    {
+        [DataMember]
+        public string road { get; set; }
+        [DataMember]
+        public string location { get; set; }
+        [DataMember]
+        public string name { get; set; }
+        [DataMember]
+        public string site { get; set; }
+        [DataMember]
+        public string type { get; set; }
+        [DataMember]
+        public double length { get; set; }
         [DataMember]
         public double latitude { get; set; }
         [DataMember]
