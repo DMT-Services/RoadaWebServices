@@ -7719,7 +7719,10 @@ namespace RoadaWebService
             {
                 var destRect = new Rectangle(0, 0, image.Width, image.Height);
                 using (var graphics = Graphics.FromImage(destImage))
+                {
+                    graphics.Clear(Color.White);
                     graphics.DrawImage(image, destRect, 0, 0, image.Width, image.Height, GraphicsUnit.Pixel);
+                }
 
                 BitmapData bmpData = destImage.LockBits(new Rectangle(0, 0, destImage.Width, destImage.Height), ImageLockMode.ReadOnly, PixelFormat.Format1bppIndexed);
                 newBitmap = new Bitmap(destImage.Width, destImage.Height, bmpData.Stride, PixelFormat.Format1bppIndexed, bmpData.Scan0);
