@@ -6352,7 +6352,7 @@ namespace RoadaWebService
         }
 
         [WebMethod(Description = "Retrieve Bridges")]
-        public Bridge[] GetBridgeList(Request request)
+        public Bridge[] GetBridgeList(Request request, int type)
         {
             Bridge[] Result = null;
 
@@ -6365,7 +6365,10 @@ namespace RoadaWebService
                     if (GetStmt(connStr, out stmt))
                     {
                         List<Bridge> Bridges = new List<Bridge>();
-                        bool rc = stmt.DoSQL("SELECT * FROM asset_bridge ORDER BY bridge");
+
+                        string sqlStr = string.Format("SELECT * FROM asset_bridge WHERE type_code = {0} ORDER BY bridge", type);
+                        bool rc = stmt.DoSQL(sqlStr);
+                        
                         while (rc)
                         {
                             Bridges.Add(fillBridge(stmt));
@@ -6394,7 +6397,7 @@ namespace RoadaWebService
         }
 
         [WebMethod(Description = "Retrieve Bridges closest to lat/lon pair for maxRows")]
-        public Bridge[] GetBridgeListNear(Request request, string searchStr, double lat, double lon, int startRow, int maxRows)
+        public Bridge[] GetBridgeListNear(Request request, string searchStr, double lat, double lon, int startRow, int maxRows, int type)
         {
             Bridge[] Result = null;
 
@@ -6410,16 +6413,16 @@ namespace RoadaWebService
                         if (lat == 0 && lon == 0)
                         {
                             if (searchStr == string.Empty)
-                                sqlStr = string.Format("SELECT TOP {0} * FROM asset_bridge ORDER BY bridge", maxRows + startRow);
+                                sqlStr = string.Format("SELECT TOP {0} * FROM asset_bridge where type_code = {1} ORDER BY bridge", maxRows + startRow, type);
                             else
-                                sqlStr = string.Format("SELECT TOP {0} * FROM asset_bridge WHERE bridge LIKE '{1}' ORDER BY bridge", maxRows + startRow, SqlHelper.FixUp(searchStr));
+                                sqlStr = string.Format("SELECT TOP {0} * FROM asset_bridge WHERE bridge LIKE '{1}' AND type_code = {2} ORDER BY bridge", maxRows + startRow, SqlHelper.FixUp(searchStr),type);
                         }
                         else
                         {
                             if (searchStr == string.Empty)
-                                sqlStr = string.Format("SELECT TOP {0} *, geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326)) as dist FROM asset_bridge WHERE latitude is not null and longitude is not null ORDER BY geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326))", maxRows + startRow, lat, lon);
+                                sqlStr = string.Format("SELECT TOP {0} *, geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326)) as dist FROM asset_bridge WHERE latitude is not null and longitude is not null AND type_code = {3} ORDER BY geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326))", maxRows + startRow, lat, lon, type);
                             else
-                                sqlStr = string.Format("SELECT TOP {0} *, geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326)) as dist FROM asset_bridge WHERE latitude is not null and longitude is not null and bridge LIKE '{3}' ORDER BY geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326))", maxRows + startRow, lat, lon, SqlHelper.FixUp(searchStr));
+                                sqlStr = string.Format("SELECT TOP {0} *, geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326)) as dist FROM asset_bridge WHERE latitude is not null and longitude is not null and bridge LIKE '{3}' AND type_code = {4}  ORDER BY geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326))", maxRows + startRow, lat, lon, SqlHelper.FixUp(searchStr), type);
                         }
 
                         bool rc = stmt.DoSQL(sqlStr);
@@ -8410,7 +8413,7 @@ namespace RoadaWebService
         }
 
         [WebMethod(Description = "Retrieve Bridges inspections")]
-        public BridgeInspectionData[] GetBridgeInsectionList(Request request, Bridge[] bridges, int maxInsp)
+        public BridgeInspectionData[] GetBridgeInsectionList(Request request, Bridge[] bridges, int maxInsp, int type)
         {
             BridgeInspectionData[] Result = null;
 
@@ -8430,7 +8433,7 @@ namespace RoadaWebService
                         {
                             if (item.bridge != null && item.bridge.Length > 0)
                             {
-                                bool brc = stmt.DoSQLFormat("SELECT TOP {0} * FROM inspection_bridge WHERE bridge='{1}' ORDER BY date desc", maxInsp, item.bridge);
+                                bool brc = stmt.DoSQLFormat("SELECT TOP {0} * FROM inspection_bridge WHERE bridge='{1}' AND type_code = {2} ORDER BY date desc", maxInsp, item.bridge,type);
                                 while (brc)
                                 {
                                     BridgeInspectionData b = new BridgeInspectionData();
@@ -9680,16 +9683,16 @@ namespace RoadaWebService
 
         [WebMethod(Description = "Retrieve Bridge list as JSON")]
         [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
-        public Bridge[] GetBridgesJson(Request req)
+        public Bridge[] GetBridgesJson(Request req, int type)
         {
-            return GetBridgeList(req);
+            return GetBridgeList(req,type);
         }
 
         [WebMethod(Description = "Retrieve Bridge list closest to lat/lon pair for maxRows")]
         [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
-        public Bridge[] GetBridgesNearJson(Request req, string searchStr, double lat, double lon, int startRow, int maxRows)
+        public Bridge[] GetBridgesNearJson(Request req, string searchStr, double lat, double lon, int startRow, int maxRows, int type)
         {
-            return GetBridgeListNear(req, searchStr, lat, lon, startRow, maxRows);
+            return GetBridgeListNear(req, searchStr, lat, lon, startRow, maxRows, int type);
         }
 
         [WebMethod(Description = "Retrieve Wall list as JSON")]
@@ -9799,9 +9802,9 @@ namespace RoadaWebService
 
         [WebMethod(Description = "Retrieve Bridge Data as JSON")]
         [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
-        public BridgeInspectionData[] GetBridgeDataJson(Request req, Bridge[] bridges, int maxInsp)
+        public BridgeInspectionData[] GetBridgeDataJson(Request req, Bridge[] bridges, int maxInsp,int type)
         {
-            return GetBridgeInsectionList(req, bridges, maxInsp);
+            return GetBridgeInsectionList(req, bridges, maxInsp, int type);
         }
 
         [WebMethod(Description = "Retrieve Bridge Data as JSON")]
