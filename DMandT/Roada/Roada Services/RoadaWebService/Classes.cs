@@ -902,6 +902,8 @@ namespace RoadaWebService
         [DataMember]
         public string type { get; set; }
         [DataMember]
+        public int type_code { get; set; }
+        [DataMember]
         public int spans { get; set; }
         [DataMember]
         public double length { get; set; }
@@ -1341,6 +1343,8 @@ namespace RoadaWebService
         public string site { get; set; }
         [DataMember]
         public string type { get; set; }
+        [DataMember]
+        public int type_code { get; set; }
         [DataMember]
         public int spans { get; set; }
         [DataMember]

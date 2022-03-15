@@ -6326,6 +6326,7 @@ namespace RoadaWebService
                                    { "name", "name" },
                                    { "site", "site" },
                                    { "type","type" },
+                                   { "type_code","type_code" },
                                    { "spans", "spans"},
                                    { "length", "length" },
                                    { "width", "width" },
@@ -6391,6 +6392,7 @@ namespace RoadaWebService
             b.name = stmt.fetch("name");
             b.site = stmt.fetch("site");
             b.type = stmt.fetch("type");
+            b.type_code = stmt.ifetch("type_code");
             b.spans = stmt.ifetch("bridge");
             b.length = stmt.dfetch("bridge");
             b.width = stmt.dfetch("width");
@@ -7837,7 +7839,7 @@ namespace RoadaWebService
         }
 
         [WebMethod(Description = "Push SendBridgeData Report")]
-        public int SendBridgeData(Request req, BridgeInspectionData bdata, int type)
+        public int SendBridgeData(Request req, BridgeInspectionData bdata)
         {
             int Result = 0;
             // low security check, don't want hackers!
@@ -7868,7 +7870,7 @@ namespace RoadaWebService
                     sql.Add("other", bdata.other);
                     sql.Add("reco", bdata.reco);
                     sql.Add("date", bdata.date);
-                    sql.Add("type_code",type);
+                    sql.Add("type_code",bdata.type_code);
                     sql.Add("road", bdata.road);
                     sql.Add("inspector", bdata.inspector);
                     sql.Add("repKey", bdata.repKey);
@@ -8485,7 +8487,7 @@ namespace RoadaWebService
                         {
                             if (item.bridge != null && item.bridge.Length > 0)
                             {
-                                bool brc = stmt.DoSQLFormat("SELECT TOP {0} * FROM inspection_bridge WHERE bridge='{1}' AND type_code = {2} ORDER BY date desc", maxInsp, item.bridge,type);
+                                bool brc = stmt.DoSQLFormat("SELECT TOP {0} * FROM inspection_bridge WHERE bridge='{1}' AND type_code = {2} ORDER BY date desc", maxInsp, item.bridge, type);
                                 while (brc)
                                 {
                                     BridgeInspectionData b = new BridgeInspectionData();
@@ -8496,6 +8498,7 @@ namespace RoadaWebService
                                     b.site = stmt.fetch("site");
                                     b.type = stmt.fetch("type");
                                     b.spans = stmt.ifetch("spans");
+                                    b.type_code = stmt.ifetch("type_code");
                                     b.length = stmt.dfetch("length");
                                     b.width = stmt.dfetch("width");
                                     b.latitude = stmt.dfetch("latitude");
@@ -9630,9 +9633,9 @@ namespace RoadaWebService
 
         [WebMethod(Description = "Send Bridgedata as JSON")]
         [ScriptMethod(UseHttpGet = false, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
-        public int SendBridgeDataJson(Request req, BridgeInspectionData bdata,int type)
+        public int SendBridgeDataJson(Request req, BridgeInspectionData bdata)
         {
-            return SendBridgeData(req, bdata, type);
+            return SendBridgeData(req, bdata);
         }
 
         [WebMethod(Description = "Send Ponddata as JSON")]
