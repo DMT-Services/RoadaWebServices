@@ -7786,7 +7786,7 @@ namespace RoadaWebService
         }
 
         [WebMethod(Description = "Push SendBridgeData Report")]
-        public int SendBridgeData(Request req, BridgeInspectionData bdata)
+        public int SendBridgeData(Request req, BridgeInspectionData bdata, int type)
         {
             int Result = 0;
             // low security check, don't want hackers!
@@ -7817,6 +7817,7 @@ namespace RoadaWebService
                     sql.Add("other", bdata.other);
                     sql.Add("reco", bdata.reco);
                     sql.Add("date", bdata.date);
+                    sql.Add("type_code",type);
                     sql.Add("road", bdata.road);
                     sql.Add("inspector", bdata.inspector);
                     sql.Add("repKey", bdata.repKey);
@@ -9578,9 +9579,9 @@ namespace RoadaWebService
 
         [WebMethod(Description = "Send Bridgedata as JSON")]
         [ScriptMethod(UseHttpGet = false, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
-        public int SendBridgeDataJson(Request req, BridgeInspectionData bdata)
+        public int SendBridgeDataJson(Request req, BridgeInspectionData bdata,int type)
         {
-            return SendBridgeData(req, bdata);
+            return SendBridgeData(req, bdata, type);
         }
 
         [WebMethod(Description = "Send Ponddata as JSON")]
