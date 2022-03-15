@@ -6264,8 +6264,8 @@ namespace RoadaWebService
                         while (rc)
                         {
                             Highway w = new Highway();
-                            w.Id = stmt.ifetch("id");
-                            w.Name = stmt.fetch("name");
+                            w.id = stmt.ifetch("id");
+                            w.value = stmt.fetch("name");
                             highways.Add(w);
 
                             rc = stmt.dbSkip();
