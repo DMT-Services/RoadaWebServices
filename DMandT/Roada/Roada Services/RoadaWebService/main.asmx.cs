@@ -6174,6 +6174,13 @@ namespace RoadaWebService
             return GetVehicleList(req, fleetId, out vv);
         }
 
+        [WebMethod(Description = "Retrieve highway listas JSON")]
+        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public Highway[] GetHighwayListJson(Request req)
+        {
+            return GetHighwayList(req);
+        }
+
         [WebMethod(Description = "get photo urls")]
         [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
         public AmazonURL[] GetAmazonUrlJson(Request req, string RepId)
@@ -6227,6 +6234,50 @@ namespace RoadaWebService
                 {
                     Global.messLog.Flush("GetVehicleList() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
                     InsertErrorRecord(request.CustCode, string.Format("GetVehicleList() Failed to send HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message), request);
+                }
+                finally
+                {
+                    if (stmt != null)
+                    {
+                        stmt.Close();
+                        stmt = null;
+                    }
+                }
+            }
+            return Result;
+        }
+
+        [WebMethod(Description = "Retrieve highway listing")]
+        public Highway[] GetHighwayList(Request request)
+        {
+            Highway[] Result = null;
+            if (LowSecurityCheck(request, "GetHighwayList"))
+            {
+                string connStr = CustConnectionString(request);
+                SqlStmt stmt = null;
+                try
+                {
+                    if (GetStmt(connStr, out stmt))
+                    {
+                        List<Highway> highways = new List<Highway>();
+                        bool rc = stmt.DoSQL("SELECT * FROM highways ORDER BY id");
+                        while (rc)
+                        {
+                            Highway w = new Highway();
+                            w.Id = stmt.ifetch("id");
+                            w.Name = stmt.fetch("name");
+                            highways.Add(w);
+
+                            rc = stmt.dbSkip();
+                        }
+                        Result = highways.ToArray();
+                        highways.Clear();
+                    }
+                }
+                catch (Exception x)
+                {
+                    Global.messLog.Flush("GetHighwayList() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
+                    InsertErrorRecord(request.CustCode, string.Format("GetHighwayList() Failed to send HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message), request);
                 }
                 finally
                 {
@@ -9693,7 +9744,7 @@ namespace RoadaWebService
         [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
         public Bridge[] GetBridgesNearJson(Request req, string searchStr, double lat, double lon, int startRow, int maxRows, int type)
         {
-            return GetBridgeListNear(req, searchStr, lat, lon, startRow, maxRows, int type);
+            return GetBridgeListNear(req, searchStr, lat, lon, startRow, maxRows, type);
         }
 
         [WebMethod(Description = "Retrieve Wall list as JSON")]
@@ -9803,9 +9854,9 @@ namespace RoadaWebService
 
         [WebMethod(Description = "Retrieve Bridge Data as JSON")]
         [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
-        public BridgeInspectionData[] GetBridgeDataJson(Request req, Bridge[] bridges, int maxInsp,int type)
+        public BridgeInspectionData[] GetBridgeDataJson(Request req, Bridge[] bridges, int maxInsp, int type)
         {
-            return GetBridgeInsectionList(req, bridges, maxInsp, int type);
+            return GetBridgeInsectionList(req, bridges, maxInsp, type);
         }
 
         [WebMethod(Description = "Retrieve Bridge Data as JSON")]
