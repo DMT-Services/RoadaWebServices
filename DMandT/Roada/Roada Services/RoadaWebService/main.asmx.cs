@@ -6421,7 +6421,7 @@ namespace RoadaWebService
 
                         string sqlStr = string.Format("SELECT * FROM asset_bridge WHERE type_code = {0} ORDER BY bridge", type);
                         bool rc = stmt.DoSQL(sqlStr);
-                        
+
                         while (rc)
                         {
                             Bridges.Add(fillBridge(stmt));
@@ -6462,20 +6462,26 @@ namespace RoadaWebService
                 {
                     if (GetStmt(connStr, out stmt))
                     {
+                        string typeCode = (type > 0) ? string.Format("AND type_code={0}", type) : string.Empty;
+
                         string sqlStr;
                         if (lat == 0 && lon == 0)
                         {
                             if (searchStr == string.Empty)
-                                sqlStr = string.Format("SELECT TOP {0} * FROM asset_bridge where type_code = {1} ORDER BY bridge", maxRows + startRow, type);
+                            {
+                                if (typeCode != string.Empty)
+                                    typeCode = typeCode.Replace("AND ", "WHERE ");
+                                sqlStr = string.Format("SELECT TOP {0} * FROM asset_bridge {1} ORDER BY bridge", maxRows + startRow, typeCode);
+                            }
                             else
-                                sqlStr = string.Format("SELECT TOP {0} * FROM asset_bridge WHERE bridge LIKE '{1}' AND type_code = {2} ORDER BY bridge", maxRows + startRow, SqlHelper.FixUp(searchStr),type);
+                                sqlStr = string.Format("SELECT TOP {0} * FROM asset_bridge WHERE bridge LIKE '{1}' {2} ORDER BY bridge", maxRows + startRow, SqlHelper.FixUp(searchStr), typeCode);
                         }
                         else
                         {
                             if (searchStr == string.Empty)
-                                sqlStr = string.Format("SELECT TOP {0} *, geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326)) as dist FROM asset_bridge WHERE latitude is not null and longitude is not null AND type_code = {3} ORDER BY geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326))", maxRows + startRow, lat, lon, type);
+                                sqlStr = string.Format("SELECT TOP {0} *, geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326)) as dist FROM asset_bridge WHERE latitude is not null and longitude is not null {3} ORDER BY geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326))", maxRows + startRow, lat, lon, typeCode);
                             else
-                                sqlStr = string.Format("SELECT TOP {0} *, geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326)) as dist FROM asset_bridge WHERE latitude is not null and longitude is not null and bridge LIKE '{3}' AND type_code = {4}  ORDER BY geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326))", maxRows + startRow, lat, lon, SqlHelper.FixUp(searchStr), type);
+                                sqlStr = string.Format("SELECT TOP {0} *, geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326)) as dist FROM asset_bridge WHERE latitude is not null and longitude is not null and bridge LIKE '{3}' {4} ORDER BY geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326))", maxRows + startRow, lat, lon, SqlHelper.FixUp(searchStr), typeCode);
                         }
 
                         bool rc = stmt.DoSQL(sqlStr);
@@ -7870,7 +7876,7 @@ namespace RoadaWebService
                     sql.Add("other", bdata.other);
                     sql.Add("reco", bdata.reco);
                     sql.Add("date", bdata.date);
-                    sql.Add("type_code",bdata.type_code);
+                    sql.Add("type_code", bdata.type_code);
                     sql.Add("road", bdata.road);
                     sql.Add("inspector", bdata.inspector);
                     sql.Add("repKey", bdata.repKey);
@@ -8467,7 +8473,7 @@ namespace RoadaWebService
         }
 
         [WebMethod(Description = "Retrieve Bridges inspections")]
-        public BridgeInspectionData[] GetBridgeInsectionList(Request request, Bridge[] bridges, int maxInsp, int type)
+        public BridgeInspectionData[] GetBridgeInsectionList(Request request, Bridge[] bridges, int maxInsp)
         {
             BridgeInspectionData[] Result = null;
 
@@ -8487,7 +8493,7 @@ namespace RoadaWebService
                         {
                             if (item.bridge != null && item.bridge.Length > 0)
                             {
-                                bool brc = stmt.DoSQLFormat("SELECT TOP {0} * FROM inspection_bridge WHERE bridge='{1}' AND type_code = {2} ORDER BY date desc", maxInsp, item.bridge, type);
+                                bool brc = stmt.DoSQLFormat("SELECT TOP {0} * FROM inspection_bridge WHERE bridge='{1}' ORDER BY date desc", maxInsp, item.bridge);
                                 while (brc)
                                 {
                                     BridgeInspectionData b = new BridgeInspectionData();
@@ -9740,14 +9746,21 @@ namespace RoadaWebService
         [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
         public Bridge[] GetBridgesJson(Request req, int type)
         {
-            return GetBridgeList(req,type);
+            return GetBridgeList(req, type);
         }
 
         [WebMethod(Description = "Retrieve Bridge list closest to lat/lon pair for maxRows")]
         [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
-        public Bridge[] GetBridgesNearJson(Request req, string searchStr, double lat, double lon, int startRow, int maxRows, int type)
+        public Bridge[] GetBridgesNearExJson(Request req, string searchStr, double lat, double lon, int startRow, int maxRows, int type)
         {
             return GetBridgeListNear(req, searchStr, lat, lon, startRow, maxRows, type);
+        }
+
+        [WebMethod(Description = "Retrieve Bridge list closest to lat/lon pair for maxRows")]
+        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public Bridge[] GetBridgesNearJson(Request req, string searchStr, double lat, double lon, int startRow, int maxRows)
+        {
+            return GetBridgeListNear(req, searchStr, lat, lon, startRow, maxRows, -1);
         }
 
         [WebMethod(Description = "Retrieve Wall list as JSON")]
@@ -9857,9 +9870,9 @@ namespace RoadaWebService
 
         [WebMethod(Description = "Retrieve Bridge Data as JSON")]
         [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
-        public BridgeInspectionData[] GetBridgeDataJson(Request req, Bridge[] bridges, int maxInsp, int type)
+        public BridgeInspectionData[] GetBridgeDataJson(Request req, Bridge[] bridges, int maxInsp)
         {
-            return GetBridgeInsectionList(req, bridges, maxInsp, type);
+            return GetBridgeInsectionList(req, bridges, maxInsp);
         }
 
         [WebMethod(Description = "Retrieve Bridge Data as JSON")]
@@ -10144,7 +10157,7 @@ namespace RoadaWebService
                                   { "EndLatitude", "end_latitude" },
                                   { "EndLongitude", "end_longitude" },
                                   { "EndOdometer", "end_odo" } };
-                                  //{ "Signature", "signature" } };
+        //{ "Signature", "signature" } };
 
         [WebMethod(Description = "Receive Login Data as JSON")]
         [ScriptMethod(UseHttpGet = false, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
