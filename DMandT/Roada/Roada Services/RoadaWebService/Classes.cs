@@ -2249,9 +2249,9 @@ namespace RoadaWebService
     public class Highway
     {
         [DataMember]
-        public string value { get; set; }
+        public string key { get; set; }
         [DataMember]
-        public int id { get; set; }
+        public string value { get; set; }
     }
 
     [DataContract]

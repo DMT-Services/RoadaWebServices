@@ -6264,7 +6264,7 @@ namespace RoadaWebService
                         while (rc)
                         {
                             Highway w = new Highway();
-                            w.id = stmt.ifetch("id");
+                            w.key = stmt.fetch("id");
                             w.value = stmt.fetch("name");
                             highways.Add(w);
 
