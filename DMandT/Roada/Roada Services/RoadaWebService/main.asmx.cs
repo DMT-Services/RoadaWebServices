@@ -4877,9 +4877,6 @@ namespace RoadaWebService
             return Result;
         }
 
-
-
-
         [WebMethod(Description = "Hos Events For go app")]
         public int SendHosEvent(Request req, HosEvent evnt)
         {
@@ -7700,7 +7697,7 @@ namespace RoadaWebService
             c.diameter = stmt.dfetch("diameter");
             c.latitude = stmt.dfetch("latitude");
             c.longitude = stmt.dfetch("longitude");
-            c.notes = stmt.fetch("notes");
+            //c.notes = stmt.fetch("notes"); no such field?
             c.date = stmt.dtfetch("date");
             return c;
         }
@@ -7788,9 +7785,7 @@ namespace RoadaWebService
                 {
                     if (GetStmt(connStr, out stmt))
                     {
-
-
-                        List<Culvert> Bridges = new List<Culvert>();
+                        List<Culvert> Culverts = new List<Culvert>();
                         bool rc;
 
                         rc = stmt.DoSQL("SELECT * FROM asset_culvert ORDER BY structure");
@@ -7806,15 +7801,15 @@ namespace RoadaWebService
                             b.diameter = stmt.dfetch("diameter");
                             b.latitude = stmt.dfetch("latitude");
                             b.longitude = stmt.dfetch("longitude");
-                            b.notes = stmt.fetch("notes");
+                            //b.notes = stmt.fetch("notes");
                             b.date = stmt.dtfetch("date");
 
-                            Bridges.Add(b);
+                            Culverts.Add(b);
 
                             rc = stmt.dbSkip();
                         }
-                        Result = Bridges.ToArray();
-                        Bridges.Clear();
+                        Result = Culverts.ToArray();
+                        Culverts.Clear();
                     }
                 }
                 catch (Exception x)
@@ -8422,7 +8417,6 @@ namespace RoadaWebService
         [WebMethod(Description = "Push SendCulvertData Report")]
         public int SendCulvertData(Request req, CulvertInspectionData bdata)
         {
-
             int Result = 0;
             // low security check, don't want hackers!
             if (!LowSecurityCheck(req, "SendCulvertData"))
@@ -8446,7 +8440,8 @@ namespace RoadaWebService
                     sql.Add("diameter", bdata.diameter);
                     sql.Add("latitude", bdata.latitude);
                     sql.Add("longitude", bdata.longitude);
-                    sql.Add("other", bdata.other);
+                    sql.Add("note", bdata.other);
+                    sql.Add("reco", bdata.reco); 
                     sql.Add("patrol", bdata.patrol);
                     sql.Add("date", bdata.date);
                     sql.Add("road", bdata.road);
@@ -8457,7 +8452,6 @@ namespace RoadaWebService
                     else
                         sql.Add("sig_data", bdata.sigData);
                     sql.Add("idate", DateTime.UtcNow);
-
 
                     stmt.DoSQL(sql.BuildInsert("INSERT INTO inspection_culvert"));
 
@@ -8470,17 +8464,16 @@ namespace RoadaWebService
                         sql.Add("issue", item.issue);
                         sql.Add("defect", item.defect);
                         sql.Add("note", item.note);
+                        sql.Add("location", item.location);
                         sql.Add("tstate", item.tstate);
                         sql.Add("group_enabled", item.groupEnabled);
                         sql.Add("severity", item.severity);
                         sql.Add("idate", DateTime.UtcNow);
 
                         stmt.DoSQL(sql.BuildInsert("INSERT INTO inspection_culvert_item"));
-
                     }
 
                     Result = 1;
-
                 }
             }
             catch (Exception x)
@@ -9448,7 +9441,8 @@ namespace RoadaWebService
                                     c.diameter = stmt.dfetch("diameter");
                                     c.latitude = stmt.dfetch("latitude");
                                     c.longitude = stmt.dfetch("longitude");
-                                    c.other = stmt.fetch("other");
+                                    c.other = stmt.fetch("note");
+                                    c.reco = stmt.fetch("reco");
                                     c.region = stmt.fetch("region");
                                     c.patrol = stmt.fetch("patrol");
                                     // remove millisecs which some older reports have
@@ -9485,6 +9479,7 @@ namespace RoadaWebService
                                         ci.date = c.date;
                                         ci.issue = stmt2.ifetch("issue");
                                         ci.defect = stmt2.bfetch("defect");
+                                        ci.location = stmt2.fetch("location");
                                         ci.note = stmt2.fetch("note");
                                         ci.tstate = stmt2.ifetch("tstate");
                                         ci.groupEnabled = stmt2.bfetch("group_enabled");
