@@ -4820,6 +4820,66 @@ namespace RoadaWebService
             return Result;
         }
 
+        [WebMethod(Description = "Retrieve Work Orders")]
+        public YrkWorkOrder[] GetWorkOrders(Request request, DateTime date)
+        {
+            return RetrieveWorkOrders(request, date);
+        }
+
+        [WebMethod(Description = "Retrieve Work Orders JSON (PUSH)")]
+        [ScriptMethod(UseHttpGet = false, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public YrkWorkOrder[] GetWorkOrdersJson(Request request, DateTime date)
+        {
+            return RetrieveWorkOrders(request, date);
+        }
+
+        private YrkWorkOrder[] RetrieveWorkOrders(Request request, DateTime date)
+        {
+            YrkWorkOrder[] Result = null;
+
+            if (!LowSecurityCheck(request, "GetWorkOrders"))
+                return Result;
+
+            string connStr = CustConnectionString(request);
+            SqlStmt stmt = null;
+            try
+            {
+                if (GetStmt(connStr, out stmt))
+                {
+                    List<YrkWorkOrder> workorders = new List<YrkWorkOrder>();
+                    bool rc;
+                    rc = stmt.DoSQLFormat("SELECT * FROM wonumbers WHERE projstartdate = '{0}'", date.ToString("yyyy-MM-dd"));
+
+                    while (rc)
+                    {
+                        YrkWorkOrder wo = new YrkWorkOrder();
+                        wo.Id = stmt.ifetch("id");
+                        wo.District = stmt.fetch("district");
+                        wo.ProjStartDate = stmt.dtfetch("projstartdate");
+                        wo.WOType = stmt.ifetch("wotype");
+                        wo.WorkOrderId = stmt.fetch("workorderid");
+                        workorders.Add(wo);
+                        rc = stmt.dbSkip();
+                    }
+                    Result = workorders.ToArray();
+                    workorders.Clear();
+                }
+            }
+            catch (Exception x)
+            {
+                Global.messLog.Flush("GetWorkOrders() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
+            }
+            finally
+            {
+                if (stmt != null)
+                    stmt.Close();
+            }
+            return Result;
+        }
+
+
+
+
         [WebMethod(Description = "Hos Events For go app")]
         public int SendHosEvent(Request req, HosEvent evnt)
         {

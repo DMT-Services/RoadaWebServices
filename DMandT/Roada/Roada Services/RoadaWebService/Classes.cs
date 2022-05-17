@@ -2460,4 +2460,20 @@ namespace RoadaWebService
             Longitude = lon;
         }
     }
+
+    [DataContract]
+    public class YrkWorkOrder
+    {
+        [DataMember]
+        public int Id { get; set; }
+        [DataMember]
+        public DateTime ProjStartDate { get; set; }
+        [DataMember]
+        public int WOType { get; set; }
+        [DataMember]
+        public string District { get; set; }
+        [DataMember]
+        public string WorkOrderId { get; set; }
+    }
+
 }
