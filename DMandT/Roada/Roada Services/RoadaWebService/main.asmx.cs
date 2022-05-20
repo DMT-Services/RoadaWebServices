@@ -6506,6 +6506,29 @@ namespace RoadaWebService
             return Result;
         }
 
+        private string getSQLNear(string table, string structure, string searchStr, double lat, double lon, int numRows)
+        {
+            return getSQLNear(table, structure, searchStr, lat, lon, numRows, string.Empty);
+        }
+
+        private string getSQLNear(string table, string structure, string searchStr, double lat, double lon, int numRows, string type)
+        {
+            string whereClause = " WHERE i2.date is null";
+            if (searchStr != string.Empty)
+                whereClause += string.Format(" AND a.{0} LIKE '{1}'", structure, SqlHelper.FixUp(searchStr));
+            if (type != string.Empty)
+                whereClause += (" AND a." + type);
+            if (lat != 0.0 && lon != 0.0)
+                whereClause += " AND (a.latitude is not null and a.longitude is not null)";
+            string orderBy = " ORDER BY " + ((lat != 0.0 && lon != 0.0) ? string.Format(" geography::Point({0}, {1}, 4326).STDistance(geography::Point(a.latitude, a.longitude, 4326))", lat, lon) : "a." + structure);
+            string distField = (lat != 0.0 && lon != 0.0) ? string.Format(",geography::Point({0}, {1}, 4326).STDistance(geography::Point(a.latitude, a.longitude, 4326)) as dist", lat, lon) : string.Empty;
+
+            // all this 'gookyness' is to get the most recent inspection date for each asset
+            // NOTE: i.date has to be first as all the asset_xxx tables also have a field called date,
+            //       but fetch("date") will always get the first one in the result set
+            return string.Format("SELECT TOP {0} i.date,a.*{1} FROM asset_{2} a inner join inspection_{2} i on a.{3}=i.{3} left outer join inspection_{2} i2 on a.{3}=i2.{3} AND i2.date>i.date", numRows, distField, table, structure) + whereClause + orderBy;
+        }
+
         [WebMethod(Description = "Retrieve Bridges closest to lat/lon pair for maxRows")]
         public Bridge[] GetBridgeListNear(Request request, string searchStr, double lat, double lon, int startRow, int maxRows, int type)
         {
@@ -6519,8 +6542,9 @@ namespace RoadaWebService
                 {
                     if (GetStmt(connStr, out stmt))
                     {
-                        string typeCode = (type > 0) ? string.Format("AND type_code={0}", type) : string.Empty;
-
+                        string typeCode = (type > 0) ? string.Format("type_code={0}", type) : string.Empty;
+                        string sqlStr = getSQLNear("bridge", "bridge", searchStr, lat, lon, maxRows + startRow, typeCode);
+                        /*
                         string sqlStr;
                         if (lat == 0 && lon == 0)
                         {
@@ -6540,6 +6564,7 @@ namespace RoadaWebService
                             else
                                 sqlStr = string.Format("SELECT TOP {0} *, geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326)) as dist FROM asset_bridge WHERE latitude is not null and longitude is not null and bridge LIKE '{3}' {4} ORDER BY geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326))", maxRows + startRow, lat, lon, SqlHelper.FixUp(searchStr), typeCode);
                         }
+                        */
 
                         bool rc = stmt.DoSQL(sqlStr);
                         // scroll to the beginning of the rows we call
@@ -6648,6 +6673,8 @@ namespace RoadaWebService
                 {
                     if (GetStmt(connStr, out stmt))
                     {
+                        string sqlStr = getSQLNear("wall", "structure", searchStr, lat, lon, maxRows + startRow);
+                        /*
                         string sqlStr;
                         if (lat == 0 && lon == 0)
                         {
@@ -6663,6 +6690,7 @@ namespace RoadaWebService
                             else
                                 sqlStr = string.Format("SELECT TOP {0} *, geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326)) as dist FROM asset_wall WHERE latitude is not null and longitude is not null and structure LIKE '{3}' ORDER BY geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326))", maxRows + startRow, lat, lon, SqlHelper.FixUp(searchStr));
                         }
+                        */
 
                         bool rc = stmt.DoSQL(sqlStr);
                         // scroll to the beginning of the rows we call
@@ -6896,6 +6924,8 @@ namespace RoadaWebService
                 {
                     if (GetStmt(connStr, out stmt))
                     {
+                        string sqlStr = getSQLNear("pond", "structure", searchStr, lat, lon, maxRows + startRow);
+                        /*
                         string sqlStr;
                         if (lat == 0 && lon == 0)
                         {
@@ -6911,6 +6941,7 @@ namespace RoadaWebService
                             else
                                 sqlStr = string.Format("SELECT TOP {0} *, geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326)) as dist FROM asset_pond WHERE latitude is not null and longitude is not null and structure LIKE '{3}' ORDER BY geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326))", maxRows + startRow, lat, lon, SqlHelper.FixUp(searchStr));
                         }
+                        */
 
                         bool rc = stmt.DoSQL(sqlStr);
                         // scroll to the beginning of the rows we call
@@ -7079,6 +7110,8 @@ namespace RoadaWebService
                 {
                     if (GetStmt(connStr, out stmt))
                     {
+                        string sqlStr = getSQLNear("beaver", "structure", searchStr, lat, lon, maxRows + startRow);
+                        /*
                         string sqlStr;
                         if (lat == 0 && lon == 0)
                         {
@@ -7094,6 +7127,7 @@ namespace RoadaWebService
                             else
                                 sqlStr = string.Format("SELECT TOP {0} *, geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326)) as dist FROM asset_beaver WHERE latitude is not null and longitude is not null and structure LIKE '{3}' ORDER BY geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326))", maxRows + startRow, lat, lon, SqlHelper.FixUp(searchStr));
                         }
+                        */
 
                         bool rc = stmt.DoSQL(sqlStr);
                         // scroll to the beginning of the rows we call
@@ -7266,6 +7300,8 @@ namespace RoadaWebService
                 {
                     if (GetStmt(connStr, out stmt))
                     {
+                        string sqlStr = getSQLNear("fence", "structure", searchStr, lat, lon, maxRows + startRow);
+                        /*
                         string sqlStr;
                         if (lat == 0 && lon == 0)
                         {
@@ -7281,6 +7317,7 @@ namespace RoadaWebService
                             else
                                 sqlStr = string.Format("SELECT TOP {0} *, geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326)) as dist FROM asset_fence WHERE latitude is not null and longitude is not null and structure LIKE '{3}' ORDER BY geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326))", maxRows + startRow, lat, lon, SqlHelper.FixUp(searchStr));
                         }
+                        */
 
                         bool rc = stmt.DoSQL(sqlStr);
                         // scroll to the beginning of the rows we call
@@ -7573,6 +7610,8 @@ namespace RoadaWebService
                 {
                     if (GetStmt(connStr, out stmt))
                     {
+                        string sqlStr = getSQLNear("sign", "structure", searchStr, lat, lon, maxRows + startRow);
+                        /*
                         string sqlStr;
                         if (lat == 0 && lon == 0)
                         {
@@ -7588,6 +7627,7 @@ namespace RoadaWebService
                             else
                                 sqlStr = string.Format("SELECT TOP {0} *, geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326)) as dist FROM asset_sign WHERE latitude is not null and longitude is not null and structure LIKE '{3}' ORDER BY geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326))", maxRows + startRow, lat, lon, SqlHelper.FixUp(searchStr));
                         }
+                        */
 
                         bool rc = stmt.DoSQL(sqlStr);
                         // scroll to the beginning of the rows we call
@@ -7720,6 +7760,8 @@ namespace RoadaWebService
                     if (GetStmt(connStr, out stmt))
                     {
                         string tWhere = string.Format("type in ({0},{1},{2})", CULVERT_CONCRETE, CULVERT_STEEL, CULVERT_STEEL_CONCRETE);
+                        string sqlStr = getSQLNear("culvert", "structure", searchStr, lat, lon, maxRows + startRow, tWhere);
+                        /*
                         string sqlStr;
                         if (lat == 0 && lon == 0)
                         {
@@ -7735,6 +7777,7 @@ namespace RoadaWebService
                             else
                                 sqlStr = string.Format("SELECT TOP {0} *, geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326)) as dist FROM asset_culvert WHERE ({4}) and latitude is not null and longitude is not null and structure LIKE '{3}' ORDER BY geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326))", maxRows + startRow, lat, lon, SqlHelper.FixUp(searchStr), tWhere);
                         }
+                        */
 
                         bool rc = stmt.DoSQL(sqlStr);
                         // scroll to the beginning of the rows we call
@@ -8441,7 +8484,7 @@ namespace RoadaWebService
                     sql.Add("latitude", bdata.latitude);
                     sql.Add("longitude", bdata.longitude);
                     sql.Add("note", bdata.other);
-                    sql.Add("reco", bdata.reco); 
+                    sql.Add("reco", bdata.reco);
                     sql.Add("patrol", bdata.patrol);
                     sql.Add("date", bdata.date);
                     sql.Add("road", bdata.road);
