@@ -1629,6 +1629,8 @@ namespace RoadaWebService
         [DataMember]
         public int weather { get; set; }
         [DataMember]
+        public int visibility { get; set; }
+        [DataMember]
         public int highway { get; set; }
         [DataMember]
         public int rowt { get; set; }

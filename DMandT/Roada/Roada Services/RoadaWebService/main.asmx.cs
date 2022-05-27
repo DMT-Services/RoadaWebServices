@@ -5308,6 +5308,7 @@ namespace RoadaWebService
                     sql.Add("gender", data.gender);
                     sql.Add("species", data.species);
                     sql.Add("weather", data.weather);
+                    sql.Add("visibility", data.visibility);
                     sql.Add("highway", data.highway);
                     sql.Add("rowt", data.rowt);
                     sql.Add("comments", data.comments);
