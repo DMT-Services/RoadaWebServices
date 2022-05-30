@@ -9062,6 +9062,7 @@ namespace RoadaWebService
                             data.gender = stmt.ifetch("gender");
                             data.species = stmt.fetch("species");
                             data.weather = stmt.ifetch("weather");
+                            data.visibility = stmt.ifetch("visibility");
                             data.highway = stmt.ifetch("highway");
                             data.rowt = stmt.ifetch("rowt");
                             data.comments = stmt.fetch("comments");
