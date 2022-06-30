@@ -6521,7 +6521,7 @@ namespace RoadaWebService
                 whereClause += (" AND a." + type);
             if (lat != 0.0 && lon != 0.0)
                 whereClause += " AND (a.latitude is not null and a.longitude is not null)";
-            string orderBy = " ORDER BY " + ((lat != 0.0 && lon != 0.0) ? string.Format(" geography::Point({0}, {1}, 4326).STDistance(geography::Point(a.latitude, a.longitude, 4326))", lat, lon) : "a." + structure);
+            string orderBy = " ORDER BY " + ((lat != 0.0 && lon != 0.0) ? string.Format(" geography::Point({0}, {1}, 4326).STDistance(geography::Point(a.latitude, a.longitude, 4326)),a.id", lat, lon) : "a." + structure);
             string distField = (lat != 0.0 && lon != 0.0) ? string.Format(",geography::Point({0}, {1}, 4326).STDistance(geography::Point(a.latitude, a.longitude, 4326)) as dist", lat, lon) : string.Empty;
 
             // all this 'gookyness' is to get the most recent inspection date for each asset
