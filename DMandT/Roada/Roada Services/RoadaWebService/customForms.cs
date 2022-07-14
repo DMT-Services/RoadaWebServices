@@ -102,6 +102,60 @@ namespace DMTServices
             return DefForm;
         }
 
+        public static aForm GetSQLLayoutFile(SqlStmt stmt, SqlStmt stmt2)
+        {
+            DefForm = null;
+            try
+            {
+                List<form> formList = new List<form>();
+                bool rc = stmt.DoSQL("SELECT * FROM formsLayout ORDER BY id");
+                while (rc)
+                {
+                    customForms.form f = new customForms.form();
+                    f.name = stmt.fetch("name");
+                    f.displayOrder = stmt.ifetch("displayOrder");
+                    f.deficiencyId = stmt.ifetch("deficiencyId");
+                    f.problemSid = stmt.ifetch("problemsid");
+                    f.problemCat = stmt.fetch("problemcat");
+                    f.problemCode = stmt.fetch("problemcode");
+                    f.tooltip = stmt.fetch("tooltip");
+                    f.notes = stmt.fetch("notes");
+                    List<customForms.form_item> itemList = new List<customForms.form_item>();
+                    bool rc2 = stmt2.DoSQLFormat("SELECT * FROM formItems WHERE layout_id = {0} ORDER BY id", stmt.ifetch("id"));
+                    while (rc2)
+                    {
+                        customForms.form_item fi = new customForms.form_item();
+                        fi.prompt = stmt2.fetch("prompt");
+                        fi.field = stmt2.fetch("field");
+                        fi.type = stmt2.fetch("ftype");
+                        fi.width = stmt2.ifetch("width");
+                        fi.multiSelect = stmt2.tfetch("multiselect");
+                        fi.vertical = stmt2.tfetch("vertical");
+                        fi.readOnly = stmt2.tfetch("readonly");
+                        itemList.Add(fi);
+
+                        rc2 = stmt2.dbSkip();
+                    }
+                    f.form_items = itemList.ToArray();
+                    itemList.Clear();
+                    formList.Add(f);
+
+                    rc = stmt.dbSkip();
+                }
+                DefForm.forms = formList.ToArray();
+                formList.Clear();
+                DefForm.errorMsg = string.Empty;
+            }
+            catch (Exception ex)
+            {
+                if (DefForm == null)
+                    DefForm = new aForm();
+                DefForm.errorMsg = ex.Message;
+            }
+
+            return DefForm;
+        }
+
         public static string typeToName(int type)
         {
             return typeToName(type, DefForm);

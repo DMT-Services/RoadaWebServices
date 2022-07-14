@@ -6514,6 +6514,23 @@ namespace RoadaWebService
 
         private string getSQLNear(string table, string structure, string searchStr, double lat, double lon, int numRows, string type)
         {
+            string whereClause = String.Empty;
+            if (searchStr != string.Empty)
+                whereClause += string.Format(" WHERE a.{0} LIKE '{1}'", structure, SqlHelper.FixUp(searchStr));
+            if (type != string.Empty)
+                whereClause += ((whereClause == string.Empty) ? " WHERE" : " AND") + (" a." + type);
+            if (lat != 0.0 && lon != 0.0)
+                whereClause += ((whereClause == string.Empty) ? " WHERE" : " AND") + " (a.latitude is not null and a.longitude is not null)";
+            string orderBy = " ORDER BY " + ((lat != 0.0 && lon != 0.0) ? string.Format(" geography::Point({0}, {1}, 4326).STDistance(geography::Point(a.latitude, a.longitude, 4326)),a.id", lat, lon) : "a." + structure);
+            string distField = (lat != 0.0 && lon != 0.0) ? string.Format(",geography::Point({0}, {1}, 4326).STDistance(geography::Point(a.latitude, a.longitude, 4326)) as dist", lat, lon) : string.Empty;
+
+            // NOTE: i.date has to be first as all the asset_xxx tables also have a field called date,
+            //       but fetch("date") will always get the first one in the result set
+            return string.Format("SELECT TOP {0} i.date,a.*{1} FROM asset_{2} a left join (select max(date) as date,{3} from inspection_{2} group by {3}) as i on a.{3}=i.{3}", numRows, distField, table, structure) + whereClause + orderBy;
+        }
+
+        private string OLDgetSQLNear(string table, string structure, string searchStr, double lat, double lon, int numRows, string type)
+        {
             string whereClause = " WHERE i2.date is null";
             if (searchStr != string.Empty)
                 whereClause += string.Format(" AND a.{0} LIKE '{1}'", structure, SqlHelper.FixUp(searchStr));
@@ -8546,46 +8563,8 @@ namespace RoadaWebService
                 SqlStmt stmt2 = null;
                 try
                 {
-                    if (GetStmt(connStr, out stmt))
-                        if (GetStmt(connStr, out stmt2))
-                        {
-                            List<customForms.form> formList = new List<customForms.form>();
-                            bool rc = stmt.DoSQL("SELECT * FROM formsLayout ORDER BY id");
-                            while (rc)
-                            {
-                                customForms.form f = new customForms.form();
-                                f.name = stmt.fetch("name");
-                                f.displayOrder = stmt.ifetch("displayOrder");
-                                f.deficiencyId = stmt.ifetch("deficiencyId");
-                                f.problemSid = stmt.ifetch("problemsid");
-                                f.problemCat = stmt.fetch("problemcat");
-                                f.problemCode = stmt.fetch("problemcode");
-                                f.tooltip = stmt.fetch("tooltip");
-                                f.notes = stmt.fetch("notes");
-                                List<customForms.form_item> itemList = new List<customForms.form_item>();
-                                bool rc2 = stmt2.DoSQLFormat("SELECT * FROM formItems WHERE layout_id = {0} ORDER BY id", stmt.ifetch("id"));
-                                while (rc2)
-                                {
-                                    customForms.form_item fi = new customForms.form_item();
-                                    fi.prompt = stmt2.fetch("prompt");
-                                    fi.field = stmt2.fetch("field");
-                                    fi.type = stmt2.fetch("ftype");
-                                    fi.width = stmt2.ifetch("width");
-                                    fi.multiSelect = stmt2.tfetch("multiselect");
-                                    fi.vertical = stmt2.tfetch("vertical");
-                                    fi.readOnly = stmt2.tfetch("readonly");
-                                    itemList.Add(fi);
-                                    rc2 = stmt2.dbSkip();
-                                }
-                                f.form_items = itemList.ToArray();
-                                itemList.Clear();
-                                formList.Add(f);
-                                rc = stmt.dbSkip();
-                            }
-                            Result.forms = formList.ToArray();
-                            formList.Clear();
-                            Result.errorMsg = string.Empty;
-                        }
+                    if (GetStmt(connStr, out stmt) && GetStmt(connStr, out stmt2))
+                        Result = customForms.GetSQLLayoutFile(stmt, stmt2);
                 }
                 catch (Exception x)
                 {
