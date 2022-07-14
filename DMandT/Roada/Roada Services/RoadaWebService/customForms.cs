@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.Serialization;
 using System.Web.Script.Serialization;
+using Newtonsoft.Json;
 
 namespace DMTServices
 {
@@ -38,7 +39,7 @@ namespace DMTServices
             [DataMember]
             public bool readOnly;
             [DataMember]
-            public string defaults;
+            public string @default { get; set; }
         }
 
         [DataContract]
@@ -54,6 +55,12 @@ namespace DMTServices
             public int problemSid;
             [DataMember]
             public string problemCat;
+            [DataMember]
+            public string problemCode;
+            [DataMember]
+            public string tooltip;
+            [DataMember]
+            public string notes;
             [DataMember]
             public form_item[] form_items;
         }

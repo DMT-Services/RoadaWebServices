@@ -76,6 +76,7 @@
     <Compile Include="BitConvert.cs" />
     <Compile Include="CheckSQLForRegion.cs" />
     <Compile Include="Classes.cs" />
+    <Compile Include="customForms.cs" />
     <Compile Include="DbFunc.cs" />
     <Compile Include="FormLayout.cs" />
     <Compile Include="Global.cs" />
@@ -126,7 +127,7 @@
         <WebProjectProperties>
           <UseIIS>False</UseIIS>
           <AutoAssignPort>True</AutoAssignPort>
-          <DevelopmentServerPort>2952</DevelopmentServerPort>
+          <DevelopmentServerPort>64354</DevelopmentServerPort>
           <DevelopmentServerVPath>/</DevelopmentServerVPath>
           <IISUrl>
           </IISUrl>

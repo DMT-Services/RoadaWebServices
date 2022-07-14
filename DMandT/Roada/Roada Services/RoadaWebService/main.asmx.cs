@@ -8534,6 +8534,89 @@ namespace RoadaWebService
             return Result;
         }
 
+        [WebMethod(Description = "Retrieve FormLayout for inspection app, new style")]
+        public customForms.aForm GetCustomForm(Request request)
+        {
+            customForms.aForm Result = new customForms.aForm();
+            Result.errorMsg = "invalid credentials";
+            if (LowSecurityCheck(request, "GetCustomForm"))
+            {
+                string connStr = CustConnectionString(request);
+                SqlStmt stmt = null;
+                SqlStmt stmt2 = null;
+                try
+                {
+                    if (GetStmt(connStr, out stmt))
+                        if (GetStmt(connStr, out stmt2))
+                        {
+                            List<customForms.form> formList = new List<customForms.form>();
+                            bool rc = stmt.DoSQL("SELECT * FROM formsLayout ORDER BY id");
+                            while (rc)
+                            {
+                                customForms.form f = new customForms.form();
+                                f.name = stmt.fetch("name");
+                                f.displayOrder = stmt.ifetch("displayOrder");
+                                f.deficiencyId = stmt.ifetch("deficiencyId");
+                                f.problemSid = stmt.ifetch("problemsid");
+                                f.problemCat = stmt.fetch("problemcat");
+                                f.problemCode = stmt.fetch("problemcode");
+                                f.tooltip = stmt.fetch("tooltip");
+                                f.notes = stmt.fetch("notes");
+                                List<customForms.form_item> itemList = new List<customForms.form_item>();
+                                bool rc2 = stmt2.DoSQLFormat("SELECT * FROM formItems WHERE layout_id = {0} ORDER BY id", stmt.ifetch("id"));
+                                while (rc2)
+                                {
+                                    customForms.form_item fi = new customForms.form_item();
+                                    fi.prompt = stmt2.fetch("prompt");
+                                    fi.field = stmt2.fetch("field");
+                                    fi.type = stmt2.fetch("ftype");
+                                    fi.width = stmt2.ifetch("width");
+                                    fi.multiSelect = stmt2.tfetch("multiselect");
+                                    fi.vertical = stmt2.tfetch("vertical");
+                                    fi.readOnly = stmt2.tfetch("readonly");
+                                    itemList.Add(fi);
+                                    rc2 = stmt2.dbSkip();
+                                }
+                                f.form_items = itemList.ToArray();
+                                itemList.Clear();
+                                formList.Add(f);
+                                rc = stmt.dbSkip();
+                            }
+                            Result.forms = formList.ToArray();
+                            formList.Clear();
+                            Result.errorMsg = string.Empty;
+                        }
+                }
+                catch (Exception x)
+                {
+                    Global.messLog.Flush("GetCustomFormLayout() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
+                    Result.errorMsg = x.Message;
+                }
+                finally
+                {
+                    if (stmt != null)
+                    {
+                        stmt.Close();
+                        stmt = null;
+                    }
+                    if (stmt2 != null)
+                    {
+                        stmt2.Close();
+                        stmt2 = null;
+                    }
+                }
+            }
+            return Result;
+        }
+
+        [WebMethod(Description = "Retrieve custom form data as JSON")]
+        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public customForms.aForm GetCustomFormJson(Request req)
+        {
+            return GetCustomForm(req);
+        }
+
+
         [WebMethod(Description = "Retrieve FormLayout for inspection app")]
         public FormHelper GetFormLayout(Request request)
         {
