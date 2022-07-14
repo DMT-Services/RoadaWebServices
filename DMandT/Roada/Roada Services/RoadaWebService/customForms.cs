@@ -102,9 +102,34 @@ namespace DMTServices
             return DefForm;
         }
 
+        public static aForm GetSQLLayoutFile(string ConnString)
+        {
+            if (DefForm == null || DefForm.forms.Length == 0)
+            {
+                SqlStmt stmt2 = null;
+                SqlStmt stmt = new SqlStmt(ConnString);
+                try
+                {
+                    stmt2 = new SqlStmt(ConnString);
+                    GetSQLLayoutFile(stmt, stmt2);
+                }
+                finally
+                {
+                    stmt.Close();
+                    stmt = null;
+                    if (stmt2 != null)
+                    {
+                        stmt2.Close();
+                        stmt2 = null;
+                    }
+                }
+            }
+            return DefForm;
+        }
+
         public static aForm GetSQLLayoutFile(SqlStmt stmt, SqlStmt stmt2)
         {
-            DefForm = null;
+            DefForm = new aForm();
             try
             {
                 List<form> formList = new List<form>();
