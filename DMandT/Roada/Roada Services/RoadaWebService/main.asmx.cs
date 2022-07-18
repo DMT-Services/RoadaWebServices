@@ -5466,7 +5466,7 @@ namespace RoadaWebService
                                 addNote = note + addNote;
                             }
 
-                            stmt.DoSQLFormat("update deficiencies set add_notes='{0}',finished={1}" + where, addNote, finish);
+                            stmt.DoSQLFormat("update deficiencies set add_notes='{0}',finished={1},udate=GetDate()" + where, SqlHelper.FixUp(addNote), finish);
                         }
                         else
                             Global.messLog.Flush("LastError - " + stmt.LastError);
@@ -5537,7 +5537,7 @@ namespace RoadaWebService
                         sql.Remove(fld);
 
                     string where = string.Format("WHERE report_id='{0}'", data.ReportId);
-
+                    sql.AddNow("udate");        // required for integration (BWG)
                     if (stmt.DoSQL("SELECT id FROM deficiencies " + where))
                     {
                         Result = stmt.ifetch("id");     // return the ID of the existing record...
@@ -5723,6 +5723,7 @@ namespace RoadaWebService
                             sql.Add("add_notes", data.addNotes);
                             if (data.Finished)
                                 sql.Add("finished", data.Finished);
+                            sql.AddNow("udate");
                             stmt.DoSQL(sql.BuildUpdate("UPDATE deficiencies with (rowlock)", string.Format(" WHERE report_id = '{0}'", data.ReportId)));
                             result = 1;
 
