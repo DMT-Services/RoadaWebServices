@@ -5598,7 +5598,7 @@ namespace RoadaWebService
                             exWh = " and isnull(closed,0)=0";
                             daysBack = -daysBack;
                         }
-                        bool rc = stmt.DoSQLFormat("select * from deficiencies where report_time>getdate()-{0}" + exWh, daysBack);
+                        bool rc = stmt.DoSQLFormat("select * from deficiencies where report_time>getdate()-{0} and finished = 0 order by report_time desc" + exWh, daysBack);
                         while (rc)
                         {
                             DeficiencyData defData = new DeficiencyData();
@@ -5635,6 +5635,8 @@ namespace RoadaWebService
                         stmt.Close();
                 }
             }
+            
+
             return result.ToArray();
         }
         #endregion
