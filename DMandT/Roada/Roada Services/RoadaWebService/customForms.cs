@@ -154,6 +154,7 @@ namespace DMTServices
                         fi.field = stmt2.fetch("field");
                         fi.type = stmt2.fetch("ftype");
                         fi.width = stmt2.ifetch("width");
+                        fi.height = stmt2.ifetch("height");
                         fi.multiSelect = stmt2.tfetch("multiselect");
                         fi.vertical = stmt2.tfetch("vertical");
                         fi.readOnly = stmt2.tfetch("readonly");
