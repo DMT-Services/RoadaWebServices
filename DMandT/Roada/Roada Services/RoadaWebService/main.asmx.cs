@@ -2265,9 +2265,10 @@ namespace RoadaWebService
                         }
                         else
                         {
-
                             SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
                             sql.AddNow("comm_date");
+                            sql.Add("phone_version", request.Version);
+
                             int rowId = stmt.ifetch("id");
                             string pcCode = stmt.fetch("pc_code");
                             string dbCodes = stmt.fetch("db_codes");
@@ -7963,6 +7964,21 @@ namespace RoadaWebService
             return rc;
         }
 
+        private void logUser(SqlStmt stmt, Request req, string user)
+        {
+            try
+            {
+                SqlHelper query = new SqlHelper();
+                query.Add("hand_code", req.Handcode);
+                query.Add("phone_version", req.Version);
+                query.Add("user_name", user);
+                string wh = string.Format("where hand_code={0}", req.Handcode);
+                bool ins = !stmt.DoSQL("select id from phone_users " + wh);
+                stmt.DoSQL(query.BuildCmd("phone_users", ins, wh));
+            }
+            catch { }
+        }
+
         [WebMethod(Description = "Push SendBridgeData Report")]
         public int SendBridgeData(Request req, BridgeInspectionData bdata)
         {
@@ -8032,6 +8048,7 @@ namespace RoadaWebService
                         }
                     }
                     Result = 1;
+                    logUser(stmt, req, bdata.inspector);
                 }
             }
             catch (Exception x)
@@ -8105,6 +8122,7 @@ namespace RoadaWebService
                         }
                     }
                     Result = 1;
+                    logUser(stmt, req, wdata.inspector);
                 }
             }
             catch (Exception x)
@@ -8176,6 +8194,7 @@ namespace RoadaWebService
                         }
                     }
                     Result = 1;
+                    logUser(stmt, req, bdata.inspector);
                 }
             }
             catch (Exception x)
@@ -8244,6 +8263,7 @@ namespace RoadaWebService
                     stmt.DoSQL(sql.BuildInsert("INSERT INTO inspection_rockfall"));
 
                     Result = 1;
+                    logUser(stmt, req, bdata.inspector);
                 }
             }
             catch (Exception x)
@@ -8315,6 +8335,7 @@ namespace RoadaWebService
                         }
                     }
                     Result = 1;
+                    logUser(stmt, req, bdata.inspector);
                 }
             }
             catch (Exception x)
@@ -8386,6 +8407,7 @@ namespace RoadaWebService
                         }
                     }
                     Result = 1;
+                    logUser(stmt, req, bdata.inspector);
                 }
             }
             catch (Exception x)
@@ -8461,7 +8483,7 @@ namespace RoadaWebService
                     }
 
                     Result = 1;
-
+                    logUser(stmt, req, bdata.inspector);
                 }
             }
             catch (Exception x)
@@ -8538,6 +8560,7 @@ namespace RoadaWebService
                     }
 
                     Result = 1;
+                    logUser(stmt, req, bdata.inspector);
                 }
             }
             catch (Exception x)
