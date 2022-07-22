@@ -5599,7 +5599,7 @@ namespace RoadaWebService
                             exWh = " and isnull(closed,0)=0";
                             daysBack = -daysBack;
                         }
-                        bool rc = stmt.DoSQLFormat("select * from deficiencies where report_time>getdate()-{0} and finished = 0 order by report_time desc" + exWh, daysBack);
+                        bool rc = stmt.DoSQLFormat("select * from deficiencies where report_time>getdate()-{0} {1} order by report_time desc", daysBack, exWh);
                         while (rc)
                         {
                             DeficiencyData defData = new DeficiencyData();
