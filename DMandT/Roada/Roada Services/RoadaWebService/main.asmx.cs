@@ -5555,6 +5555,7 @@ namespace RoadaWebService
 
                     if (req.Handcode == 0 && string.IsNullOrEmpty(req.Version))
                         Result = 1;  // OLD TABLETS EXPECT THIS, can remove once all RHILL tablets updated...
+                    logUser(stmt, req, data.UserName, true);
                 }
             }
             catch (Exception ex)
@@ -7966,12 +7967,19 @@ namespace RoadaWebService
 
         private void logUser(SqlStmt stmt, Request req, string user)
         {
+            logUser(stmt, req, user, false);
+
+        }
+
+        private void logUser(SqlStmt stmt, Request req, string user, bool defCol)
+        {
             try
             {
                 SqlHelper query = new SqlHelper();
                 query.Add("hand_code", req.Handcode);
                 query.Add("phone_version", req.Version);
                 query.Add("user_name", user);
+                query.Add("def_col", defCol);
                 string wh = string.Format("where hand_code={0}", req.Handcode);
                 bool ins = !stmt.DoSQL("select id from phone_users " + wh);
                 stmt.DoSQL(query.BuildCmd("phone_users", ins, wh));
