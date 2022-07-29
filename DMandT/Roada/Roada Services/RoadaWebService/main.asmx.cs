@@ -6234,7 +6234,16 @@ namespace RoadaWebService
         {
             // can't do OUT parameters in JSON, as far as I've been able to find...
             int vv = 0;
-            return GetVehicleList(req, fleetId, out vv);
+            return GetVehicleList(req, fleetId,false, out vv);
+        }
+
+        [WebMethod(Description = "Retrieve vehicle list, optionally filtered by fleetId, as JSON")]
+        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public Vehicle[] GetVehicleListJsonEX(Request req, int? fleetId)
+        {
+            // can't do OUT parameters in JSON, as far as I've been able to find...
+            int vv = 0;
+            return GetVehicleList(req, fleetId, true, out vv);
         }
 
         [WebMethod(Description = "Retrieve highway listas JSON")]
@@ -6253,7 +6262,7 @@ namespace RoadaWebService
         }
 
         [WebMethod(Description = "Retrieve vehicle listing")]
-        public Vehicle[] GetVehicleList(Request request, int? fleetId, out int VehicleVersion)
+        public Vehicle[] GetVehicleList(Request request, int? fleetId,bool patrol, out int VehicleVersion)
         {
             Vehicle[] Result = null;
             VehicleVersion = 0;
@@ -6271,9 +6280,9 @@ namespace RoadaWebService
                         List<Vehicle> vehicles = new List<Vehicle>();
                         bool rc;
                         if (fleetId != null)
-                            rc = stmt.DoSQLFormat("SELECT vehicles.*, handheld.id as hid FROM vehicles LEFT JOIN handheld ON handheld.hand_code = vehicles.hand_code WHERE vehicles.fleet = {0} ORDER BY vehicles.unit_num", fleetId);
+                            rc = stmt.DoSQLFormat("SELECT vehicles.*, handheld.id as hid FROM vehicles LEFT JOIN handheld ON handheld.hand_code = vehicles.hand_code WHERE vehicles.fleet = {0} AND patrol = {1} ORDER BY vehicles.unit_num", fleetId , patrol);
                         else
-                            rc = stmt.DoSQL("SELECT vehicles.*, handheld.id as hid FROM vehicles LEFT JOIN handheld ON handheld.hand_code = vehicles.hand_code ORDER BY vehicles.unit_num");
+                            rc = stmt.DoSQLFormat("SELECT vehicles.*, handheld.id as hid FROM vehicles LEFT JOIN handheld ON handheld.hand_code = vehicles.hand_code WHERE patrol = {0} ORDER BY vehicles.unit_num", patrol);
                         while (rc)
                         {
                             Vehicle v = new Vehicle();
