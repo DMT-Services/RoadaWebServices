@@ -6284,7 +6284,7 @@ namespace RoadaWebService
                         {
                             whereStr = string.Format(" WHERE vehicles.fleet = {0} ", fleetId);
                             if (patrol)
-                                whereStr = " AND patrol = 1 ";
+                                whereStr += " AND patrol = 1 ";
                         }
                         else
                         {
