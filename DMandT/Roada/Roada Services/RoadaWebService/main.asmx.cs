@@ -6234,7 +6234,7 @@ namespace RoadaWebService
         {
             // can't do OUT parameters in JSON, as far as I've been able to find...
             int vv = 0;
-            return GetVehicleList(req, fleetId,false, out vv);
+            return GetVehicleList(req, fleetId, false, out vv);
         }
 
         [WebMethod(Description = "Retrieve vehicle list, optionally filtered by fleetId, as JSON")]
@@ -6279,10 +6279,19 @@ namespace RoadaWebService
 
                         List<Vehicle> vehicles = new List<Vehicle>();
                         bool rc;
+                        string whereStr = string.Empty;
                         if (fleetId != null)
-                            rc = stmt.DoSQLFormat("SELECT vehicles.*, handheld.id as hid FROM vehicles LEFT JOIN handheld ON handheld.hand_code = vehicles.hand_code WHERE vehicles.fleet = {0} AND patrol = {1} ORDER BY vehicles.unit_num", fleetId , patrol);
+                        {
+                            whereStr = string.Format(" WHERE vehicles.fleet = {0} ", fleetId);
+                            if (patrol)
+                                whereStr = " AND patrol = 1 ";
+                        }
                         else
-                            rc = stmt.DoSQLFormat("SELECT vehicles.*, handheld.id as hid FROM vehicles LEFT JOIN handheld ON handheld.hand_code = vehicles.hand_code WHERE patrol = {0} ORDER BY vehicles.unit_num", patrol);
+                        {
+                            if (patrol)
+                                whereStr = " WHERE patrol = 1 ";
+                        }
+                        rc = stmt.DoSQLFormat("SELECT vehicles.*, handheld.id as hid FROM vehicles LEFT JOIN handheld ON handheld.hand_code = vehicles.hand_code {0} ORDER BY vehicles.unit_num", whereStr);
                         while (rc)
                         {
                             Vehicle v = new Vehicle();
