@@ -6234,7 +6234,7 @@ namespace RoadaWebService
         {
             // can't do OUT parameters in JSON, as far as I've been able to find...
             int vv = 0;
-            return GetVehicleList(req, fleetId, false, out vv);
+            return GetVehicleList(req, fleetId, out vv);
         }
 
         [WebMethod(Description = "Retrieve vehicle list, optionally filtered by fleetId, as JSON")]
@@ -6243,7 +6243,7 @@ namespace RoadaWebService
         {
             // can't do OUT parameters in JSON, as far as I've been able to find...
             int vv = 0;
-            return GetVehicleList(req, fleetId, true, out vv);
+            return GetVehicleListEx(req, fleetId, true, out vv);
         }
 
         [WebMethod(Description = "Retrieve highway listas JSON")]
@@ -6262,7 +6262,13 @@ namespace RoadaWebService
         }
 
         [WebMethod(Description = "Retrieve vehicle listing")]
-        public Vehicle[] GetVehicleList(Request request, int? fleetId,bool patrol, out int VehicleVersion)
+        public Vehicle[] GetVehicleList(Request request, int? fleetId, out int VehicleVersion)
+        {
+            return GetVehicleListEx(request, fleetId, false, out VehicleVersion);
+        }
+
+        [WebMethod(Description = "Retrieve vehicle listing")]
+        public Vehicle[] GetVehicleListEx(Request request, int? fleetId,bool patrol, out int VehicleVersion)
         {
             Vehicle[] Result = null;
             VehicleVersion = 0;
