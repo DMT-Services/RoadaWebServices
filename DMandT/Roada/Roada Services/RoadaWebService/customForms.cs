@@ -158,6 +158,8 @@ namespace DMTServices
                         fi.multiSelect = stmt2.tfetch("multiselect");
                         fi.vertical = stmt2.tfetch("vertical");
                         fi.readOnly = stmt2.tfetch("readonly");
+                        fi.@default = stmt2.fetch("defaults");
+
                         itemList.Add(fi);
 
                         rc2 = stmt2.dbSkip();

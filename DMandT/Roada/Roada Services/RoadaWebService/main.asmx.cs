@@ -5637,7 +5637,7 @@ namespace RoadaWebService
                         stmt.Close();
                 }
             }
-            
+
 
             return result.ToArray();
         }
@@ -6268,7 +6268,7 @@ namespace RoadaWebService
         }
 
         [WebMethod(Description = "Retrieve vehicle listing")]
-        public Vehicle[] GetVehicleListEx(Request request, int? fleetId,bool patrol, out int VehicleVersion)
+        public Vehicle[] GetVehicleListEx(Request request, int? fleetId, bool patrol, out int VehicleVersion)
         {
             Vehicle[] Result = null;
             VehicleVersion = 0;
@@ -6553,9 +6553,15 @@ namespace RoadaWebService
             string orderBy = " ORDER BY " + ((lat != 0.0 && lon != 0.0) ? string.Format(" geography::Point({0}, {1}, 4326).STDistance(geography::Point(a.latitude, a.longitude, 4326)),a.id", lat, lon) : "a." + structure);
             string distField = (lat != 0.0 && lon != 0.0) ? string.Format(",geography::Point({0}, {1}, 4326).STDistance(geography::Point(a.latitude, a.longitude, 4326)) as dist", lat, lon) : string.Empty;
 
+            // don't include walkabouts in the inspection_xxx join
+            string inspTypeFilter = string.Empty;
+            if (table == "bridge")
+                inspTypeFilter = " where type_code<>20";
+            else if (table == "culvert")
+                inspTypeFilter = " where type<>25";
             // NOTE: i.date has to be first as all the asset_xxx tables also have a field called date,
             //       but fetch("date") will always get the first one in the result set
-            return string.Format("SELECT TOP {0} i.date,a.*{1} FROM asset_{2} a left join (select max(date) as date,{3} from inspection_{2} group by {3}) as i on a.{3}=i.{3}", numRows, distField, table, structure) + whereClause + orderBy;
+            return string.Format("SELECT TOP {0} i.date,a.*{1} FROM asset_{2} a left join (select max(date) as date,{3} from inspection_{2}{4} group by {3}) as i on a.{3}=i.{3}", numRows, distField, table, structure, inspTypeFilter) + whereClause + orderBy;
         }
 
         private string OLDgetSQLNear(string table, string structure, string searchStr, double lat, double lon, int numRows, string type)
@@ -7792,6 +7798,7 @@ namespace RoadaWebService
         static int CULVERT_STEEL = 3;
         static int CULVERT_CONCRETE = 4;
         static int CULVERT_STEEL_CONCRETE = 8;
+        static List<int> AMC_CULVERT_INSP = new List<int> { CULVERT_CONCRETE, CULVERT_STEEL, CULVERT_STEEL_CONCRETE };
 
         [WebMethod(Description = "Retrieve Culverts closest to lat/lon pair for maxRows")]
         public Culvert[] GetCulvertListNear(Request request, string searchStr, double lat, double lon, int startRow, int maxRows)
@@ -8710,7 +8717,10 @@ namespace RoadaWebService
                         {
                             if (item.bridge != null && item.bridge.Length > 0)
                             {
-                                bool brc = stmt.DoSQLFormat("SELECT TOP {0} * FROM inspection_bridge WHERE bridge='{1}' ORDER BY date desc", maxInsp, item.bridge);
+                                string typeWhere = string.Empty;
+                                if (item.type_code > 0)
+                                    typeWhere = string.Format(" AND type_code={0}", item.type_code);
+                                bool brc = stmt.DoSQLFormat("SELECT TOP {0} * FROM inspection_bridge WHERE bridge='{1}'{2} ORDER BY date desc", maxInsp, item.bridge, typeWhere);
                                 while (brc)
                                 {
                                     BridgeInspectionData b = new BridgeInspectionData();
@@ -9593,7 +9603,14 @@ namespace RoadaWebService
                         {
                             if (item.structure != null && item.structure.Length > 0)
                             {
-                                bool crc = stmt.DoSQLFormat("SELECT TOP {0} * FROM inspection_culvert WHERE structure='{1}' ORDER BY date desc", maxInsp, item.structure);
+                                string typeWhere = string.Empty;
+                                if (item.type > 0)
+                                    if (AMC_CULVERT_INSP.Contains(item.type))
+                                        typeWhere = string.Format(" AND type in ({0},{1},{2})", CULVERT_CONCRETE, CULVERT_STEEL, CULVERT_STEEL_CONCRETE);
+                                    else
+                                        typeWhere = string.Format(" AND type={0}", item.type);
+
+                                bool crc = stmt.DoSQLFormat("SELECT TOP {0} * FROM inspection_culvert WHERE structure='{1}'{2} ORDER BY date desc", maxInsp, item.structure, typeWhere);
                                 while (crc)
                                 {
                                     CulvertInspectionData c = new CulvertInspectionData();
