@@ -8594,6 +8594,7 @@ namespace RoadaWebService
                         sql.Add("group_enabled", item.groupEnabled);
                         sql.Add("severity", item.severity);
                         sql.Add("idate", DateTime.UtcNow);
+                        sql.Add("item", item.item);
 
                         stmt.DoSQL(sql.BuildInsert("INSERT INTO inspection_culvert_item"));
                     }
@@ -10098,56 +10099,56 @@ namespace RoadaWebService
             return GetCulvertList(req);
         }
 
-        [WebMethod(Description = "Retrieve Bridge Data as JSON")]
+        [WebMethod(Description = "Retrieve Defect forms as JSON")]
         [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
         public FormHelper GetFormLayoutJson(Request req)
         {
             return GetFormLayout(req);
         }
 
-        [WebMethod(Description = "Retrieve Bridge Data as JSON")]
+        [WebMethod(Description = "Retrieve Bridge Inspection Data as JSON")]
         [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
         public BridgeInspectionData[] GetBridgeDataJson(Request req, Bridge[] bridges, int maxInsp)
         {
             return GetBridgeInsectionList(req, bridges, maxInsp);
         }
 
-        [WebMethod(Description = "Retrieve Bridge Data as JSON")]
+        [WebMethod(Description = "Retrieve Wall Inspection Data as JSON")]
         [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
         public WallInspectionData[] GetWallDataJson(Request req, Wall[] walls, int maxInsp)
         {
             return GetWallInspectionList(req, walls, maxInsp);
         }
 
-        [WebMethod(Description = "Retrieve Pond Data as JSON")]
+        [WebMethod(Description = "Retrieve Pond Inspection Data as JSON")]
         [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
         public PondInspectionData[] GetPondDataJson(Request req, Pond[] ponds, int maxInsp)
         {
             return GetPondInspectionList(req, ponds, maxInsp);
         }
 
-        [WebMethod(Description = "Retrieve Beaver Data as JSON")]
+        [WebMethod(Description = "Retrieve Beaver Inspection Data as JSON")]
         [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
         public BeaverInspectionData[] GetBeaverDataJson(Request req, Beaver[] beavers, int maxInsp)
         {
             return GetBeaverInspectionList(req, beavers, maxInsp);
         }
 
-        [WebMethod(Description = "Retrieve Fence Data as JSON")]
+        [WebMethod(Description = "Retrieve Fence Inspection Data as JSON")]
         [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
         public FenceInspectionData[] GetFenceDataJson(Request req, Fence[] fences, int maxInsp)
         {
             return GetFenceInspectionList(req, fences, maxInsp);
         }
 
-        [WebMethod(Description = "Retrieve Sign Data as JSON")]
+        [WebMethod(Description = "Retrieve Sign Inspection Data as JSON")]
         [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
         public SignInspectionData[] GetSignDataJson(Request req, Sign[] signs, int maxInsp)
         {
             return GetSignInspectionList(req, signs, maxInsp);
         }
 
-        [WebMethod(Description = "Retrieve Culvert Data as JSON")]
+        [WebMethod(Description = "Retrieve Culvert Inspection Data as JSON")]
         [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
         public CulvertInspectionData[] GetCulvertDataJson(Request req, Culvert[] culvert, int maxInsp)
         {

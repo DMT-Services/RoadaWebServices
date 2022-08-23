@@ -1598,7 +1598,8 @@ namespace RoadaWebService
         public string structure { get; set; }
         [DataMember]
         public string location { get; set; }
-
+        [DataMember]
+        public string item { get; set; }
     }
 
     [DataContract]
