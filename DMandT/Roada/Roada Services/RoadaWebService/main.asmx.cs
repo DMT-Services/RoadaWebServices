@@ -9664,6 +9664,7 @@ namespace RoadaWebService
                                         ci.defect = stmt2.bfetch("defect");
                                         ci.location = stmt2.fetch("location");
                                         ci.note = stmt2.fetch("note");
+                                        ci.item = stmt2.fetch("item");
                                         ci.tstate = stmt2.ifetch("tstate");
                                         ci.groupEnabled = stmt2.bfetch("group_enabled");
                                         ci.severity = stmt2.ifetch("severity");
