@@ -941,6 +941,8 @@ namespace RoadaWebService
         [DataMember]
         public string note { get; set; }
         [DataMember]
+        public string item { get; set; }
+        [DataMember]
         public int tstate { get; set; }
         [DataMember]
         public bool groupEnabled { get; set; }

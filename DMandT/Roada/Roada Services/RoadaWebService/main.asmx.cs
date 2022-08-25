@@ -8077,6 +8077,7 @@ namespace RoadaWebService
 
                             sql.Add("issue", item.issue);
                             sql.Add("defect", item.defect);
+                            sql.Add("item", item.item);
                             sql.Add("note", item.note);
                             sql.Add("tstate", item.tstate);
                             sql.Add("group_enabled", item.groupEnabled);
@@ -8773,6 +8774,7 @@ namespace RoadaWebService
                                         bi.date = b.date;
                                         bi.issue = stmt2.ifetch("issue");
                                         bi.defect = stmt2.bfetch("defect");
+                                        bi.item = stmt2.fetch("item");
                                         bi.note = stmt2.fetch("note");
                                         bi.tstate = stmt2.ifetch("tstate");
                                         bi.groupEnabled = stmt2.bfetch("group_enabled");
