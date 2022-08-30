@@ -2257,7 +2257,40 @@ namespace RoadaWebService
                     {
                         stmt = new SqlStmt(mConn);
                         // main database, look for a new software activation record that
-                        stmt.DoSQL(string.Format("SELECT * FROM soft_activate WHERE client_guid = '{0}'", guid));
+                        bool rc = stmt.DoSQL(string.Format("SELECT * FROM soft_activate WHERE client_guid='{0}'", guid));
+
+                        Global.messLog.Flush("AutoCommission = " + (myConvert.ToBoolean(WebConfigurationManager.AppSettings["AutoCommission"]) ? "True" : "False"));
+
+                        if ((!rc || stmt.fetch("db_codes") == string.Empty) && myConvert.ToBoolean(WebConfigurationManager.AppSettings["AutoCommission"]))
+                        {
+                            int HandCode = 0;
+                            string where = string.Empty;
+
+                            SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
+                            sql.AddNow("comm_date");
+                            sql.Add("phone_version", request.Version);
+                            sql.Add("db_codes", "DMT1");
+                            sql.Add("pc_code", "DM T");
+                            sql.Add("description", "Auto Commissioned ROADAReact V2");
+
+                            if (rc)
+                            {
+                                HandCode = stmt.ifetch("hand_code");
+                                where = string.Format("WHERE id={0}", stmt.ifetch("id"));
+                            }
+                            else
+                                sql.Add("client_guid", guid);
+
+                            if (HandCode == 0)
+                            {
+                                stmt.DoSQL("select max(hand_code) as handCode from soft_activate");
+                                sql.Add("hand_code", stmt.ifetch("handCode") + 1);
+                            }
+
+                            stmt.DoSQL(sql.BuildCmd("soft_activate", !rc, where));
+                            stmt.DoSQL(string.Format("SELECT * FROM soft_activate WHERE client_guid='{0}'", guid));
+                        }
+
 
                         if (stmt.fetch("db_codes") == "")
                         {
