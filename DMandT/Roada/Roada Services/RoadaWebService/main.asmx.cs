@@ -2259,7 +2259,7 @@ namespace RoadaWebService
                         // main database, look for a new software activation record that
                         bool rc = stmt.DoSQL(string.Format("SELECT * FROM soft_activate WHERE client_guid='{0}'", guid));
 
-                        Global.messLog.Flush("AutoCommission = " + (myConvert.ToBoolean(WebConfigurationManager.AppSettings["AutoCommission"]) ? "True" : "False"));
+                        //Global.messLog.Flush("AutoCommission = " + (myConvert.ToBoolean(WebConfigurationManager.AppSettings["AutoCommission"]) ? "True" : "False"));
 
                         if ((!rc || stmt.fetch("db_codes") == string.Empty) && myConvert.ToBoolean(WebConfigurationManager.AppSettings["AutoCommission"]))
                         {
