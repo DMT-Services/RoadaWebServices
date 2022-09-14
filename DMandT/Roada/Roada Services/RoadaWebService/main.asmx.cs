@@ -2299,7 +2299,7 @@ namespace RoadaWebService
                         else
                         {
                             SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
-                            sql.AddNow("comm_date");
+                            sql.AddNow("last_checkin");
                             sql.Add("phone_version", request.Version);
 
                             int rowId = stmt.ifetch("id");
