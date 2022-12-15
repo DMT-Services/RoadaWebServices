@@ -1365,6 +1365,17 @@ namespace DMTServices
         {
             return Add(stmt, query, colName, "@" + colName, value);
         }
+
+        /// <summary>
+        /// returns an SQL timestamp  ie. {ts 'date'}
+        /// </summary>
+        /// <param name="stmt"></param>
+        /// <param name="fieldName"></param>
+        /// <returns></returns>
+        public static string tsfetch(this SqlStmt stmt, string fieldName)
+        {
+            return SqlHelper.timeStamp(stmt.dtfetch(fieldName));
+        }
     }
 
     public static class SqlCommands
