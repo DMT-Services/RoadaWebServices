@@ -1449,10 +1449,12 @@ namespace DMTServices
             if (rdr != null)
                 return dbSkip();
             else
+            {
                 if (!select)
-                return RowsAffected > 0;
-            else
-                return false;
+                    return RowsAffected > 0;
+                else
+                    return false;
+            }
         }
 
         public bool DoSQL(string selectStr)
