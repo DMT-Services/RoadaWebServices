@@ -6279,11 +6279,27 @@ namespace RoadaWebService
             return GetVehicleListEx(req, fleetId, true, out vv);
         }
 
+        [WebMethod(Description = "Retrieve vehicle list, optionally filtered by fleetId and username role, as JSON")]
+        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public Vehicle[] GetVehicleListJsonRole(Request req, int? fleetId, string username)
+        {
+            // can't do OUT parameters in JSON, as far as I've been able to find...
+            int vv = 0;
+            return GetVehicleListRole(req, fleetId, true, username, out vv);
+        }
+
         [WebMethod(Description = "Retrieve highway listas JSON")]
         [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
         public Highway[] GetHighwayListJson(Request req)
         {
             return GetHighwayList(req);
+        }
+
+        [WebMethod(Description = "Retrieve Mobile Role lists JSON")]
+        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public Role[] GetRoleListJson(Request req)
+        {
+            return GetRoleList(req);
         }
 
         [WebMethod(Description = "get photo urls")]
@@ -6367,6 +6383,156 @@ namespace RoadaWebService
             return Result;
         }
 
+        [WebMethod(Description = "Retrieve vehicle listing")]
+        public Vehicle[] GetVehicleListRole(Request request, int? fleetId, bool patrol,string username, out int VehicleVersion)
+        {
+            Role usersRoles = null;
+            Vehicle[] Result = null;
+            VehicleVersion = 0;
+            if (LowSecurityCheck(request, "GetVehicleListRole"))
+            {
+                string connStr = CustConnectionString(request);
+                SqlStmt stmt = null;
+                SqlStmt stmt2 = null; 
+                try
+                {
+
+                    if (GetStmt(connStr, out stmt) && GetStmt(connStr, out stmt2))
+                    {
+
+
+                        if (username != null && username.Length > 0)
+                        {
+                            usersRoles.username = username;
+                           
+                            bool rc2;
+                            string[] vlist = null;
+                            rc2 = stmt2.DoSQLFormat("SELECT * FROM user_roles LEFT JOIN role_access_general ON role_access_general.vehicles = role_access_general.vehicles where user_roles.role = role_access_general.role and user_roles.username = '{0}'", username);
+                            while (rc2)
+                            {
+                                string[] nxt = null;
+
+                                nxt = stmt2.fetch("vehicles").Split(",".ToCharArray(), StringSplitOptions.RemoveEmptyEntries);
+
+                                vlist = vlist.Union(nxt).ToArray(); //not sure if this union function works help says that it will remove any duplicates and join the arrays
+
+                                rc2 = stmt2.dbSkip();
+                            }
+
+                            usersRoles.Vlist = vlist;
+                           
+                        }
+
+
+                        if (usersRoles.Vlist.Length > 0)
+                        {
+                            List<Vehicle> vehicles = new List<Vehicle>();
+                            foreach (var item in usersRoles.Vlist)
+	                        {
+		                        if (stmt.DoSQL("SELECT TOP 1 vehicles FROM go_update"))
+                                VehicleVersion = stmt.ifetch("vehicles");
+
+                            
+                            bool rc;
+                            string whereStr = string.Empty;
+                            if (fleetId != null)
+                            {
+                                whereStr = string.Format(" WHERE vehicles.fleet = {0} AND unit_num = '{1}'", fleetId,item);
+                                if (patrol)
+                                    whereStr += " AND patrol = 1 ";
+                            }
+                            else
+                            {
+                                if (patrol)
+                                    whereStr = string.Format(" WHERE patrol = 1 AND unit_num = '{0}'",item);
+                            }
+
+                       
+                            rc = stmt.DoSQLFormat("SELECT vehicles.*, handheld.id as hid FROM vehicles LEFT JOIN handheld ON handheld.hand_code = vehicles.hand_code {0} ORDER BY vehicles.unit_num", whereStr);
+                            while (rc)
+                            {
+                                Vehicle v = new Vehicle();
+                                v.Id = stmt.ifetch("vehicle");
+                                v.fleetID = stmt.ifetch("fleet");
+                                v.DevId = stmt.ifetch("hand_code");
+                                v.UnitNum = stmt.fetch("unit_num");
+                                v.License = stmt.fetch("license");
+                                v.Type = stmt.ifetch("type");
+                                v.Odom = stmt.dfetch("gps_odom");
+                                v.HHFlag = !stmt.IsNull("hid");        // new mobile viewer app needs to know if a handheld record exists, if not it ignores the vehicle
+                                vehicles.Add(v);
+
+                                rc = stmt.dbSkip();
+                            }
+	                        }
+                            
+                            Result = vehicles.ToArray();
+                            vehicles.Clear();
+                        }
+                        else
+                        {
+                            if (stmt.DoSQL("SELECT TOP 1 vehicles FROM go_update"))
+                                VehicleVersion = stmt.ifetch("vehicles");
+
+                            List<Vehicle> vehicles = new List<Vehicle>();
+                            bool rc;
+                            string whereStr = string.Empty;
+                            if (fleetId != null)
+                            {
+                                whereStr = string.Format(" WHERE vehicles.fleet = {0} ", fleetId);
+                                if (patrol)
+                                    whereStr += " AND patrol = 1 ";
+                            }
+                            else
+                            {
+                                if (patrol)
+                                    whereStr = " WHERE patrol = 1 ";
+                            }
+                            rc = stmt.DoSQLFormat("SELECT vehicles.*, handheld.id as hid FROM vehicles LEFT JOIN handheld ON handheld.hand_code = vehicles.hand_code {0} ORDER BY vehicles.unit_num", whereStr);
+                            while (rc)
+                            {
+                                Vehicle v = new Vehicle();
+                                v.Id = stmt.ifetch("vehicle");
+                                v.fleetID = stmt.ifetch("fleet");
+                                v.DevId = stmt.ifetch("hand_code");
+                                v.UnitNum = stmt.fetch("unit_num");
+                                v.License = stmt.fetch("license");
+                                v.Type = stmt.ifetch("type");
+                                v.Odom = stmt.dfetch("gps_odom");
+                                v.HHFlag = !stmt.IsNull("hid");        // new mobile viewer app needs to know if a handheld record exists, if not it ignores the vehicle
+                                vehicles.Add(v);
+
+                                rc = stmt.dbSkip();
+                            }
+                            Result = vehicles.ToArray();
+                            vehicles.Clear();
+                        }
+
+                       
+                    }
+                }
+                catch (Exception x)
+                {
+                    Global.messLog.Flush("GetVehicleList() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
+                    InsertErrorRecord(request.CustCode, string.Format("GetVehicleList() Failed to send HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message), request);
+                }
+                finally
+                {
+                    if (stmt != null)
+                    {
+                        stmt.Close();
+                        stmt = null;
+                    }
+                    if (stmt2 != null)
+                    {
+                        stmt2.Close();
+                        stmt2 = null;
+                    }
+                }
+            }
+            return Result;
+        }
+
         [WebMethod(Description = "Retrieve highway listing")]
         public Highway[] GetHighwayList(Request request)
         {
@@ -6398,6 +6564,51 @@ namespace RoadaWebService
                 {
                     Global.messLog.Flush("GetHighwayList() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
                     InsertErrorRecord(request.CustCode, string.Format("GetHighwayList() Failed to send HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message), request);
+                }
+                finally
+                {
+                    if (stmt != null)
+                    {
+                        stmt.Close();
+                        stmt = null;
+                    }
+                }
+            }
+            return Result;
+        }
+
+        [WebMethod(Description = "Retrieve highway listing")]
+        public Role[] GetRoleList(Request request)
+        {
+            //need to get user_roles and role_access_general to get a list of the vehicles as per role
+            Role[] Result = null;
+            if (LowSecurityCheck(request, "GetRoleList"))
+            {
+                string connStr = CustConnectionString(request);
+                SqlStmt stmt = null;
+                try
+                {
+                    if (GetStmt(connStr, out stmt))
+                    {
+                        List<Role> role = new List<Role>();
+                        bool rc = stmt.DoSQL("SELECT * FROM user_roles ORDER BY id");
+                        while (rc)
+                        {
+                            Role r = new Role();
+                            r.username = stmt.fetch("username");
+                            r.role = stmt.fetch("role");                       
+                            role.Add(r);
+
+                            rc = stmt.dbSkip();
+                        }
+                        Result = role.ToArray();
+                        role.Clear();
+                    }
+                }
+                catch (Exception x)
+                {
+                    Global.messLog.Flush("GetRoleList() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
+                    InsertErrorRecord(request.CustCode, string.Format("GetRoleList() Failed! HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message), request);
                 }
                 finally
                 {

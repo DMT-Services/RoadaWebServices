@@ -2262,6 +2262,19 @@ namespace RoadaWebService
     }
 
     [DataContract]
+    public class Role
+    {
+        [DataMember]
+        public string username { get; set; }
+        [DataMember]
+        public string role { get; set; }
+        [DataMember]
+        public string vehicles { get; set; }
+        [DataMember]
+        public string[] Vlist { get; set; }
+    }
+
+    [DataContract]
     public class Vehicle
     {
         [DataMember]
