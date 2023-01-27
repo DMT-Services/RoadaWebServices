@@ -6399,20 +6399,16 @@ namespace RoadaWebService
 
                     if (GetStmt(connStr, out stmt) && GetStmt(connStr, out stmt2))
                     {
-
-
                         if (username != null && username.Length > 0)
                         {
                             usersRoles.username = username;
                            
                             bool rc2;
-                            string[] vlist = null;
-                            rc2 = stmt2.DoSQLFormat("SELECT * FROM user_roles LEFT JOIN role_access_general ON role_access_general.vehicles = role_access_general.vehicles where user_roles.role = role_access_general.role and user_roles.username = '{0}'", username);
+                            string[] vlist = new string[0];
+                            rc2 = stmt2.DoSQLFormat("SELECT vehicles FROM user_roles LEFT JOIN role_access_general ON role_access_general.vehicles = role_access_general.vehicles where user_roles.role = role_access_general.role and user_roles.username = '{0}'", username);
                             while (rc2)
                             {
-                                string[] nxt = null;
-
-                                nxt = stmt2.fetch("vehicles").Split(",".ToCharArray(), StringSplitOptions.RemoveEmptyEntries);
+                                string[] nxt = stmt2.fetch("vehicles").Split(",".ToCharArray(), StringSplitOptions.RemoveEmptyEntries);
 
                                 vlist = vlist.Union(nxt).ToArray(); //not sure if this union function works help says that it will remove any duplicates and join the arrays
 
@@ -6424,57 +6420,52 @@ namespace RoadaWebService
                         }
 
 
+                        if (stmt.DoSQL("SELECT TOP 1 vehicles FROM go_update"))
+                            VehicleVersion = stmt.ifetch("vehicles");
+                        List<Vehicle> vehicles = new List<Vehicle>();
                         if (usersRoles.Vlist.Length > 0)
                         {
-                            List<Vehicle> vehicles = new List<Vehicle>();
                             foreach (var item in usersRoles.Vlist)
-	                        {
-		                        if (stmt.DoSQL("SELECT TOP 1 vehicles FROM go_update"))
-                                VehicleVersion = stmt.ifetch("vehicles");
-
-                            
-                            bool rc;
-                            string whereStr = string.Empty;
-                            if (fleetId != null)
                             {
-                                whereStr = string.Format(" WHERE vehicles.fleet = {0} AND unit_num = '{1}'", fleetId,item);
-                                if (patrol)
-                                    whereStr += " AND patrol = 1 ";
-                            }
-                            else
-                            {
-                                if (patrol)
-                                    whereStr = string.Format(" WHERE patrol = 1 AND unit_num = '{0}'",item);
-                            }
+                                bool rc;
+                                string whereStr = string.Empty;
+                                if (fleetId != null)
+                                {
+                                    whereStr = string.Format(" WHERE vehicles.fleet = {0} AND unit_num = '{1}'", fleetId, item);
+                                    if (patrol)
+                                        whereStr += " AND patrol = 1 ";
+                                }
+                                else
+                                {
+                                    whereStr = string.Format(" WHERE unit_num = '{0}'", item);
+                                    if (patrol)
+                                        whereStr = " AND patrol = 1";
+                                }
 
-                       
-                            rc = stmt.DoSQLFormat("SELECT vehicles.*, handheld.id as hid FROM vehicles LEFT JOIN handheld ON handheld.hand_code = vehicles.hand_code {0} ORDER BY vehicles.unit_num", whereStr);
-                            while (rc)
-                            {
-                                Vehicle v = new Vehicle();
-                                v.Id = stmt.ifetch("vehicle");
-                                v.fleetID = stmt.ifetch("fleet");
-                                v.DevId = stmt.ifetch("hand_code");
-                                v.UnitNum = stmt.fetch("unit_num");
-                                v.License = stmt.fetch("license");
-                                v.Type = stmt.ifetch("type");
-                                v.Odom = stmt.dfetch("gps_odom");
-                                v.HHFlag = !stmt.IsNull("hid");        // new mobile viewer app needs to know if a handheld record exists, if not it ignores the vehicle
-                                vehicles.Add(v);
 
-                                rc = stmt.dbSkip();
+                                rc = stmt.DoSQLFormat("SELECT vehicles.*, handheld.id as hid FROM vehicles LEFT JOIN handheld ON handheld.hand_code = vehicles.hand_code {0} ORDER BY vehicles.unit_num", whereStr);
+                                while (rc)
+                                {
+                                    Vehicle v = new Vehicle();
+                                    v.Id = stmt.ifetch("vehicle");
+                                    v.fleetID = stmt.ifetch("fleet");
+                                    v.DevId = stmt.ifetch("hand_code");
+                                    v.UnitNum = stmt.fetch("unit_num");
+                                    v.License = stmt.fetch("license");
+                                    v.Type = stmt.ifetch("type");
+                                    v.Odom = stmt.dfetch("gps_odom");
+                                    v.HHFlag = !stmt.IsNull("hid");        // new mobile viewer app needs to know if a handheld record exists, if not it ignores the vehicle
+                                    vehicles.Add(v);
+
+                                    rc = stmt.dbSkip();
+                                }
                             }
-	                        }
                             
                             Result = vehicles.ToArray();
                             vehicles.Clear();
                         }
                         else
                         {
-                            if (stmt.DoSQL("SELECT TOP 1 vehicles FROM go_update"))
-                                VehicleVersion = stmt.ifetch("vehicles");
-
-                            List<Vehicle> vehicles = new List<Vehicle>();
                             bool rc;
                             string whereStr = string.Empty;
                             if (fleetId != null)
