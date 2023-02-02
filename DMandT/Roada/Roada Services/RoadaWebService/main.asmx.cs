@@ -6281,11 +6281,12 @@ namespace RoadaWebService
 
         [WebMethod(Description = "Retrieve vehicle list, optionally filtered by fleetId and username role, as JSON")]
         [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
-        public Vehicle[] GetVehicleListJsonRole(Request req, int? fleetId, string username)
+        public Vehicle[] GetVehicleListJsonRole(Request req, string username)
         {
+            //, int? fleetId, string username
             // can't do OUT parameters in JSON, as far as I've been able to find...
             int vv = 0;
-            return GetVehicleListRole(req, fleetId, true, username, out vv);
+            return GetVehicleListRole(req, null, true, username, out vv);
         }
 
         [WebMethod(Description = "Retrieve highway listas JSON")]
@@ -6386,7 +6387,7 @@ namespace RoadaWebService
         [WebMethod(Description = "Retrieve vehicle listing")]
         public Vehicle[] GetVehicleListRole(Request request, int? fleetId, bool patrol,string username, out int VehicleVersion)
         {
-            Role usersRoles = null;
+            Role usersRoles = new Role();
             Vehicle[] Result = null;
             VehicleVersion = 0;
             if (LowSecurityCheck(request, "GetVehicleListRole"))
@@ -6431,17 +6432,16 @@ namespace RoadaWebService
                                 string whereStr = string.Empty;
                                 if (fleetId != null)
                                 {
-                                    whereStr = string.Format(" WHERE vehicles.fleet = {0} AND unit_num = '{1}'", fleetId, item);
+                                    whereStr = string.Format(" WHERE vehicles.fleet = {0} AND vehicles.unit_num = '{1}'", fleetId, item);
                                     if (patrol)
                                         whereStr += " AND patrol = 1 ";
                                 }
                                 else
                                 {
-                                    whereStr = string.Format(" WHERE unit_num = '{0}'", item);
+                                    whereStr = string.Format(" WHERE vehicles.unit_num = '{0}'", item);
                                     if (patrol)
-                                        whereStr = " AND patrol = 1";
+                                        whereStr += " AND patrol = 1";
                                 }
-
 
                                 rc = stmt.DoSQLFormat("SELECT vehicles.*, handheld.id as hid FROM vehicles LEFT JOIN handheld ON handheld.hand_code = vehicles.hand_code {0} ORDER BY vehicles.unit_num", whereStr);
                                 while (rc)
