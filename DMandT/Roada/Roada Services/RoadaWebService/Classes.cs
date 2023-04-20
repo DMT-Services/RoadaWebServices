@@ -196,6 +196,8 @@ namespace RoadaWebService
         [DataMember]
         public double lat { get; set; }
         [DataMember]
+        public int pic_count { get; set; }
+        [DataMember]
         public List<PhotoData> photos { get; set; }
     }
 

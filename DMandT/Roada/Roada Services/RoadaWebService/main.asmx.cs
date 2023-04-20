@@ -5272,7 +5272,7 @@ namespace RoadaWebService
                         sql.Add("def2", data.def2);
                     sql.Add("latitude", data.lat);
                     sql.Add("longitude", data.lon);
-
+                    sql.Add("pic_count", data.pic_count);
                     if (stmt.DoSQL(String.Format("SELECT * FROM sidewalk_report WHERE report_id = '{0}'", data.reportId)))
                     {
                         stmt.DoSQL(sql.BuildUpdate("UPDATE sidewalk_report", String.Format("WHERE report_id = '{0}'", data.reportId)));
