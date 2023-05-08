@@ -31,6 +31,12 @@ namespace RoadaWebService
         public int Id { get; set; }
         [DataMember]
         public string ReportID { get; set; }
+        [DataMember]
+        public DateTime rdate { get; set; }
+        [DataMember]
+        public decimal Latitude { get; set; }
+        [DataMember]
+        public decimal Longitude { get; set; }
     }
 
     [DataContract]

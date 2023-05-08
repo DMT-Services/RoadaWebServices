@@ -6211,7 +6211,7 @@ namespace RoadaWebService
             List<AmazonURL> urls = new List<AmazonURL>();
             AmazonURL[] result = null;
             // low security check, don't want hackers!
-            if (!LowSecurityCheck(req, "GetLoginStatus"))
+            if (!LowSecurityCheck(req, "GetAmazonUrls"))
                 return null;
 
             string connStr = CustConnectionString(req);
@@ -6252,6 +6252,55 @@ namespace RoadaWebService
             return result;
         }
 
+        [WebMethod(Description = "returns list of amazon image urls, pass repkey in binpassword")]
+        public AmazonURL[] GetImageUrls(Request req, string RepId)
+        {
+            List<AmazonURL> urls = new List<AmazonURL>();
+            AmazonURL[] result = null;
+            // low security check, don't want hackers!
+            if (!LowSecurityCheck(req, "GetImageUrls"))
+                return null;
+
+            string connStr = CustConnectionString(req);
+            SqlStmt stmt = null;
+            try
+            {
+                if (GetStmt(connStr, out stmt))
+                {
+                    bool rc = stmt.DoSQLFormat("SELECT * FROM Img_Events WHERE RepKey = '{0}' order by id desc", SqlHelper.FixUp(RepId));
+
+                    while (rc)
+                    {
+                        AmazonURL url = new AmazonURL();
+
+                        url.Id = stmt.ifetch("id");
+                        url.ReportID = RepId;
+                        url.urlString = stmt.fetch("img_url");
+                        url.rdate = stmt.dtfetch("rdate");
+                        url.Latitude = stmt.cfetch("latitude");
+                        url.Longitude = stmt.cfetch("longitude");
+
+                        urls.Add(url);
+                        rc = stmt.dbSkip();
+                    }
+
+                    result = urls.ToArray();
+                }
+
+            }
+            catch (Exception x)
+            {
+                Global.messLog.Flush("GetImageUrls() HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, x.Message);
+                InsertErrorRecord(req.CustCode, string.Format("GetImageUrls() Failed to send HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, x.Message), req);
+            }
+            finally
+            {
+                if (stmt != null)
+                    stmt.Close();
+
+            }
+            return result;
+        }
         [WebMethod(Description = "Retrieve vehicle list, optionally filtered by fleetId, as JSON")]
         [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
         public string GetAppVersionJson(Request req)
@@ -6307,8 +6356,14 @@ namespace RoadaWebService
         [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
         public AmazonURL[] GetAmazonUrlJson(Request req, string RepId)
         {
-            // can't do OUT parameters in JSON, as far as I've been able to find...
             return GetAmazonUrls(req, RepId);
+        }
+
+        [WebMethod(Description = "get photo urls, note the post because RepId has slashes")]
+        [ScriptMethod(UseHttpGet = false, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public AmazonURL[] GetImageUrlsJson(Request req, string RepId)
+        {
+            return GetImageUrls(req, RepId);
         }
 
         [WebMethod(Description = "Retrieve vehicle listing")]
