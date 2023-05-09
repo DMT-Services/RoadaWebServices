@@ -6711,6 +6711,129 @@ namespace RoadaWebService
                                    { "longitude", "longitude" },
                                    { "notes", "notes" } };
 
+        // first string is name in class, second is name in database
+        string[,] HighmastLayout = { 
+                                       { "structure", "structure" },
+                                       { "powerSupplyLocation", "power_supply_location" },
+                                       { "poleNumber", "pole_number" },
+                                       { "contractNum", "contract_num" },
+                                       { "poleManu", "pole_manu" },
+                                       { "dateManu","date_manu" },
+                                       { "luminaireManu","luminaire_manu" },
+                                       { "luminaireDist", "luminaire_dist"},
+                                       { "loweringDevice", "lowering_device" },
+                                       { "latching", "latching" },
+                                       { "drive", "drive" },
+                                       { "lineVolts", "line_volts" },
+                                       { "phase", "phase" },
+                                       { "numFixtures", "num_fixtures" }, 
+                                       { "raisedLowerd", "raised_lowerd" } ,
+                                       { "luminaireVolt", "luminaire_volt" } ,
+                                       { "breakerSize", "breaker_size" } ,
+                                       { "notes", "notes" } ,
+                                       { "type", "type" } ,
+                                       { "latitude", "latitude" },
+                                       { "longitude", "longitude" }
+                                
+                                   };
+
+        [WebMethod(Description = "Add a HighMast")]
+        public int AddHighMast(Request request, HighMast data)
+        {
+            int Result = -5;
+
+            if (LowSecurityCheck(request, "AddHighMast"))
+            {
+                Result = -4;
+                string connStr = CustConnectionString(request);
+                SqlStmt stmt = null;
+                try
+                {
+                    Result = -3;
+                    if (GetStmt(connStr, out stmt))
+                    {
+                        if (data != null && data.structure != string.Empty)
+                        {
+                            Result = -2;
+                            // currently, we are only adding a highmast, no UPDATES
+                            if (!stmt.DoSQLFormat("SELECT id FROM asset_high_mast_lite WHERE structure='{0}'", data.structure))
+                            {
+                                Result = -1;
+
+                                SqlHelper sql = procData.fillQuery(data, bridgeLayout);
+                                sql.AddNow("date");
+
+                                if (stmt.DoSQL(sql.BuildCmd("asset_high_mast_lite", true)))
+                                    Result = 1;
+                            }
+                        }
+                    }
+                }
+                catch (Exception x)
+                {
+                    Global.messLog.Flush("AddHighMast() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
+                    InsertErrorRecord(request.CustCode, string.Format("AddHighMast() Failed to receive HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message), request);
+                }
+                finally
+                {
+                    if (stmt != null)
+                    {
+                        stmt.Close();
+                        stmt = null;
+                    }
+                }
+            }
+            return Result;
+        }
+
+        private Bridge fillBridge(SqlStmt stmt)
+        {
+            Bridge b = new Bridge();
+            b.bridge = stmt.fetch("bridge");
+            b.structure = stmt.fetch("structure");
+            b.location = stmt.fetch("location");
+            b.name = stmt.fetch("name");
+            b.site = stmt.fetch("site");
+            b.type = stmt.fetch("type");
+            b.type_code = stmt.ifetch("type_code");
+            b.spans = stmt.ifetch("bridge");
+            b.length = stmt.dfetch("bridge");
+            b.width = stmt.dfetch("width");
+            b.latitude = stmt.dfetch("latitude");
+            b.longitude = stmt.dfetch("longitude");
+            b.notes = stmt.fetch("notes");
+            b.date = stmt.dtfetch("date");
+
+            return b;
+        }
+
+        private HighMast fillHighmast(SqlStmt stmt)
+        {
+            HighMast hm = new HighMast();
+        
+
+            hm.structure = stmt.fetch("structure");
+            hm.powerSupplyLocation = stmt.fetch("power_supply_location");
+            hm.poleNumber = stmt.fetch("pole_number");
+            hm.contractNum = stmt.fetch("contract_num");
+            hm.poleManu = stmt.fetch("pole_manu");
+            hm.dateManu = stmt.dtfetch("date_manu");
+            hm.luminaireManu = stmt.fetch("luminaire_manu");
+            hm.luminaireDist = stmt.fetch("luminaire_dist");
+            hm.loweringDevice = stmt.fetch("lowering_device");
+            hm.phase = stmt.fetch("phase");
+            hm.numFixtures = stmt.ifetch("num_fixtures");
+            hm.raisedLowerd = stmt.ifetch("raisedL_lowerd");
+            hm.luminaireVolt = stmt.fetch("luminaire_volt");
+            hm.breakerSize = stmt.fetch("breaker_size"); 
+            hm.note = stmt.fetch("notes");
+            hm.latitude = stmt.dfetch("latitude");
+            hm.longitude = stmt.dfetch("longitude");
+
+
+            return hm;
+        }
+
         [WebMethod(Description = "Add a Bridge")]
         public int AddBridge(Request request, Bridge bdata)
         {
@@ -6760,26 +6883,6 @@ namespace RoadaWebService
             return Result;
         }
 
-        private Bridge fillBridge(SqlStmt stmt)
-        {
-            Bridge b = new Bridge();
-            b.bridge = stmt.fetch("bridge");
-            b.structure = stmt.fetch("structure");
-            b.location = stmt.fetch("location");
-            b.name = stmt.fetch("name");
-            b.site = stmt.fetch("site");
-            b.type = stmt.fetch("type");
-            b.type_code = stmt.ifetch("type_code");
-            b.spans = stmt.ifetch("bridge");
-            b.length = stmt.dfetch("bridge");
-            b.width = stmt.dfetch("width");
-            b.latitude = stmt.dfetch("latitude");
-            b.longitude = stmt.dfetch("longitude");
-            b.notes = stmt.fetch("notes");
-            b.date = stmt.dtfetch("date");
-
-            return b;
-        }
 
         [WebMethod(Description = "Retrieve Bridges")]
         public Bridge[] GetBridgeList(Request request, int type)
@@ -6870,6 +6973,79 @@ namespace RoadaWebService
             // NOTE: i.date has to be first as all the asset_xxx tables also have a field called date,
             //       but fetch("date") will always get the first one in the result set
             return string.Format("SELECT TOP {0} i.date,a.*{1} FROM asset_{2} a inner join inspection_{2} i on a.{3}=i.{3} left outer join inspection_{2} i2 on a.{3}=i2.{3} AND i2.date>i.date", numRows, distField, table, structure) + whereClause + orderBy;
+        }
+
+        [WebMethod(Description = "Retrieve Highmast closest to lat/lon pair for maxRows")]
+        public HighMast[] GetHighMastListNear(Request request, string searchStr, double lat, double lon, int startRow, int maxRows)
+        {
+            HighMast[] Result = null;
+
+            if (LowSecurityCheck(request, "GetBridgeListNear"))
+            {
+                string connStr = CustConnectionString(request);
+                SqlStmt stmt = null;
+                try
+                {
+                    if (GetStmt(connStr, out stmt))
+                    {
+                        string sqlStr = getSQLNear("_high_mast_lite", "structure", searchStr, lat, lon, maxRows + startRow, string.Empty);
+                        /*
+                        string sqlStr;
+                        if (lat == 0 && lon == 0)
+                        {
+                            if (searchStr == string.Empty)
+                            {
+                                if (typeCode != string.Empty)
+                                    typeCode = typeCode.Replace("AND ", "WHERE ");
+                                sqlStr = string.Format("SELECT TOP {0} * FROM asset_bridge {1} ORDER BY bridge", maxRows + startRow, typeCode);
+                            }
+                            else
+                                sqlStr = string.Format("SELECT TOP {0} * FROM asset_bridge WHERE bridge LIKE '{1}' {2} ORDER BY bridge", maxRows + startRow, SqlHelper.FixUp(searchStr), typeCode);
+                        }
+                        else
+                        {
+                            if (searchStr == string.Empty)
+                                sqlStr = string.Format("SELECT TOP {0} *, geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326)) as dist FROM asset_bridge WHERE latitude is not null and longitude is not null {3} ORDER BY geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326))", maxRows + startRow, lat, lon, typeCode);
+                            else
+                                sqlStr = string.Format("SELECT TOP {0} *, geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326)) as dist FROM asset_bridge WHERE latitude is not null and longitude is not null and bridge LIKE '{3}' {4} ORDER BY geography::Point({1}, {2}, 4326).STDistance(geography::Point(latitude, longitude, 4326))", maxRows + startRow, lat, lon, SqlHelper.FixUp(searchStr), typeCode);
+                        }
+                        */
+
+                        bool rc = stmt.DoSQL(sqlStr);
+                        // scroll to the beginning of the rows we call
+                        while (rc && startRow > 0)
+                        {
+                            startRow--;
+                            rc = stmt.dbSkip();
+                        }
+
+                        // now get the data we want
+                        List<HighMast> Highmast = new List<HighMast>();
+                        while (rc)
+                        {
+                            Highmast.Add(fillHighmast(stmt));
+
+                            rc = stmt.dbSkip();
+                        }
+                        Result = Highmast.ToArray();
+                        Highmast.Clear();
+                    }
+                }
+                catch (Exception x)
+                {
+                    Global.messLog.Flush("GetHighMastListNear() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
+                    InsertErrorRecord(request.CustCode, string.Format("GetHighMastListNear() Failed to send HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message), request);
+                }
+                finally
+                {
+                    if (stmt != null)
+                    {
+                        stmt.Close();
+                        stmt = null;
+                    }
+                }
+            }
+            return Result;
         }
 
         [WebMethod(Description = "Retrieve Bridges closest to lat/lon pair for maxRows")]
@@ -8395,6 +8571,85 @@ namespace RoadaWebService
             return Result;
         }
 
+        [WebMethod(Description = "Push SendHighMastData Report")]
+        public int SendHighMastData(Request req, HighMastInspectionData data)
+        {
+            int Result = 0;
+            // low security check, don't want hackers!
+            if (!LowSecurityCheck(req, "SendHighMastData"))
+                return -2;
+
+            string connStr = CustConnectionString(req);
+            SqlStmt stmt = null;
+            try
+            {
+                Result = -3;
+                if (GetStmt(connStr, out stmt))
+                {
+                    SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
+                    DateTime now = DateTime.Now.ToLocalTime();
+
+
+                    sql.Add("structure", data.structure);               
+                    sql.Add("xdate", data.xdate);
+                    sql.Add("user_name", data.userName);
+                    sql.Add("phone", data.phone);
+                    sql.Add("relamped", data.relamped);
+                    sql.Add("insp", data.insp);
+                    sql.Add("repair", data.repair);
+                    sql.Add("risk", data.risk);
+                    sql.Add("scope", data.scope);
+                    sql.Add("notes", data.notes);            
+                    sql.Add("reco", data.reco);
+                    sql.Add("file_num", data.fileNum);
+                    sql.Add("repKey", data.repKey);
+
+                    if (!string.IsNullOrEmpty(data.sigBase64))
+                        sql.Add("sig_data", myConvert.ToByteArray(base64SigToBmp(data.sigBase64)));
+                    else
+                        sql.Add("sig_data", data.sigData);
+
+                    sql.AddNow("idate");
+
+                    stmt.DoSQL(sql.BuildInsert("INSERT INTO inspection__high_mast_lite"));
+
+                    foreach (var item in data.highmastItems)
+                    {
+                        sql.Clear();
+
+                        // MUST have an issue # 
+                        if (item.issue > 0)
+                        {
+                            sql.Add("structure", data.structure);
+                            sql.Add("xdate", data.xdate);
+
+                            sql.Add("issue", item.issue);
+                            sql.Add("note", item.note);
+                            sql.Add("tstate", item.tstate);
+                            sql.AddNow("idate");
+
+                            stmt.DoSQL(sql.BuildInsert("INSERT INTO inspection__high_mast_lite__item"));
+                        }
+                    }
+                    Result = 1;
+                    logUser(stmt, req, data.userName);
+                }
+            }
+            catch (Exception x)
+            {
+                Result = -4;
+                Global.messLog.Flush("SendHighMastData() HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, x.Message);
+                InsertErrorRecord(req.CustCode, "SendHighMastData() " + x.Message, req);
+            }
+            finally
+            {
+                if (stmt != null)
+                    stmt.Close();
+            }
+            return Result;
+        }
+
+
         [WebMethod(Description = "Push Wall Inspection Report")]
         public int SendWallData(Request req, WallInspectionData wdata)
         {
@@ -8987,6 +9242,113 @@ namespace RoadaWebService
             }
             return Result;
         }
+
+        [WebMethod(Description = "Retrieve Bridges inspections")]
+        public HighMastInspectionData[] GetHighMastInsectionList(Request request, HighMast[] highmasts, int maxInsp)
+        {
+            HighMastInspectionData[] Result = null;
+
+            if (LowSecurityCheck(request, "GetHighMastInsectionList"))
+            {
+                string connStr = CustConnectionString(request);
+                SqlStmt stmt = null;
+                SqlStmt stmt2 = null;
+                try
+                {
+                    if (GetStmt(connStr, out stmt) && GetStmt(connStr, out stmt2))
+                    {
+                        maxInsp = Math.Max(1, maxInsp);
+                        List<HighMastInspectionData> Highmasts = new List<HighMastInspectionData>();
+
+                        foreach (var item in highmasts)
+                        {
+                            if (item.structure != null && item.structure.Length > 0)
+                            {
+
+                                bool brc = stmt.DoSQLFormat("SELECT TOP {0} * FROM inspection__high_mast_lite WHERE structure='{1}' ORDER BY xdate desc", maxInsp, item.structure );
+                                while (brc)
+                                {
+                                    HighMastInspectionData hm = new HighMastInspectionData();
+                           
+                                    hm.structure = stmt.fetch("structure");
+                                    hm.xdate = stmt.dtfetch("xdate");
+                                    hm.userName = stmt.fetch("user_name");
+                                    hm.phone = stmt.fetch("phone");
+                                    hm.relamped = stmt.ifetch("relamped");
+                                    hm.insp = stmt.ifetch("insp");
+                                    hm.repair = stmt.ifetch("repair");
+                                    hm.risk = stmt.ifetch("risk");
+                                    hm.scope = stmt.ifetch("scope");
+                                    hm.notes = stmt.fetch("notes");
+                                    hm.reco = stmt.fetch("reco");
+                                    hm.fileNum = stmt.fetch("fileNum");
+                                    hm.repKey = stmt.fetch("repKey");
+
+                                    bool rc;
+                                    if (hm.repKey != string.Empty)
+                                    {
+                                        rc = stmt2.DoSQLFormat("SELECT * FROM Img_events WHERE RepKey='{0}'", hm.repKey);
+                                        while (rc)
+                                        {
+                                            PhotoData pdata = new PhotoData();
+
+                                            pdata.repkey = hm.repKey;
+                                            pdata.imgUrl = stmt2.fetch("img_url");
+                                            pdata.issue = stmt2.ifetch("issue");
+
+                                            hm.photos.Add(pdata);
+
+                                            rc = stmt2.dbSkip();
+                                        }
+                                    }
+
+                                    // the DATEADD(ms, -DATEPART(ms, date), date) is because some older inspections had millisecs in the date, this makes sure to ignore that
+                                    rc = stmt2.DoSQLFormat("SELECT * FROM inspection__high_mast_lite__item WHERE structure='{0}' and DATEADD(ms, -DATEPART(ms, date), xdate)={1}", hm.structure, SqlHelper.timeStamp(hm.xdate));
+                                    while (rc)
+                                    {
+                                        HighMastItem hmi = new HighMastItem();
+
+                                        hmi.issue = stmt2.ifetch("issue");                         
+                                        hmi.note = stmt2.fetch("note");
+                                        hmi.tstate = stmt2.ifetch("tstate");
+
+                                        hm.highmastItems.Add(hmi);
+
+                                        rc = stmt2.dbSkip();
+                                    }
+
+                                    Highmasts.Add(hm);
+
+                                    brc = stmt.dbSkip();
+                                }
+                            }
+                        }
+                        Result = Highmasts.ToArray();
+                        Highmasts.Clear();
+                    }
+                }
+                catch (Exception x)
+                {
+                    Global.messLog.Flush("GetHighMastInsectionList() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
+                    InsertErrorRecord(request.CustCode, string.Format("GetBridgeInspectionList() Failed to send HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message), request);
+                }
+                finally
+                {
+                    if (stmt2 != null)
+                    {
+                        stmt2.Close();
+                        stmt2 = null;
+                    }
+                    if (stmt != null)
+                    {
+                        stmt.Close();
+                        stmt = null;
+                    }
+                }
+            }
+            return Result;
+        }
+
 
         [WebMethod(Description = "Retrieve Bridges inspections")]
         public BridgeInspectionData[] GetBridgeInsectionList(Request request, Bridge[] bridges, int maxInsp)
@@ -10175,6 +10537,13 @@ namespace RoadaWebService
             return SendBridgeData(req, bdata);
         }
 
+        [WebMethod(Description = "Send Highmast as JSON")]
+        [ScriptMethod(UseHttpGet = false, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public int SendHighMastDataJson(Request req, HighMastInspectionData data)
+        {
+            return SendHighMastData(req, data);
+        }
+
         [WebMethod(Description = "Send Ponddata as JSON")]
         [ScriptMethod(UseHttpGet = false, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
         public int SendPondDataJson(Request req, PondInspectionData bdata)
@@ -10231,6 +10600,13 @@ namespace RoadaWebService
             return AddBridge(req, bdata);
         }
 
+        [WebMethod(Description = "Add a Bridge")]
+        [ScriptMethod(UseHttpGet = false, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public int AddHighMastJson(Request req, HighMast data)
+        {
+            return AddHighMast(req, data);
+        }
+
         [WebMethod(Description = "Add a Sign")]
         [ScriptMethod(UseHttpGet = false, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
         public int AddSignJson(Request req, Sign sdata)
@@ -10285,6 +10661,13 @@ namespace RoadaWebService
         public Bridge[] GetBridgesNearExJson(Request req, string searchStr, double lat, double lon, int startRow, int maxRows, int type)
         {
             return GetBridgeListNear(req, searchStr, lat, lon, startRow, maxRows, type);
+        }
+
+        [WebMethod(Description = "Retrieve Bridge list closest to lat/lon pair for maxRows")]
+        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public HighMast[] GetHighMastNearJson(Request req, string searchStr, double lat, double lon, int startRow, int maxRows)
+        {
+            return GetHighMastListNear(req, searchStr, lat, lon, startRow, maxRows);
         }
 
         [WebMethod(Description = "Retrieve Bridge list closest to lat/lon pair for maxRows")]
@@ -10404,6 +10787,13 @@ namespace RoadaWebService
         public BridgeInspectionData[] GetBridgeDataJson(Request req, Bridge[] bridges, int maxInsp)
         {
             return GetBridgeInsectionList(req, bridges, maxInsp);
+        }
+
+        [WebMethod(Description = "Retrieve HighMast Inspection Data as JSON")]
+        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public HighMastInspectionData[] GetHighMastDataJson(Request req, HighMast[] highmasts, int maxInsp)
+        {
+            return GetHighMastInsectionList(req, highmasts, maxInsp);
         }
 
         [WebMethod(Description = "Retrieve Wall Inspection Data as JSON")]

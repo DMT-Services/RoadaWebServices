@@ -938,6 +938,62 @@ namespace RoadaWebService
     }
 
     [DataContract]
+    public class HighMastInspectionData
+    {
+        public HighMastInspectionData()
+        {
+            this.highmastItems = new List<HighMastItem>();
+            this.photos = new List<PhotoData>();
+        }
+        [DataMember]
+        public string structure { get; set; }
+        [DataMember]
+        public DateTime xdate { get; set; }
+        [DataMember]
+        public string userName { get; set; }
+        [DataMember]
+        public string phone { get; set; }
+        [DataMember]
+        public int relamped { get; set; }
+        [DataMember]
+        public int insp { get; set; }
+        [DataMember]
+        public int repair { get; set; }
+        [DataMember]
+        public int risk { get; set; }
+        [DataMember]
+        public int scope { get; set; }
+        [DataMember]
+        public string notes { get; set; }
+        [DataMember]
+        public string reco { get; set; }
+        [DataMember]
+        public string fileNum { get; set; }
+        [DataMember]
+        public string sigBase64 { get; set; }
+        [DataMember] 
+        public List<short> sigData { get; set; }
+        [DataMember]
+        public List<HighMastItem> highmastItems { get; set; }
+        [DataMember]
+        public string repKey { get; set; }
+        [DataMember]
+        public List<PhotoData> photos { get; set; }
+    }
+
+
+    [DataContract]
+    public class HighMastItem
+    {
+        [DataMember]
+        public int issue { get; set; }
+        [DataMember]
+        public int tstate { get; set; }
+        [DataMember]
+        public string note { get; set; }
+    }
+
+    [DataContract]
     public class BridgeItem
     {
         [DataMember]
@@ -1335,7 +1391,51 @@ namespace RoadaWebService
         [DataMember]
         public string structure { get; set; }
     }
+    [DataContract]
+    public class HighMast 
+    {
+        [DataMember]
+        public string structure { get; set; }
+        [DataMember]
+        public string powerSupplyLocation { get; set; }
+        [DataMember]
+        public string poleNumber { get; set; }
+        [DataMember]
+        public string contractNum { get; set; }
+        [DataMember]
+        public string poleManu { get; set; }
+        [DataMember]
+        public DateTime dateManu { get; set; }
+        [DataMember]
+        public string luminaireManu { get; set; }
+        [DataMember]
+        public string luminaireDist { get; set; }
+        [DataMember]
+        public string loweringDevice { get; set; }
+        [DataMember]
+        public string latching { get; set; }
+        [DataMember]
+        public string drive { get; set; }
+        [DataMember]
+        public string lineVolts { get; set; }
+        [DataMember]
+        public string phase { get; set; }
+        [DataMember]
+        public int numFixtures { get; set; }
+        [DataMember]
+        public int raisedLowerd { get; set; }
+        [DataMember]
+        public string luminaireVolt { get; set; }
+        [DataMember]
+        public string breakerSize { get; set; }
+        [DataMember]
+        public string note { get; set; }
+        [DataMember]
+        public double latitude { get; set; }
+        [DataMember]
+        public double longitude { get; set; }
 
+    }
     [DataContract]
     public class Bridge
     {
