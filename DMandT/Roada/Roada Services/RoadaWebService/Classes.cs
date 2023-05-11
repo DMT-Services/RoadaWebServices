@@ -948,7 +948,7 @@ namespace RoadaWebService
         [DataMember]
         public string structure { get; set; }
         [DataMember]
-        public DateTime xdate { get; set; }
+        public DateTime date { get; set; }
         [DataMember]
         public string userName { get; set; }
         [DataMember]

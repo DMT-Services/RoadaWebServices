@@ -6756,14 +6756,14 @@ namespace RoadaWebService
                         {
                             Result = -2;
                             // currently, we are only adding a highmast, no UPDATES
-                            if (!stmt.DoSQLFormat("SELECT id FROM asset_high_mast_lite WHERE structure='{0}'", data.structure))
+                            if (!stmt.DoSQLFormat("SELECT id FROM asset__high_mast_lite WHERE structure='{0}'", data.structure))
                             {
                                 Result = -1;
 
-                                SqlHelper sql = procData.fillQuery(data, bridgeLayout);
-                                sql.AddNow("date");
+                                SqlHelper sql = procData.fillQuery(data, HighmastLayout);
+                                sql.AddNow("idate");
 
-                                if (stmt.DoSQL(sql.BuildCmd("asset_high_mast_lite", true)))
+                                if (stmt.DoSQL(sql.BuildCmd("asset__high_mast_lite", true)))
                                     Result = 1;
                             }
                         }
@@ -8591,7 +8591,7 @@ namespace RoadaWebService
 
 
                     sql.Add("structure", data.structure);               
-                    sql.Add("xdate", data.xdate);
+                    sql.Add("date", data.date);
                     sql.Add("user_name", data.userName);
                     sql.Add("phone", data.phone);
                     sql.Add("relamped", data.relamped);
@@ -8621,7 +8621,7 @@ namespace RoadaWebService
                         if (item.issue > 0)
                         {
                             sql.Add("structure", data.structure);
-                            sql.Add("xdate", data.xdate);
+                            sql.Add("date", data.date);
 
                             sql.Add("issue", item.issue);
                             sql.Add("note", item.note);
@@ -9265,13 +9265,13 @@ namespace RoadaWebService
                             if (item.structure != null && item.structure.Length > 0)
                             {
 
-                                bool brc = stmt.DoSQLFormat("SELECT TOP {0} * FROM inspection__high_mast_lite WHERE structure='{1}' ORDER BY xdate desc", maxInsp, item.structure );
+                                bool brc = stmt.DoSQLFormat("SELECT TOP {0} * FROM inspection__high_mast_lite WHERE structure='{1}' ORDER BY date desc", maxInsp, item.structure );
                                 while (brc)
                                 {
                                     HighMastInspectionData hm = new HighMastInspectionData();
                            
                                     hm.structure = stmt.fetch("structure");
-                                    hm.xdate = stmt.dtfetch("xdate");
+                                    hm.date = stmt.dtfetch("date");
                                     hm.userName = stmt.fetch("user_name");
                                     hm.phone = stmt.fetch("phone");
                                     hm.relamped = stmt.ifetch("relamped");
@@ -9303,7 +9303,7 @@ namespace RoadaWebService
                                     }
 
                                     // the DATEADD(ms, -DATEPART(ms, date), date) is because some older inspections had millisecs in the date, this makes sure to ignore that
-                                    rc = stmt2.DoSQLFormat("SELECT * FROM inspection__high_mast_lite__item WHERE structure='{0}' and DATEADD(ms, -DATEPART(ms, date), xdate)={1}", hm.structure, SqlHelper.timeStamp(hm.xdate));
+                                    rc = stmt2.DoSQLFormat("SELECT * FROM inspection__high_mast_lite__item WHERE structure='{0}' and DATEADD(ms, -DATEPART(ms, date), date)={1}", hm.structure, SqlHelper.timeStamp(hm.date));
                                     while (rc)
                                     {
                                         HighMastItem hmi = new HighMastItem();
