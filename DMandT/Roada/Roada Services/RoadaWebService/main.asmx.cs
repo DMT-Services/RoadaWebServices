@@ -5059,6 +5059,13 @@ namespace RoadaWebService
             return Result;
         }
 
+        [WebMethod(Description = "send installer pics via Json for mobileinstaller")]
+        [ScriptMethod(UseHttpGet = false, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public int sendInstallerPicsJson(Request req, InstalledPictures[] picturedata)
+        {
+            return sendInstallerPics(req, picturedata);
+        }
+
         [WebMethod(Description = "Puts installed pictures away")]
         public int sendInstallerPics(Request req, InstalledPictures[] picturedata)
         {
