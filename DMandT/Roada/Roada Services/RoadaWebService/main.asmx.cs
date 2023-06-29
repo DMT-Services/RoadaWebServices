@@ -5532,6 +5532,71 @@ namespace RoadaWebService
             return Result;
         }
 
+        // needed to use Post on this function (UseHttpGet = false)
+        [WebMethod(Description = "Send Deficiency Location Changes as JSON")]
+        [ScriptMethod(UseHttpGet = false, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public int SendDefLocChangeJson(Request req, DeficiencyData data)
+        {
+            return SendDefLocChange(req, data);
+        }
+
+        [WebMethod(Description = "Receive Deficiency Location Changes")]
+        public int SendDefLocChange(Request req, DeficiencyData data)
+        {
+            int Result = -1;
+            // low security check, don't want hackers!
+            if (LowSecurityCheck(req, "SendDefLocChange"))
+            {
+                string connStr = CustConnectionString(req);
+                SqlStmt stmt = null;
+                try
+                {
+                    Result = -2;
+                    if (GetStmt(connStr, out stmt))
+                    {
+                        string where = string.Format(" WHERE id={0}", data.ReportId);
+                        stmt.DoSQLFormat("select * from deficiencies {0}", where);
+                        int requestId = stmt.ifetch("requestid");
+                        SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
+                        sql.Add("latitude", data.Lat);
+                        sql.Add("longitude", data.Lon);
+                        sql.Add("location_desc", data.Location);
+                        string sqlStr = sql.BuildUpdate("update deficiencies", where);
+                        stmt.DoSQL(sqlStr);
+                        Global.messLog.Flush(sqlStr);
+                        double utmNorthing, utmEasting;
+                        string zoneStr;
+                        utm.FromLatLong(data.Lat, data.Lon, out utmNorthing, out utmEasting, out zoneStr);
+                        // we need to update the service request as well for York, if it exists
+                        sql.Clear();
+                        sql.Add("sry", utmNorthing);
+                        sql.Add("srx", utmEasting);
+                        sql.Add("problocation", data.Location);
+                        string sqlStr2 = sql.BuildUpdate("update servicerequest", string.Format(" where requestid={0}", requestId));
+                        stmt.DoSQL(sqlStr2);
+                        Global.messLog.Flush(sqlStr2);
+                        Result = 0;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Result = -3;
+                    Global.messLog.Flush("SendDefLocChange() data failed to receive: " + ex.Message);
+                    InsertErrorRecord(req.CustCode, string.Format("SendDefLocChange() data failed to receive HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, ex.Message), req);
+                }
+                finally
+                {
+                    if (stmt != null)
+                    {
+                        stmt.Close();
+                        stmt = null;
+                    }
+                }
+            }
+
+            return Result;
+        }
+
         // created this to allow using POST as the one below has UseHttpGet = true and is already in use by other programs
         [WebMethod(Description = "Receive Deficiency Data as JSON")]
         [ScriptMethod(UseHttpGet = false, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
