@@ -2269,8 +2269,8 @@ namespace RoadaWebService
                             SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
                             sql.AddNow("comm_date");
                             sql.Add("phone_version", request.Version);
-                            sql.Add("db_codes", "DMT1");
-                            sql.Add("pc_code", "DM T");
+                            sql.Add("db_codes", "DEMO");
+                            sql.Add("pc_code", "DEMO");
                             sql.Add("description", "Auto Commissioned ROADAReact V2");
 
                             if (rc)
@@ -11205,6 +11205,7 @@ namespace RoadaWebService
                             stmt.DoSQLFormat("update patrol_log set end_patrol={0} where hand_code={1} and user_name='{2}' and end_patrol is null", SqlHelper.timeStamp(data.StartTime), data.HandCode, data.UserName);
 
                             sql.Add("vehicle_id", getVehicleId(stmt, data.HandCode, data.UnitNum));
+                            sql.Add("dev_id", req.Handcode);
                             // MUST set second param of DoSQL() to true as this makes it run the insert 
                             // as an ExecuteReader instead of ExecuteNonQuery so we can get back the inserted.id
                             stmt.DoSQL(sql.BuildInsert("INSERT INTO patrol_log", " output inserted.id VALUES "), true);
@@ -11486,6 +11487,60 @@ namespace RoadaWebService
                 }
             }
             return Result;
+        }
+
+        [WebMethod(Description = "Retrieve attachment info for CityWorks service requests, response Json")]
+        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public AttachInfo[] getAttachInfoJson(Request req, int requestId)
+        {
+            return getAttachInfo(req, requestId);
+
+        }
+
+        [WebMethod(Description = "Retrieve attachment info for CityWorks service requests")]
+        public AttachInfo[] getAttachInfo(Request req, int requestId)
+        {
+            List<AttachInfo> Result = new List<AttachInfo>();
+
+            if (LowSecurityCheck(req, "getAttachInfo"))
+            {
+                string connStr = CustConnectionString(req);
+
+                SqlStmt stmt = null;
+                try
+                {
+                    if (GetStmt(connStr, out stmt))
+                    {
+                        string sql = "select srattach.*, img_events.img_url from srattach left join img_events on img_events.obj_key = srattach.objkey where srattach.requestid = {0} order by srattach.datetimeattached desc";
+                        //Global.messLog.Flush("Cmd: " + sql + join + where + " order by w.start_time desc");
+                        bool rc = stmt.DoSQLFormat(sql, requestId);
+                        //Global.messLog.Flush("Error: " + stmt.LastError);
+                        while (rc)
+                        {
+                            AttachInfo a = new AttachInfo();
+                            a.Comments = stmt.fetch("comments");
+                            a.FileName = stmt.fetch("attachment");
+                            a.Id = stmt.ifetch("id");
+                            a.RDate = stmt.dtfetch("datetimeattached");
+                            a.RequestId = stmt.ifetch("requestid");
+                            a.URL = stmt.fetch("img_url");
+                            a.AttachedBy = stmt.fetch("attachedby");
+                            Result.Add(a);
+
+                            rc = stmt.dbSkip();
+                        }
+                    }
+                }
+                finally
+                {
+                    if (stmt != null)
+                    {
+                        stmt.Close();
+                        stmt = null;
+                    }
+                }
+            }
+            return Result.ToArray();
         }
 
         [WebMethod(Description = "Retrieve comment list, optionally filtered by DC Name, as JSON")]

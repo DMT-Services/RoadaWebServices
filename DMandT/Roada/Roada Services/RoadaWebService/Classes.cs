@@ -23,6 +23,25 @@ namespace RoadaWebService
     }
 
     [DataContract]
+    public class AttachInfo
+    {
+        [DataMember]
+        public int Id { get; set; }
+        [DataMember]
+        public int RequestId { get; set; }
+        [DataMember]
+        public DateTime RDate { get; set; }
+        [DataMember]
+        public string URL { get; set; }
+        [DataMember]
+        public string FileName { get; set; }
+        [DataMember]
+        public string Comments { get; set; }
+        [DataMember]
+        public string AttachedBy { get; set; }
+    }
+
+    [DataContract]
     public class AmazonURL
     {
         [DataMember]
