@@ -3707,6 +3707,8 @@ namespace RoadaWebService
                         stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO report_ppl"));
                         Result = 6;
                     }
+
+                    logUser(stmt, req, rdata.repPrep);
                 }
             }
             catch (Exception x)
