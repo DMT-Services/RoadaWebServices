@@ -3708,7 +3708,7 @@ namespace RoadaWebService
                         Result = 6;
                     }
 
-                    logUser(stmt, req, rdata.repPrep);
+                    logUser(stmt, req, rdata.repPrep, true);
                 }
             }
             catch (Exception x)
