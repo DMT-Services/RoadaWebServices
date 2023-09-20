@@ -1928,6 +1928,11 @@ namespace RoadaWebService
                         else
                         {
                             SqlHelper sql = procData.fillQuery(hdr, dvirHeaderLayout);
+                            if (!string.IsNullOrEmpty(hdr.sigBase64))
+                                sql.Add("signature", myConvert.ToByteArray(base64SigToBmp(hdr.sigBase64)));
+                            else
+                                sql.Add("signature", hdr.Signature);
+
                             sql.AddNow("idate");
                             stmt.DoSQL(sql.BuildInsert("INSERT INTO DVIRHeader", " output inserted.id VALUES "), true);
                             int id = stmt.ifetch("id");
@@ -1956,7 +1961,6 @@ namespace RoadaWebService
                                         defects.Clear();
                                     }
                                     stmt.DoSQL(sql.BuildInsert("INSERT INTO dvirdetail"));
-
                                 }
                             }
                             rc = 1;
@@ -2130,6 +2134,11 @@ namespace RoadaWebService
                         else
                         {
                             SqlHelper sql = procData.fillQuery(report, dvirHeaderLayout);
+                            if (!string.IsNullOrEmpty(report.sigBase64))
+                                sql.Add("signature", myConvert.ToByteArray(base64SigToBmp(report.sigBase64)));
+                            else
+                                sql.Add("signature", report.Signature);
+
                             sql.AddNow("idate");
                             reportStatement.DoSQL(sql.BuildInsert("INSERT INTO DVIRHeader", " output inserted.id VALUES "), true);
                             int id = reportStatement.ifetch("id");
@@ -11316,7 +11325,6 @@ namespace RoadaWebService
                                   { "lon", "lon" },
                                   { "Inspector", "inspector" },
                                   { "Comments", "comments" },
-                                  { "Signature", "signature" },
                                   { "RepKey", "RepKey" },
                                   { "rdate", "rdate" } };
 

@@ -2267,6 +2267,9 @@ namespace RoadaWebService
         [DataMember]
         public List<short> Signature { get; set; }
         [DataMember]
+        public string sigBase64 { get; set; }
+
+        [DataMember]
         public string RepKey { get; set; }
         [DataMember]
         public List<int> DefectIds { get; set; }
@@ -2339,6 +2342,8 @@ namespace RoadaWebService
         public string Comments { get; set; }
         [DataMember]
         public List<short> Signature { get; set; }
+        [DataMember]
+        public string sigBase64 { get; set; }
         [DataMember]
         public string RepKey { get; set; }
         [DataMember]
