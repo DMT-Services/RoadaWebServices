@@ -474,6 +474,8 @@ namespace RoadaWebService
         public string patrolFrqURL { get; set; }
         [DataMember]
         public string Name { get; set; }
+        [DataMember]
+        public int SidewalkConditions { get; set; }
     }
 
     [DataContract]

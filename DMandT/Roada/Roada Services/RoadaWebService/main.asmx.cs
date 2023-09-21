@@ -1687,6 +1687,7 @@ namespace RoadaWebService
                     ServerInfo.AmazonAccessKey = stmt.fetch("amz_access_key");
                     ServerInfo.patrolFrqURL = stmt.fetch("patrol_frq");
                     ServerInfo.Name = stmt.fetch("name");
+                    ServerInfo.SidewalkConditions = stmt.ifetch("sidewalk_cond");
                     validConfig = true;
                 }
                 else
@@ -7063,7 +7064,7 @@ namespace RoadaWebService
         {
             HighMast[] Result = null;
 
-            if (LowSecurityCheck(request, "GetBridgeListNear"))
+            if (LowSecurityCheck(request, "GetHighMastListNear"))
             {
                 string connStr = CustConnectionString(request);
                 SqlStmt stmt = null;
