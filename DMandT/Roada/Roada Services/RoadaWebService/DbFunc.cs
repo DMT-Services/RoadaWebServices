@@ -630,7 +630,12 @@ namespace DMTServices
         public void SetupRestrictions()
         {
             SchemaGet.Clear();
-            DataTable schemaTable = dbConnection.GetSchema("Restrictions");
+            DataTable schemaTable = null;
+            try
+            {
+                schemaTable = dbConnection.GetSchema("Restrictions");
+            }
+            catch { }
             if (schemaTable != null)
             {
                 List<string> lRests = new List<string>(fRestrictionNames);
@@ -1913,6 +1918,16 @@ namespace DMTServices
             frdrFields.Clear();
         }
 
+        private DataTable fGetSchemaTable(myDataReader rdr)
+        {
+            DataTable dt = new DataTable();
+            dt.Columns.Add("ColumnName");
+            for (int i = 0; i < rdr.FieldCount; i++)
+                dt.Rows.Add(new object[1] { rdr.GetName(i) });
+
+            return dt;
+        }
+
         // if it's empty, fill the List<> with
         // field names from current result set...
         private void rdrGetFieldList()
@@ -1923,10 +1938,17 @@ namespace DMTServices
                 {
                     if (rdr != null)
                     {
+                        for (int i = 0; i < rdr.FieldCount; i++)
+                            frdrFields.Add(rdr.GetName(i).ToString().ToLower());
+
+                        /*
+                        Sometimes, over the internet, the .GetSchemaTable() can be verrrryy slowwww...
+                        
                         DataTable dt = rdr.GetSchemaTable();
                         if (dt != null)
                             foreach (DataRow dr in dt.Rows)
                                 frdrFields.Add(dr[0].ToString().ToLower());
+                        */
                     }
                 }
             }
@@ -1964,6 +1986,9 @@ namespace DMTServices
             {
                 if (rdr != null)
                 {
+                    for (int i = 0; i < rdr.FieldCount; i++)
+                        rc.Add(rdr.GetProviderSpecificFieldType(i).FullName);
+                    /*
                     DataTable dt = rdr.GetSchemaTable();
                     if (dt != null)
                     {
@@ -1972,6 +1997,7 @@ namespace DMTServices
                             rc.Add(dr.fetch("DataType"));
                         }
                     }
+                    */
                 }
             }
             catch { }
