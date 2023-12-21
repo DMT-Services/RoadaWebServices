@@ -6403,6 +6403,7 @@ namespace RoadaWebService
             return GetVehicleList(req, fleetId, out vv);
         }
 
+
         [WebMethod(Description = "Retrieve vehicle list, optionally filtered by fleetId, as JSON")]
         [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
         public Vehicle[] GetVehicleListJsonEX(Request req, int? fleetId)
@@ -6486,7 +6487,7 @@ namespace RoadaWebService
                             if (patrol)
                                 whereStr = " WHERE patrol = 1 ";
                         }
-                        rc = stmt.DoSQLFormat("SELECT vehicles.*, handheld.id as hid FROM vehicles LEFT JOIN handheld ON handheld.hand_code = vehicles.hand_code {0} ORDER BY vehicles.unit_num", whereStr);
+                        rc = stmt.DoSQLFormat("SELECT vehicles.*,handheld.last_lat, handheld.last_long, handheld.id as hid FROM vehicles LEFT JOIN handheld ON handheld.hand_code = vehicles.hand_code {0} ORDER BY vehicles.unit_num", whereStr);
                         while (rc)
                         {
                             Vehicle v = new Vehicle();
@@ -6497,6 +6498,8 @@ namespace RoadaWebService
                             v.License = stmt.fetch("license");
                             v.Type = stmt.ifetch("type");
                             v.Odom = stmt.dfetch("gps_odom");
+                            v.LastLat = stmt.dfetch("last_lat");
+                            v.LastLong = stmt.dfetch("last_long");
                             v.HHFlag = !stmt.IsNull("hid");        // new mobile viewer app needs to know if a handheld record exists, if not it ignores the vehicle
                             vehicles.Add(v);
 
@@ -6522,6 +6525,7 @@ namespace RoadaWebService
             }
             return Result;
         }
+      
 
         [WebMethod(Description = "Retrieve vehicle listing")]
         public Vehicle[] GetVehicleListRole(Request request, int? fleetId, bool patrol,string username, out int VehicleVersion)

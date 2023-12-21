@@ -59,6 +59,19 @@ namespace RoadaWebService
     }
 
     [DataContract]
+    public class VehicleLocations
+    {
+        [DataMember]
+        public int Handcode { get; set; }
+        [DataMember]
+        public string UnitNum { get; set; }      
+        [DataMember]
+        public decimal Latitude { get; set; }
+        [DataMember]
+        public decimal Longitude { get; set; }
+    }
+
+    [DataContract]
     public class Yard
     {
         [DataMember]
@@ -2421,6 +2434,10 @@ namespace RoadaWebService
         public string UnitNum { get; set; }
         [DataMember]
         public string License { get; set; }
+        [DataMember]
+        public double LastLat { get; set; }
+        [DataMember]
+        public double LastLong { get; set; }
         [DataMember]
         public int Type { get; set; }
         [DataMember(IsRequired = false, EmitDefaultValue = false)]
