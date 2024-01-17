@@ -6525,10 +6525,10 @@ namespace RoadaWebService
             }
             return Result;
         }
-      
+
 
         [WebMethod(Description = "Retrieve vehicle listing")]
-        public Vehicle[] GetVehicleListRole(Request request, int? fleetId, bool patrol,string username, out int VehicleVersion)
+        public Vehicle[] GetVehicleListRole(Request request, int? fleetId, bool patrol, string username, out int VehicleVersion)
         {
             Role usersRoles = new Role();
             Vehicle[] Result = null;
@@ -6537,7 +6537,7 @@ namespace RoadaWebService
             {
                 string connStr = CustConnectionString(request);
                 SqlStmt stmt = null;
-                SqlStmt stmt2 = null; 
+                SqlStmt stmt2 = null;
                 try
                 {
 
@@ -6546,7 +6546,7 @@ namespace RoadaWebService
                         if (username != null && username.Length > 0)
                         {
                             usersRoles.username = username;
-                           
+
                             bool rc2;
                             string[] vlist = new string[0];
                             rc2 = stmt2.DoSQLFormat("SELECT vehicles FROM user_roles LEFT JOIN role_access_general ON role_access_general.vehicles = role_access_general.vehicles where user_roles.role = role_access_general.role and user_roles.username = '{0}'", username);
@@ -6560,7 +6560,7 @@ namespace RoadaWebService
                             }
 
                             usersRoles.Vlist = vlist;
-                           
+
                         }
 
 
@@ -6603,7 +6603,7 @@ namespace RoadaWebService
                                     rc = stmt.dbSkip();
                                 }
                             }
-                            
+
                             Result = vehicles.ToArray();
                             vehicles.Clear();
                         }
@@ -6642,7 +6642,7 @@ namespace RoadaWebService
                             vehicles.Clear();
                         }
 
-                       
+
                     }
                 }
                 catch (Exception x)
@@ -6730,7 +6730,7 @@ namespace RoadaWebService
                         {
                             Role r = new Role();
                             r.username = stmt.fetch("username");
-                            r.role = stmt.fetch("role");                       
+                            r.role = stmt.fetch("role");
                             role.Add(r);
 
                             rc = stmt.dbSkip();
@@ -6800,7 +6800,7 @@ namespace RoadaWebService
                                    { "notes", "notes" } };
 
         // first string is name in class, second is name in database
-        string[,] HighmastLayout = { 
+        string[,] HighmastLayout = {
                                        { "structure", "structure" },
                                        { "powerSupplyLocation", "power_supply_location" },
                                        { "poleNumber", "pole_number" },
@@ -6814,7 +6814,7 @@ namespace RoadaWebService
                                        { "drive", "drive" },
                                        { "lineVolts", "line_volts" },
                                        { "phase", "phase" },
-                                       { "numFixtures", "num_fixtures" }, 
+                                       { "numFixtures", "num_fixtures" },
                                        { "raisedLowerd", "raised_lowerd" } ,
                                        { "luminaireVolt", "luminaire_volt" } ,
                                        { "breakerSize", "breaker_size" } ,
@@ -6822,7 +6822,7 @@ namespace RoadaWebService
                                        { "type", "type" } ,
                                        { "latitude", "latitude" },
                                        { "longitude", "longitude" }
-                                
+
                                    };
 
         [WebMethod(Description = "Add a HighMast")]
@@ -6898,7 +6898,7 @@ namespace RoadaWebService
         private HighMast fillHighmast(SqlStmt stmt)
         {
             HighMast hm = new HighMast();
-        
+
 
             hm.structure = stmt.fetch("structure");
             hm.powerSupplyLocation = stmt.fetch("power_supply_location");
@@ -6913,7 +6913,7 @@ namespace RoadaWebService
             hm.numFixtures = stmt.ifetch("num_fixtures");
             hm.raisedLowerd = stmt.ifetch("raisedL_lowerd");
             hm.luminaireVolt = stmt.fetch("luminaire_volt");
-            hm.breakerSize = stmt.fetch("breaker_size"); 
+            hm.breakerSize = stmt.fetch("breaker_size");
             hm.note = stmt.fetch("notes");
             hm.latitude = stmt.dfetch("latitude");
             hm.longitude = stmt.dfetch("longitude");
@@ -8678,7 +8678,7 @@ namespace RoadaWebService
                     DateTime now = DateTime.Now.ToLocalTime();
 
 
-                    sql.Add("structure", data.structure);               
+                    sql.Add("structure", data.structure);
                     sql.Add("date", data.date);
                     sql.Add("user_name", data.userName);
                     sql.Add("phone", data.phone);
@@ -8687,7 +8687,7 @@ namespace RoadaWebService
                     sql.Add("repair", data.repair);
                     sql.Add("risk", data.risk);
                     sql.Add("scope", data.scope);
-                    sql.Add("notes", data.notes);            
+                    sql.Add("notes", data.notes);
                     sql.Add("reco", data.reco);
                     sql.Add("file_num", data.fileNum);
                     sql.Add("repKey", data.repKey);
@@ -9353,11 +9353,11 @@ namespace RoadaWebService
                             if (item.structure != null && item.structure.Length > 0)
                             {
 
-                                bool brc = stmt.DoSQLFormat("SELECT TOP {0} * FROM inspection__high_mast_lite WHERE structure='{1}' ORDER BY date desc", maxInsp, item.structure );
+                                bool brc = stmt.DoSQLFormat("SELECT TOP {0} * FROM inspection__high_mast_lite WHERE structure='{1}' ORDER BY date desc", maxInsp, item.structure);
                                 while (brc)
                                 {
                                     HighMastInspectionData hm = new HighMastInspectionData();
-                           
+
                                     hm.structure = stmt.fetch("structure");
                                     hm.date = stmt.dtfetch("date");
                                     hm.userName = stmt.fetch("user_name");
@@ -9396,7 +9396,7 @@ namespace RoadaWebService
                                     {
                                         HighMastItem hmi = new HighMastItem();
 
-                                        hmi.issue = stmt2.ifetch("issue");                         
+                                        hmi.issue = stmt2.ifetch("issue");
                                         hmi.note = stmt2.fetch("note");
                                         hmi.tstate = stmt2.ifetch("tstate");
 
@@ -11595,7 +11595,7 @@ namespace RoadaWebService
                             CommentData com = new CommentData();
                             com.comment = stmt.fetch("comment");
                             com.roadSegment = stmt.fetch("seg_id");
-                            com.sent = stmt.dtfetch("start_time");
+                            com.sent = fromUTC(stmt.dtfetch("start_time"));
                             com.user = (stmt.fetch("first_name") + " " + stmt.fetch("last_name")).Trim();
                             if (com.user == string.Empty)
                                 com.user = stmt.fetch("driver");
