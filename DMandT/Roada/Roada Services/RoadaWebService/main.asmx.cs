@@ -2244,6 +2244,61 @@ namespace RoadaWebService
 
         [WebMethod(Description = "Check for activation for React App JSON")]
         [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public GoUser WebLogJson(Request req, string data)
+        {
+            return PhoneLogin(req, data);
+        }
+
+        [WebMethod(Description = "Login request for phone app")]
+        public GoUser PhoneLogin(Request request, string data)
+        {
+            GoUser response = new GoUser();
+            response.username = string.Empty;
+
+            // added security!!
+            if (LowSecurityCheck(request, "PhoneLogin"))
+            {
+                string connStr = CustConnectionString(request);
+                SqlStmt stmt = null;
+                try
+                {
+                    if (GetStmt(connStr, out stmt))
+                    {
+                        string[] passUser = data.Split('¿');
+                        if(passUser.Length > 1)
+                        {
+                            if(stmt.DoSQLFormat("select * from users where username='{0}'", passUser[1]))
+                            {
+                                if (passUser[0] == stmt.fetch("password"))
+                                {
+                                    response.username = stmt.fetch("username");
+                                    response.email = stmt.fetch("email");
+                                    response.firstname = stmt.fetch("first_name");
+                                    response.lastname = stmt.fetch("last_name");
+                                    response.phonenumber = stmt.fetch("phone_number");
+                                    response.title = stmt.fetch("title");
+                                }
+                            }
+                        }    
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Global.messLog.Flush("PhoneLogin" + ex.Message);
+                    InsertErrorRecord(request.CustCode, "PhoneLogin() " + ex.Message, request);
+                }
+                finally
+                {
+                    if (stmt != null)
+                        stmt.Close();
+                }
+            }
+            return response;
+        }
+
+
+        [WebMethod(Description = "Check for activation for React App JSON")]
+        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
         public CommResponse PhoneLoginJson(Request req, string imei)
         {
             return PhoneSoft(req, imei);
