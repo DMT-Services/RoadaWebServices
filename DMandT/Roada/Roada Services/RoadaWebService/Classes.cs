@@ -85,6 +85,10 @@ namespace RoadaWebService
         [DataMember]
         public string Postal { get; set; }
         [DataMember]
+        public double Latitude { get; set; }
+        [DataMember]
+        public double Longitude { get; set; }
+        [DataMember]
         public string Phone { get; set; }
         [DataMember]
         public string GEOFence { get; set; }
@@ -98,6 +102,8 @@ namespace RoadaWebService
         public bool Visible { get; set; }
         [DataMember]
         public int Dc_Id { get; set; }
+        [DataMember]
+        public int ContractId { get; set; }
     }
 
     public class PatrolTripData
@@ -2418,7 +2424,20 @@ namespace RoadaWebService
         [DataMember]
         public string vehicles { get; set; }
         [DataMember]
+        public string[] Clist { get; set; }
+        [DataMember]
+        public string[] DClist { get; set; }
+        [DataMember]
         public string[] Vlist { get; set; }
+    }
+
+    [DataContract]
+    public class Contract
+    {
+        [DataMember]
+        public int Id { get; set; }
+        [DataMember]
+        public string Name { get; set; }
     }
 
     [DataContract]
@@ -2426,6 +2445,8 @@ namespace RoadaWebService
     {
         [DataMember]
         public int Id { get; set; }
+        [DataMember]
+        public int DcId { get; set; }
         [DataMember]
         public int fleetID { get; set; }
         [DataMember]
@@ -2462,6 +2483,7 @@ namespace RoadaWebService
         [DataMember]
         public bool HasSpreader { get; set; }
     }
+
     [DataContract]
     public class ImgInfo
     {
