@@ -6514,12 +6514,17 @@ namespace RoadaWebService
 
         [WebMethod(Description = "Retrieve vehicle list, optionally filtered by fleetId and username role, as JSON")]
         [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
-        public Vehicle[] GetVehicleListJsonRole(Request req, string username)
+        public Vehicle[] GetVehicleListJsonRole(Request req, string username, bool? patrol)
         {
+            // default to only patrol vehicles
+            bool pPatrol = true;
+            if (patrol != null)
+                pPatrol = (bool)patrol;
+
             //, int? fleetId, string username
             // can't do OUT parameters in JSON, as far as I've been able to find...
             int vv = 0;
-            return GetVehicleListRole(req, null, true, username, out vv);
+            return GetVehicleListRole(req, null, pPatrol, username, out vv);
         }
 
         [WebMethod(Description = "Retrieve highway listas JSON")]
@@ -6651,7 +6656,7 @@ namespace RoadaWebService
 
         private void vehicleSql(SqlStmt stmt, string whereStr, string para, List<Vehicle> vehicles)
         {
-            bool rc = stmt.DoSQLFormat("SELECT vehicles.*,handheld.id as hid,fleet.distribution_id as dc_id FROM vehicles LEFT JOIN handheld ON handheld.hand_code=vehicles.hand_code LEFT JOIN fleet on vehicles.fleet=fleet.id " + whereStr + " ORDER BY vehicles.unit_num", para);
+            bool rc = stmt.DoSQLFormat("SELECT vehicles.*,handheld.id as hid,handheld.last_lat,handheld.last_long,handheld.last_date,fleet.distribution_id as dc_id FROM vehicles LEFT JOIN handheld ON handheld.hand_code=vehicles.hand_code LEFT JOIN fleet on vehicles.fleet=fleet.id " + whereStr + " ORDER BY vehicles.unit_num", para);
             while (rc)
             {
                 Vehicle v = new Vehicle();
@@ -6663,6 +6668,9 @@ namespace RoadaWebService
                 v.License = stmt.fetch("license");
                 v.Type = stmt.ifetch("type");
                 v.Odom = stmt.dfetch("gps_odom");
+                v.LastGPS = stmt.dtfetch("last_date");
+                v.LastLat = stmt.dfetch("last_lat");
+                v.LastLong = stmt.dfetch("last_long");
                 v.HHFlag = !stmt.IsNull("hid");        // new mobile viewer app needs to know if a handheld record exists, if not it ignores the vehicle
 
                 vehicles.Add(v);

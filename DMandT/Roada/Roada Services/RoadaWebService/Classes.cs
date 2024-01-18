@@ -2456,6 +2456,8 @@ namespace RoadaWebService
         [DataMember]
         public string License { get; set; }
         [DataMember]
+        public DateTime LastGPS { get; set; }
+        [DataMember]
         public double LastLat { get; set; }
         [DataMember]
         public double LastLong { get; set; }
