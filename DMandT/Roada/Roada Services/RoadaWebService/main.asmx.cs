@@ -6512,19 +6512,26 @@ namespace RoadaWebService
             return GetVehicleListEx(req, fleetId, true, out vv);
         }
 
-        [WebMethod(Description = "Retrieve vehicle list, optionally filtered by fleetId and username role, as JSON")]
+        [WebMethod(Description = "Retrieve vehicle list, optionally filtered by fleetId and username for roles, as JSON")]
         [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
-        public Vehicle[] GetVehicleListJsonRole(Request req, string username, bool? patrol)
+        public Vehicle[] GetVehicleListJsonRoleEx(Request req, string username, bool? patrol)
         {
-            // default to only patrol vehicles
-            bool pPatrol = true;
+            bool pPatrol = false;
             if (patrol != null)
                 pPatrol = (bool)patrol;
-
-            //, int? fleetId, string username
             // can't do OUT parameters in JSON, as far as I've been able to find...
             int vv = 0;
             return GetVehicleListRole(req, null, pPatrol, username, out vv);
+        }
+
+        [WebMethod(Description = "Retrieve PATROL ONLY vehicle list, optionally filtered by fleetId and username for roles, as JSON")]
+        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public Vehicle[] GetVehicleListJsonRole(Request req, string username)
+        {
+            //, int? fleetId, string username
+            // can't do OUT parameters in JSON, as far as I've been able to find...
+            int vv = 0;
+            return GetVehicleListRole(req, null, true, username, out vv);
         }
 
         [WebMethod(Description = "Retrieve highway listas JSON")]
