@@ -12,6 +12,7 @@ using System.Web.Configuration;
 using System.Web.Script.Services;
 using System.Drawing;
 using System.Drawing.Imaging;
+using System.Collections;
 
 using DMTServices;
 
@@ -6491,7 +6492,12 @@ namespace RoadaWebService
             return GetAppVersion(req);
         }
 
-
+        [WebMethod(Description = "Retrieve vehicle locations, filtered by username for roles, and by contact and/or yard as JSON")]
+        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public Vehicle[] GetVehicleLocationJsonRole(Request req, DateTime lastDate, string username, int contract_no = 0, int yard_no = 0)
+        {
+            return GetVehicleLocationRole(req, lastDate, username, contract_no, yard_no);
+        }
 
         [WebMethod(Description = "Retrieve vehicle list, optionally filtered by fleetId, as JSON")]
         [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
@@ -6501,7 +6507,6 @@ namespace RoadaWebService
             int vv = 0;
             return GetVehicleList(req, fleetId, out vv);
         }
-
 
         [WebMethod(Description = "Retrieve vehicle list, optionally filtered by fleetId, as JSON")]
         [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
@@ -6639,6 +6644,12 @@ namespace RoadaWebService
 
         private static void getRoleResources(SqlStmt stmt, Role usersRoles)
         {
+            getRoleResources(stmt, usersRoles, 0, 0);
+
+        }
+
+        private static void getRoleResources(SqlStmt stmt, Role usersRoles, int contract_no, int dc_no)
+        {
             string[] alist = new string[0];
             string[] ylist = new string[0];
             string[] vlist = new string[0];
@@ -6656,9 +6667,114 @@ namespace RoadaWebService
                 rc = stmt.dbSkip();
             }
 
+            if (contract_no + dc_no > 0)
+            {
+                // get the 'link' between vehicle/yard and vehicle/contract
+                List<string> units = new List<string>(vlist);
+                rc = stmt.DoSQL("select v.unit_num,d.id as dc_no,y.yard_no as contract_no from vehicles v left join fleet f on v.fleet=f.id left join distribution_center d on f.distribution_id=d.id left join yard y on d.yard_no=y.yard_no");
+                while (rc)
+                {
+                    string unit = stmt.fetch("unit_num");
+
+                    if (units.Contains(unit))
+                    {
+                        int cont = stmt.ifetch("contract_no");
+                        int dc = stmt.ifetch("dc_no");
+
+                        if ((contract_no > 0 && cont != contract_no) || (dc_no > 0 && dc != dc_no))
+                            units.Remove(unit);
+                    }
+
+                    rc = stmt.dbSkip();
+                }
+                vlist = units.ToArray();
+            }
             usersRoles.Clist = alist;
             usersRoles.DClist = ylist;
             usersRoles.Vlist = vlist;
+        }
+
+        [WebMethod(Description = "Retrieve vehicle locations")]
+        public Vehicle[] GetVehicleLocationRole(Request request, DateTime lastDate, string username, int contract_no = 0, int yard_no = 0)
+        {
+            Vehicle[] Result = null;
+            Role usersRoles = new Role();
+            usersRoles.username = string.Empty;
+            if (LowSecurityCheck(request, "GetVehicleListRole"))
+            {
+                string connStr = CustConnectionString(request);
+                SqlStmt stmt = null;
+                try
+                {
+                    if (GetStmt(connStr, out stmt))
+                    {
+                        List<Vehicle> vehicles = new List<Vehicle>();
+
+                        SqlHelper qwhere = new SqlHelper();
+                        if (username != null && username.Length > 0 && username.ToLower() != "dmtadm")
+                        {
+                            usersRoles.username = username;
+
+                            getRoleResources(stmt, usersRoles, contract_no, yard_no);
+
+                            qwhere.Add("v.unit_num", new ArrayList(usersRoles.Vlist));        // unitWhere = "unit_num in ('" + string.Join("','", usersRoles.Vlist) + "')";
+                        }
+                        else
+                        {
+                            if (contract_no + yard_no > 0)
+                            {
+                                if (yard_no > 0)
+                                    qwhere.Add("d.id", yard_no);    //exWhere = string.Format("dc_no={0}", yard_no);
+                                else if (contract_no > 0)
+                                    qwhere.Add("y.yard_no", contract_no); //exWhere = string.Format("contract_no={0}", contract_no);
+                            }
+                        }
+
+                        if (lastDate != DateTime.MinValue)
+                        {
+                            int ndx = qwhere.Add("last_date", SqlHelper.timeStamp(lastDate), false);      // where += string.Format("WHERE last_date>={0}", SqlHelper.timeStamp(lastDate));
+                            qwhere.SetCompare(ndx - 1, ">=");
+                        }
+                        string where = qwhere.BuildWhere();
+                        if (where != string.Empty)
+                            where = " WHERE " + where;
+
+                        bool rc = stmt.DoSQL("select h.id as hid,h.hand_code,h.last_lat,h.last_long,h.last_date,v.vehicle,v.unit_num,v.type,d.id as dc_id from handheld h left join vehicles v on h.hand_code=v.hand_code left join fleet f on v.fleet=f.id left join distribution_center d on f.distribution_id=d.id left join yard y on d.yard_no=y.yard_no" + where);
+                        while (rc)
+                        {
+                            Vehicle v = new Vehicle();
+                            v.Id = stmt.ifetch("vehicle");
+                            v.fleetID = stmt.ifetch("fleet");
+                            v.DcId = stmt.ifetch("dc_id");
+                            v.DevId = stmt.ifetch("hand_code");
+                            v.UnitNum = stmt.fetch("unit_num");
+                            v.License = stmt.fetch("license");
+                            v.Type = stmt.ifetch("type");
+                            v.Odom = stmt.dfetch("gps_odom");
+                            v.LastGPS = stmt.dtfetch("last_date");
+                            v.LastLat = stmt.dfetch("last_lat");
+                            v.LastLong = stmt.dfetch("last_long");
+                            v.HHFlag = !stmt.IsNull("hid");        // new mobile viewer app needs to know if a handheld record exists, if not it ignores the vehicle
+
+                            vehicles.Add(v);
+
+                            rc = stmt.dbSkip();
+                        }
+                        Result = vehicles.ToArray();
+                        vehicles.Clear();
+                    }
+                }
+                finally
+                {
+                    if (stmt != null)
+                    {
+                        stmt.Close();
+                        stmt = null;
+                    }
+                }
+            }
+
+            return Result;
         }
 
         private void vehicleSql(SqlStmt stmt, string whereStr, string para, List<Vehicle> vehicles)
@@ -6704,7 +6820,7 @@ namespace RoadaWebService
                         if (stmt.DoSQL("SELECT TOP 1 vehicles FROM go_update"))
                             VehicleVersion = stmt.ifetch("vehicles");
                         List<Vehicle> vehicles = new List<Vehicle>();
-                        if (username != null && username.Length > 0)
+                        if (username != null && username.Length > 0 && username.ToLower() != "dmtadm")
                         {
                             usersRoles.username = username;
 
