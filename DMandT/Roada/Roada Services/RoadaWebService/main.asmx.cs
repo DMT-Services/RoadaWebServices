@@ -1402,7 +1402,7 @@ namespace RoadaWebService
         {
             List<Yard> dcs = new List<Yard>(RequestYards(req));
             if (dcs.Count > 0)
-                if (username != null && username.Length > 0)
+                if (username != null && username.Length > 0 && username.ToLower() != "dmtadm")
                 {
                     Role usersRoles = new Role();
                     usersRoles.username = username;
@@ -6494,7 +6494,7 @@ namespace RoadaWebService
 
         [WebMethod(Description = "Retrieve vehicle locations, filtered by username for roles, and by contact and/or yard as JSON")]
         [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
-        public Vehicle[] GetVehicleLocationJsonRole(Request req, DateTime lastDate, string username, int contract_no = 0, int yard_no = 0)
+        public Vehicle[] GetVehicleLocationJsonRole(Request req, DateTime lastDate, string username, int contract_no, int yard_no)
         {
             return GetVehicleLocationRole(req, lastDate, username, contract_no, yard_no);
         }
@@ -6695,12 +6695,12 @@ namespace RoadaWebService
         }
 
         [WebMethod(Description = "Retrieve vehicle locations")]
-        public Vehicle[] GetVehicleLocationRole(Request request, DateTime lastDate, string username, int contract_no = 0, int yard_no = 0)
+        public Vehicle[] GetVehicleLocationRole(Request request, DateTime lastDate, string username, int contract_no, int yard_no)
         {
             Vehicle[] Result = null;
             Role usersRoles = new Role();
             usersRoles.username = string.Empty;
-            if (LowSecurityCheck(request, "GetVehicleListRole"))
+            if (LowSecurityCheck(request, "GetVehicleLocationRole"))
             {
                 string connStr = CustConnectionString(request);
                 SqlStmt stmt = null;
@@ -6729,8 +6729,8 @@ namespace RoadaWebService
                                     qwhere.Add("y.yard_no", contract_no); //exWhere = string.Format("contract_no={0}", contract_no);
                             }
                         }
-
-                        if (lastDate != DateTime.MinValue)
+                        // new Date(0) in Javascript (React) is Jan 1st 1970
+                        if (lastDate != null && lastDate != DateTime.MinValue && lastDate != new DateTime(1970, 1, 1))
                         {
                             int ndx = qwhere.Add("last_date", SqlHelper.timeStamp(lastDate), false);      // where += string.Format("WHERE last_date>={0}", SqlHelper.timeStamp(lastDate));
                             qwhere.SetCompare(ndx - 1, ">=");
@@ -6923,7 +6923,7 @@ namespace RoadaWebService
                     {
                         List<Contract> contracts = new List<Contract>();
                         string whereStr = string.Empty;
-                        if (username != null && username.Length > 0)
+                        if (username != null && username.Length > 0 && username.ToLower() != "dmtadm")
                         {
                             usersRoles.username = username;
 
