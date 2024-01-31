@@ -1402,6 +1402,9 @@ namespace RoadaWebService
         {
             List<Yard> dcs = new List<Yard>(RequestYards(req));
             if (dcs.Count > 0)
+            {
+                // if there are 2 fleet records pointing to same dc record you end up with dups, this removes them
+                dcs = dcs.Distinct(new YardEqualityComparer()).ToList();
                 if (username != null && username.Length > 0 && username.ToLower() != "dmtadm")
                 {
                     Role usersRoles = new Role();
@@ -1434,6 +1437,8 @@ namespace RoadaWebService
                     }
 
                 }
+            }
+
             return dcs.ToArray();
         }
 
@@ -6494,7 +6499,7 @@ namespace RoadaWebService
 
         [WebMethod(Description = "Retrieve vehicle locations, filtered by username for roles, and by contact and/or yard as JSON")]
         [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
-        public Vehicle[] GetVehicleLocationJsonRole(Request req, DateTime lastDate, string username, int contract_no, int yard_no)
+        public VehicleInfo[] GetVehicleLocationJsonRole(Request req, DateTime lastDate, string username, int contract_no, int yard_no)
         {
             return GetVehicleLocationRole(req, lastDate, username, contract_no, yard_no);
         }
@@ -6695,9 +6700,9 @@ namespace RoadaWebService
         }
 
         [WebMethod(Description = "Retrieve vehicle locations")]
-        public Vehicle[] GetVehicleLocationRole(Request request, DateTime lastDate, string username, int contract_no, int yard_no)
+        public VehicleInfo[] GetVehicleLocationRole(Request request, DateTime lastDate, string username, int contract_no, int yard_no)
         {
-            Vehicle[] Result = null;
+            VehicleInfo[] Result = null;
             Role usersRoles = new Role();
             usersRoles.username = string.Empty;
             if (LowSecurityCheck(request, "GetVehicleLocationRole"))
@@ -6708,7 +6713,7 @@ namespace RoadaWebService
                 {
                     if (GetStmt(connStr, out stmt))
                     {
-                        List<Vehicle> vehicles = new List<Vehicle>();
+                        List<VehicleInfo> vehicles = new List<VehicleInfo>();
 
                         SqlHelper qwhere = new SqlHelper();
                         if (username != null && username.Length > 0 && username.ToLower() != "dmtadm")
@@ -6729,35 +6734,46 @@ namespace RoadaWebService
                                     qwhere.Add("y.yard_no", contract_no); //exWhere = string.Format("contract_no={0}", contract_no);
                             }
                         }
+                        DateTime chkDate = DateTime.MinValue;
                         // new Date(0) in Javascript (React) is Jan 1st 1970
                         if (lastDate != null && lastDate != DateTime.MinValue && lastDate != new DateTime(1970, 1, 1))
                         {
-                            int ndx = qwhere.Add("last_date", SqlHelper.timeStamp(lastDate), false);      // where += string.Format("WHERE last_date>={0}", SqlHelper.timeStamp(lastDate));
-                            qwhere.SetCompare(ndx - 1, ">=");
+                            // faster to do the select without this 'where' and filter out when reading
+                            chkDate = lastDate;
+                            //int ndx = qwhere.Add("last_date", SqlHelper.timeStamp(lastDate), false);      // where += string.Format("WHERE last_date>={0}", SqlHelper.timeStamp(lastDate));
+                            //qwhere.SetCompare(ndx - 1, ">=");
                         }
+
+
                         string where = qwhere.BuildWhere();
                         if (where != string.Empty)
                             where = " WHERE " + where;
 
-                        bool rc = stmt.DoSQL("select h.id as hid,h.hand_code,h.last_lat,h.last_long,h.last_date,v.vehicle,v.unit_num,v.type,d.id as dc_id from handheld h left join vehicles v on h.hand_code=v.hand_code left join fleet f on v.fleet=f.id left join distribution_center d on f.distribution_id=d.id left join yard y on d.yard_no=y.yard_no" + where);
+                        bool rc = stmt.DoSQL("select h.id as hid,h.hand_code,h.last_lat,h.last_long,h.last_date,v.vehicle,v.unit_num,v.gps_odom,m.degrees,m.speed,m.temp_air,m.temp_road from vehicles v " +
+                                                 "LEFT JOIN handheld h on v.hand_code=h.hand_code " +
+                                                 "LEFT JOIN messagein m with (nolock) ON m.hand_code=v.hand_code AND m.rdate=h.last_date " +
+                                                 "LEFT JOIN fleet f on v.fleet=f.id " +
+                                                 "LEFT JOIN distribution_center d on f.distribution_id=d.id " +
+                                                 "LEFT JOIN yard y on d.yard_no=y.yard_no" + where);
                         while (rc)
                         {
-                            Vehicle v = new Vehicle();
-                            v.Id = stmt.ifetch("vehicle");
-                            v.fleetID = stmt.ifetch("fleet");
-                            v.DcId = stmt.ifetch("dc_id");
-                            v.DevId = stmt.ifetch("hand_code");
-                            v.UnitNum = stmt.fetch("unit_num");
-                            v.License = stmt.fetch("license");
-                            v.Type = stmt.ifetch("type");
-                            v.Odom = stmt.dfetch("gps_odom");
-                            v.LastGPS = stmt.dtfetch("last_date");
-                            v.LastLat = stmt.dfetch("last_lat");
-                            v.LastLong = stmt.dfetch("last_long");
-                            v.HHFlag = !stmt.IsNull("hid");        // new mobile viewer app needs to know if a handheld record exists, if not it ignores the vehicle
+                            DateTime rdate = stmt.dtfetch("last_date");
+                            if (chkDate == DateTime.MinValue || rdate >= lastDate)
+                            {
+                                VehicleInfo v = new VehicleInfo();
+                                v.Id = stmt.ifetch("vehicle");
+                                v.UnitNum = stmt.fetch("unit_num");
+                                v.LastGPS = rdate;
+                                v.LastLat = stmt.dfetch("last_lat");
+                                v.LastLong = stmt.dfetch("last_long");
+                                v.degrees = stmt.ifetch("degrees");
+                                v.speed = stmt.ifetch("speed");
+                                v.tempAir = stmt.dfetch("temp_air");
+                                v.tempRoad = stmt.dfetch("temp_road");
+                                v.Odom = stmt.dfetch("gps_odom");
 
-                            vehicles.Add(v);
-
+                                vehicles.Add(v);
+                            }
                             rc = stmt.dbSkip();
                         }
                         Result = vehicles.ToArray();

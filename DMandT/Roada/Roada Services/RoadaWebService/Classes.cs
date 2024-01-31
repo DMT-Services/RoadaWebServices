@@ -106,6 +106,20 @@ namespace RoadaWebService
         public int ContractId { get; set; }
     }
 
+    public class YardEqualityComparer : IEqualityComparer<Yard>
+    {
+        public bool Equals(Yard a, Yard b)
+        {
+            return (a.Id == b.Id);
+        }
+
+        public int GetHashCode(Yard a)
+        {
+            return a.Id.GetHashCode();
+        }
+
+    }
+
     public class PatrolTripData
     {
         public int TripId;              // (Server) Database determined only!  Reverse match-up can be achived using h/c, user & time.
@@ -2467,6 +2481,31 @@ namespace RoadaWebService
         public double Odom { get; set; }
         [DataMember(IsRequired = false, EmitDefaultValue = false)]
         public bool HHFlag { get; set; }
+    }
+
+    [DataContract]
+    public class VehicleInfo
+    {
+        [DataMember]
+        public int Id { get; set; }
+        [DataMember]
+        public string UnitNum { get; set; }
+        [DataMember]
+        public DateTime LastGPS { get; set; }
+        [DataMember]
+        public double LastLat { get; set; }
+        [DataMember]
+        public double LastLong { get; set; }
+        [DataMember]
+        public int degrees { get; set; }
+        [DataMember]
+        public int speed { get; set; }
+        [DataMember]
+        public double tempAir { get; set; }
+        [DataMember]
+        public double tempRoad { get; set; }
+        [DataMember]
+        public double Odom { get; set; }
     }
 
     [DataContract]
