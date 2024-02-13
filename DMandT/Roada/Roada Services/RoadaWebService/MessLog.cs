@@ -172,17 +172,17 @@ namespace DMTServices
         }
 #endif
 
-        public void Flush(string msg, params object[] args)
+        public virtual void Flush(string msg, params object[] args)
         {
             iFlush(string.Format(msg, args));
         }
 
-        public void Flush(string msg)
+        public virtual void Flush(string msg)
         {
             iFlush(msg);
         }
 
-        public void Flush()
+        public virtual void Flush()
         {
             iFlush(string.Empty);
         }
