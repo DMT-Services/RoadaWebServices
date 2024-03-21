@@ -5863,6 +5863,65 @@ namespace RoadaWebService
 
             return result.ToArray();
         }
+
+        string[,] rwisLayout = { { "LocId", "LocId"},
+                                       { "TempDate", "tdate"},
+                                       { "SurfaceTemp", "SurfaceTemp"},
+                                       { "AirTemp", "AirTemp"},
+                                       { "DewPoint", "DewPoint"},
+                                       { "Humidity", "Humidity"},
+                                       { "ImgDate", "fdate"},
+                                       { "ImageUrl", "img_url"} };
+
+        [WebMethod(Description = "Returns all RWIS Data since hrsBack")]
+        public RWISData[] GetRWISData(Request req)
+        {
+            List<RWISData> result = new List<RWISData>();
+
+            // low security check, don't want hackers!
+            if (LowSecurityCheck(req, "GetRWISData"))
+            {
+                string connStr = CustConnectionString(req);
+                SqlStmt stmt = null;
+                try
+                {
+                    if (GetStmt(connStr, out stmt))
+                    {
+                        bool rc = stmt.DoSQL("select * from rwis_images");
+                        while (rc)
+                        {
+                            RWISData rwisData = new RWISData();
+                            procData.fillClass(rwisData, rwisLayout, stmt);
+
+                            result.Add(rwisData);
+
+                            rc = stmt.dbSkip();
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Global.messLog.Flush("GetRWISData() data failed to retrieve: " + ex.Message);
+                    InsertErrorRecord(req.CustCode, string.Format("GetRWISData() data failed to retrieve HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, ex.Message), req);
+                }
+                finally
+                {
+                    if (stmt != null)
+                        stmt.Close();
+                }
+            }
+
+
+            return result.ToArray();
+        }
+
+        [WebMethod(Description = "Return RWIS Data as JSON")]
+        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public RWISData[] GetRWISDataJson(Request req)
+        {
+            return GetRWISData(req);
+        }
+
         #endregion
 
         [WebMethod(Description = "Return Deficiency Data as JSON")]

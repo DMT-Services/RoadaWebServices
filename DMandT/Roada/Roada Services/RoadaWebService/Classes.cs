@@ -269,6 +269,27 @@ namespace RoadaWebService
     }
 
     [DataContract]
+    public class RWISData
+    {
+        [DataMember]
+        public string LocID { get; set; }
+        [DataMember]
+        public DateTime TempDate { get; set; }
+        [DataMember]
+        public double SurfaceTemp { get; set; }
+        [DataMember]
+        public double AirTemp { get; set; }
+        [DataMember]
+        public double DewPoint { get; set; }
+        [DataMember]
+        public double Humidity { get; set; }
+        [DataMember]
+        public DateTime ImgDate { get; set; }
+        [DataMember]
+        public string ImageURL { get; set; }
+    }
+
+    [DataContract]
     public class DeficiencyData
     {
         [DataMember(IsRequired = false, EmitDefaultValue = false)]
