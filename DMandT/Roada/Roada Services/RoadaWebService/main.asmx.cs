@@ -6563,6 +6563,58 @@ namespace RoadaWebService
             return GetVehicleLocationRole(req, lastDate, username, contract_no, yard_no);
         }
 
+        [WebMethod(Description = "Retrieve customer list")]
+        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public AppServerInfo[] GetCustomerListJson(Request req)
+        {
+            return GetCustomerList(req);
+        }
+
+        private AppServerInfo[] GetCustomerList(Request req)
+        {
+            List<AppServerInfo> Result = new List<AppServerInfo>();
+            if (LowSecurityCheck(req, "GetCustomerList"))
+            {
+                SqlStmt stmt = new SqlStmt("MainConn");
+                try
+                {
+                    stmt.Mess = Global.messLog;
+
+                    bool rc = stmt.DoSQL("SELECT * FROM customer WHERE isnull(go_weburl,'')<>''");
+                    while (rc)
+                    {
+                        AppServerInfo ServerInfo = new AppServerInfo();
+
+                        ServerInfo.customerCode = stmt.fetch("cust_code");
+                        ServerInfo.Name = stmt.fetch("name");
+                        ServerInfo.WebServiceUrl = stmt.fetch("go_weburl");
+                        ServerInfo.PhotoBucket = stmt.fetch("go_photo_bucket");
+                        ServerInfo.PickupBucket = stmt.fetch("go_pickup_bucket");
+                        ServerInfo.ReportBucket = stmt.fetch("go_report_bucket");
+                        ServerInfo.ObjStoreUrl = stmt.fetch("obj_store_url");
+                        ServerInfo.AmazonSecretKey = stmt.fetch("amz_secret_key");
+                        ServerInfo.AmazonAccessKey = stmt.fetch("amz_access_key");
+                        ServerInfo.patrolFrqURL = stmt.fetch("patrol_frq");
+                        ServerInfo.SidewalkConditions = stmt.ifetch("sidewalk_cond");
+
+                        Result.Add(ServerInfo);
+
+                        rc = stmt.dbSkip();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Global.messLog.Flush("GetCustomerList() {0}", ex.Message);
+                }
+                finally
+                {
+                    stmt.Close();
+                    stmt = null;
+                }
+            }
+            return Result.ToArray();
+        }
+
         [WebMethod(Description = "Retrieve vehicle list, optionally filtered by fleetId, as JSON")]
         [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
         public Vehicle[] GetVehicleListJson(Request req, int? fleetId)
