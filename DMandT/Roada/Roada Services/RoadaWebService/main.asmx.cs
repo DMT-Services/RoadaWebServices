@@ -12006,7 +12006,7 @@ namespace RoadaWebService
                     if (GetStmt(connStr, out stmt))
                     {
                         string sql = "select w.*,r.seg_id,u.first_name,u.last_name from weather_condition w";
-                        string where = " where isnull(w.comment, '')<>'' and w.start_time>=getdate()-1.25";
+                        string where = " where isnull(w.comment, '')<>'' and w.start_time>=getdate()-3";
                         if (!string.IsNullOrEmpty(Area))
                             where += string.Format(" and w.vehicle_id in (select vehicle from vehicles where fleet in (select id from fleet where distribution_id in (select id from distribution_center where name='{0}')))", Area);
 
