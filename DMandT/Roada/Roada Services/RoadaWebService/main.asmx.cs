@@ -3590,6 +3590,101 @@ namespace RoadaWebService
             return dInfos;
         }
 
+        [WebMethod(Description = "Push WRR Report Data Json")]
+        [ScriptMethod(UseHttpGet = false, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public int SendWrrJson(Request req, wrrData wdata)
+        {
+            return SendWrr(req, wdata);
+        }
+        private int SendWrr(Request req, wrrData wdata)
+        {
+
+            int Result = 0;
+            // low security check, don't want hackers!
+            if (!LowSecurityCheck(req, "SendWeatherReport"))
+                return -2;
+
+            string connStr = CustConnectionString(req);
+            SqlStmt stmt = null;
+            try
+            {
+                Result = -3;
+                if (GetStmt(connStr, out stmt))
+                {
+                    SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
+                    
+                        sql.Clear();
+                        sql.Add("username", wdata.username);
+                        sql.Add("date", wdata.date);
+                        sql.Add("handcode", wdata.handcode);
+                        sql.Add("unitnum", wdata.unitnum);
+                        sql.Add("yard", wdata.yard);
+                        sql.Add("avlgps", wdata.avlgps);
+                        sql.Add("avlnote", wdata.avlnote);
+                        sql.Add("antenna", wdata.antenna);
+                        sql.Add("antennaNote", wdata.antennaNote);
+                        sql.Add("camera", wdata.camera);
+                        sql.Add("cameraNote", wdata.cameraNote);
+                        sql.Add("gpslocation", wdata.gpslocation);
+                        sql.Add("gpsNote", wdata.gpsNote);
+                        sql.Add("modem", wdata.modem);
+                        sql.Add("modemNote", wdata.modemNote);
+                        sql.Add("ignition", wdata.ignition);
+                        sql.Add("ignitionNote", wdata.ignitionNote);
+                        sql.Add("plowup", wdata.plowup);
+                        sql.Add("plowupNote", wdata.plowupNote);
+                        sql.Add("plowdown", wdata.plowdown);
+                        sql.Add("plowdownNote", wdata.plowdownNote);
+                        sql.Add("wingup", wdata.wingup);
+                        sql.Add("wingupNote", wdata.wingupNote);
+                        sql.Add("wingdown", wdata.wingdown);
+                        sql.Add("wingdownNote", wdata.wingdownNote);
+                        sql.Add("ECM", wdata.ECM);
+                        sql.Add("ECMnote", wdata.ECMnote);
+                        sql.Add("spreader", wdata.spreader);
+                        sql.Add("spreaderNote", wdata.spreaderNote);
+                        sql.Add("spreaderMatch", wdata.spreaderMatch);
+                        sql.Add("spreaderMatchNote", wdata.spreaderMatchNote);
+                        sql.Add("material", wdata.material);                   
+                        sql.Add("materialNote", wdata.materialNote);
+                        sql.Add("blue", wdata.blue);
+                        sql.Add("blueNote", wdata.blueNote);
+                        sql.Add("amber", wdata.amber);
+                        sql.Add("amberNote", wdata.amberNote);
+                        sql.Add("airtemp", wdata.airtemp);
+                        sql.Add("airNote", wdata.airNote);
+                        sql.Add("roadtemp", wdata.roadtemp);
+                        sql.Add("roadNote", wdata.roadNote);
+                        sql.Add("camerapower", wdata.camerapower);
+                        sql.Add("camerapowerNote", wdata.camerapowerNote);
+                        sql.Add("cameramount", wdata.cameramount);
+                        sql.Add("cameramountNote", wdata.cameramountNote);
+                        sql.Add("camerareport", wdata.camerareport);
+                        sql.Add("camerareportNote", wdata.camerareportNote);
+                        sql.Add("testimage", wdata.testimage);
+                        sql.Add("testimageNote", wdata.testimageNote);
+
+
+                    stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO winter_ready"));
+
+                        Result = 1;
+                    
+                }
+            }
+            catch (Exception x)
+            {
+                Result = -4;
+                Global.messLog.Flush("SendWrrReport() HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, x.Message);
+                InsertErrorRecord(req.CustCode, "SendWrrReport() " + x.Message, req);
+            }
+            finally
+            {
+                if (stmt != null)
+                    stmt.Close();
+            }
+            return Result;
+        }
+
         [WebMethod(Description = "Push Weather Report Data Json")]
         [ScriptMethod(UseHttpGet = false, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
         public int SendWeatherReportJson(Request req, WeatherData wdata)
@@ -3602,6 +3697,9 @@ namespace RoadaWebService
         {
             return SendWeather(req, wdata);
         }
+
+     
+
 
         private int SendWeather(Request req, WeatherData wdata)
         {

@@ -2557,6 +2557,110 @@ namespace RoadaWebService
         public string ImgUrl { get; set; }
     }
 
+
+    [DataContract]
+    public class wrrData
+    {
+        [DataMember]
+        public string yard { get; set; }
+        [DataMember]
+        public int handcode { get; set; }
+        [DataMember]
+        public string unitnum {get; set;}
+        [DataMember]
+        public string username { get; set; }
+        [DataMember]
+        public DateTime date { get; set; }
+        [DataMember]
+        public bool avlgps { get; set; }
+        [DataMember]
+        public string avlnote { get; set; }
+        [DataMember]
+        public bool antenna { get; set; }
+        [DataMember]
+        public string antennaNote { get; set; }
+        [DataMember]
+        public bool camera { get; set; }
+        [DataMember]
+        public string cameraNote { get; set; }
+        [DataMember]
+        public bool gpslocation { get; set; }
+        [DataMember]
+        public string gpsNote { get; set; }
+        [DataMember]
+        public bool modem { get; set; }
+        [DataMember]
+        public string modemNote { get; set; }
+        [DataMember]
+        public bool ignition { get; set; }
+        [DataMember]
+        public string ignitionNote { get; set; }
+        [DataMember]
+        public bool plowup { get; set; }
+        [DataMember]
+        public string plowupNote { get; set; }
+        [DataMember]
+        public bool plowdown { get; set; }
+        [DataMember]
+        public string plowdownNote { get; set; }
+        [DataMember]
+        public bool wingup { get; set; }
+        [DataMember]
+        public string wingupNote { get; set; }
+        [DataMember]
+        public bool wingdown { get; set; }
+        [DataMember]
+        public string wingdownNote { get; set; }
+        [DataMember]
+        public bool ECM { get; set; }
+        [DataMember]
+        public string ECMnote { get; set; }
+        [DataMember]
+        public bool spreader { get; set; }
+        [DataMember]
+        public string spreaderNote { get; set; }
+        [DataMember]
+        public bool spreaderMatch { get; set; }
+        [DataMember]
+        public string spreaderMatchNote { get; set; }
+        [DataMember]
+        public bool material { get; set; }
+        [DataMember]
+        public string materialNote { get; set; }
+        [DataMember]
+        public bool blue { get; set; }
+        [DataMember]
+        public string blueNote { get; set; }
+        [DataMember]
+        public bool amber { get; set; }
+        [DataMember]
+        public string amberNote { get; set; }
+        [DataMember]
+        public bool airtemp { get; set; }
+        [DataMember]
+        public string airNote { get; set; }
+        [DataMember]
+        public bool roadtemp { get; set; }
+        [DataMember]
+        public string roadNote { get; set; }
+        [DataMember]
+        public bool camerapower { get; set; }
+        [DataMember]
+        public string camerapowerNote { get; set; }
+        [DataMember]
+        public bool cameramount { get; set; }
+        [DataMember]
+        public string cameramountNote { get; set; }
+        [DataMember]
+        public bool camerareport { get; set; }
+        [DataMember]
+        public string camerareportNote { get; set; }
+        [DataMember]
+        public bool testimage { get; set; }
+        [DataMember]
+        public string testimageNote { get; set; }
+    }
+
     [DataContract]
     public class DeviceInfo
     {
