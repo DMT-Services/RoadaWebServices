@@ -3601,7 +3601,7 @@ namespace RoadaWebService
 
             int Result = 0;
             // low security check, don't want hackers!
-            if (!LowSecurityCheck(req, "SendWeatherReport"))
+            if (!LowSecurityCheck(req, "SendWrr"))
                 return -2;
 
             string connStr = CustConnectionString(req);
