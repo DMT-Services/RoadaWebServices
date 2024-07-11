@@ -7543,10 +7543,15 @@ namespace RoadaWebService
 
         private string getSQLNear(string table, string structure, string searchStr, double lat, double lon, int numRows)
         {
-            return getSQLNear(table, structure, searchStr, lat, lon, numRows, string.Empty);
+            return getSQLNear(table, structure, searchStr, lat, lon, numRows, string.Empty, 0);
         }
 
         private string getSQLNear(string table, string structure, string searchStr, double lat, double lon, int numRows, string type)
+        {
+            return getSQLNear(table, structure, searchStr, lat, lon, numRows, string.Empty, 0);
+        }
+
+        private string getSQLNear(string table, string structure, string searchStr, double lat, double lon, int numRows, string type, int contract)
         {
             string whereClause = String.Empty;
             if (searchStr != string.Empty)
@@ -7555,6 +7560,9 @@ namespace RoadaWebService
                 whereClause += ((whereClause == string.Empty) ? " WHERE" : " AND") + (" a." + type);
             if (lat != 0.0 && lon != 0.0)
                 whereClause += ((whereClause == string.Empty) ? " WHERE" : " AND") + " (a.latitude is not null and a.longitude is not null)";
+            if(contract > 0)
+                whereClause += ((whereClause == string.Empty) ? " WHERE" : " AND") + string.Format(" (contract={0})", contract);
+
             string orderBy = " ORDER BY " + ((lat != 0.0 && lon != 0.0) ? string.Format(" geography::Point({0}, {1}, 4326).STDistance(geography::Point(a.latitude, a.longitude, 4326)),a.id", lat, lon) : "a." + structure);
             string distField = (lat != 0.0 && lon != 0.0) ? string.Format(",geography::Point({0}, {1}, 4326).STDistance(geography::Point(a.latitude, a.longitude, 4326)) as dist", lat, lon) : string.Empty;
 
@@ -8729,7 +8737,7 @@ namespace RoadaWebService
         }
 
         [WebMethod(Description = "Retrieve Signs closest to lat/lon pair for maxRows")]
-        public Sign[] GetSignListNear(Request request, string searchStr, double lat, double lon, int startRow, int maxRows)
+        public Sign[] GetSignListNear(Request request, string searchStr, double lat, double lon, int startRow, int maxRows, int contract)
         {
             Sign[] Result = null;
 
@@ -8741,7 +8749,7 @@ namespace RoadaWebService
                 {
                     if (GetStmt(connStr, out stmt))
                     {
-                        string sqlStr = getSQLNear("sign", "structure", searchStr, lat, lon, maxRows + startRow);
+                        string sqlStr = getSQLNear("sign", "structure", searchStr, lat, lon, maxRows + startRow, string.Empty, contract);
                         /*
                         string sqlStr;
                         if (lat == 0 && lon == 0)
@@ -11370,7 +11378,14 @@ namespace RoadaWebService
         [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
         public Sign[] GetSignsNearJson(Request req, string searchStr, double lat, double lon, int startRow, int maxRows)
         {
-            return GetSignListNear(req, searchStr, lat, lon, startRow, maxRows);
+            return GetSignListNear(req, searchStr, lat, lon, startRow, maxRows, 0);
+        }
+
+        [WebMethod(Description = "Retrieve Sign list closest to lat/lon pair for maxRows filtered by contract field")]
+        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public Sign[] GetSignsNearJsonEx(Request req, string searchStr, double lat, double lon, int startRow, int maxRows, int contract)
+        {
+            return GetSignListNear(req, searchStr, lat, lon, startRow, maxRows, contract);
         }
 
         [WebMethod(Description = "Retrieve Culvert list closest to lat/lon pair for maxRows")]
