@@ -8660,6 +8660,54 @@ namespace RoadaWebService
             return Result;
         }
 
+        public Contract[] GetSignContracts(Request request)
+        {
+            Contract[] Result = null;
+
+            if (LowSecurityCheck(request, "GetSignContracts"))
+            {
+                string connStr = CustConnectionString(request);
+                SqlStmt stmt = null;
+                try
+                {
+                    if (GetStmt(connStr, out stmt))
+                    {
+                        List<Contract> contracts = new List<Contract>();
+
+                        bool rc = stmt.DoSQL("select * from yard where yard_no in (select distinct isnull(contract,0) from asset_sign)");
+                        while(rc)
+                        {
+                            Contract v = new Contract();
+                            v.Id = stmt.ifetch("yard_no");
+                            v.Name = stmt.fetch("name");
+
+                            contracts.Add(v);
+
+                            rc = stmt.dbSkip();
+                        }
+
+                        Result = contracts.ToArray();
+                        contracts.Clear();
+                    }
+                }
+                catch (Exception x)
+                {
+                    Global.messLog.Flush("GetSignContracts() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
+                    InsertErrorRecord(request.CustCode, string.Format("GetSignContracts() Failed to send HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message), request);
+                }
+                finally
+                {
+                    if (stmt != null)
+                    {
+                        stmt.Close();
+                        stmt = null;
+                    }
+                }
+            }
+
+            return Result;
+        }
+        
         private Sign FillSign(SqlStmt stmt)
         {
             Sign s = new Sign();
@@ -11386,6 +11434,13 @@ namespace RoadaWebService
         public Sign[] GetSignsNearJsonEx(Request req, string searchStr, double lat, double lon, int startRow, int maxRows, int contract)
         {
             return GetSignListNear(req, searchStr, lat, lon, startRow, maxRows, contract);
+        }
+
+        [WebMethod(Description = "Retrieve all values in contract field of asset_sign")]
+        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public Contract[] GetSignContractsJson(Request req)
+        {
+            return GetSignContracts(req);
         }
 
         [WebMethod(Description = "Retrieve Culvert list closest to lat/lon pair for maxRows")]
