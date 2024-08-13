@@ -14,6 +14,8 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.Collections;
 
+using Newtonsoft.Json;
+
 using DMTServices;
 
 namespace RoadaWebService
@@ -7667,6 +7669,81 @@ namespace RoadaWebService
             }
             return Result;
         }
+
+        [WebMethod(Description = "Retrieve Road Segment list")]
+        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public Segment[] RequestSegmentsJson(Request req)
+        {
+            return GetSegmentList(req);
+        }
+
+        private class APoint
+        {
+            public double latitude { get; set; }
+            public double longitude { get; set; }
+        }
+
+        private string convertGeogText(string Geog)
+        {
+            string rc = string.Empty;
+            List<APoint> aPoints = new List<APoint>();
+
+            string[] points = Geog.Replace("), (", "),(").Replace("MULTILINESTRING (", "").Replace("MULTILINESTRING(", "").Split(new char[] { ')', ',', '(' });
+            foreach (string point in points)
+            {
+                string[] ll = point.Trim(' ').Split(' ');
+                if (ll.Length > 1)
+                    aPoints.Add(new APoint() { latitude = Math.Round(myConvert.ToDouble(ll[1]), 7, MidpointRounding.AwayFromZero), longitude = Math.Round(myConvert.ToDouble(ll[0]), 7, MidpointRounding.AwayFromZero) });
+            }
+            return JsonConvert.SerializeObject(aPoints);
+        }
+
+
+        public Segment[] GetSegmentList(Request request)
+        {
+            Segment[] Result = null;
+
+            if (LowSecurityCheck(request, "GetSegmentList"))
+            {
+                string connStr = CustConnectionString(request);
+                SqlStmt stmt = null;
+                try
+                {
+                    if (GetStmt(connStr, out stmt))
+                    {
+                        List<Segment> Segments = new List<Segment>();
+                        //bool rc = stmt.DoSQL("select seg_name_full,geog.STAsText() as geog from baseSegments");
+                        //
+                        bool rc = stmt.DoSQL("select seg_name_full,geography::STGeomFromWKB(geog.STAsBinary(),4326).STAsText() as geog from baseSegments");
+                        while (rc)
+                        {
+                            string seg = convertGeogText(stmt.fetch("geog"));
+                            Segments.Add(new Segment() { name = stmt.fetch("seg_name_full"), segment = seg });
+
+                            rc = stmt.dbSkip();
+                        }
+
+                        Result = Segments.ToArray();
+                        Segments.Clear();
+                    }
+                }
+                catch (Exception x)
+                {
+                    Global.messLog.Flush("GetSegmentList() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
+                    InsertErrorRecord(request.CustCode, string.Format("GetSegmentList() Failed to send HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message), request);
+                }
+                finally
+                {
+                    if (stmt != null)
+                    {
+                        stmt.Close();
+                        stmt = null;
+                    }
+                }
+            }
+            return Result;
+        }
+
 
         [WebMethod(Description = "Retrieve Bridges closest to lat/lon pair for maxRows")]
         public Bridge[] GetBridgeListNear(Request request, string searchStr, double lat, double lon, int startRow, int maxRows, int type)

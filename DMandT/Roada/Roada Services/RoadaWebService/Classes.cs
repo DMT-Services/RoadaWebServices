@@ -1964,6 +1964,15 @@ namespace RoadaWebService
         public int chkSig { get; set; }
     }
 
+    [DataContract]
+    public class Segment
+    {
+        [DataMember]
+        public string name { get; set; }
+        [DataMember]
+        public string segment { get; set; }
+    }
+
     public class PhoneData
     {
         public int id { get; set; }                 // Primary key
