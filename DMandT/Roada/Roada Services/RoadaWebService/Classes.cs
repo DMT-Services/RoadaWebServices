@@ -1968,7 +1968,13 @@ namespace RoadaWebService
     public class Segment
     {
         [DataMember]
+        public string segmentId { get; set; }
+        [DataMember]
         public string name { get; set; }
+        [DataMember]
+        public string nextSegment { get; set; }
+        [DataMember]
+        public string segmentInfo { get; set; }
         [DataMember]
         public string segment { get; set; }
     }

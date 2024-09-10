@@ -3614,63 +3614,63 @@ namespace RoadaWebService
                 if (GetStmt(connStr, out stmt))
                 {
                     SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
-                    
-                        sql.Clear();
-                        sql.Add("username", wdata.username);
-                        sql.Add("date", wdata.date);
-                        sql.Add("handcode", wdata.handcode);
-                        sql.Add("unitnum", wdata.unitnum);
-                        sql.Add("yard", wdata.yard);
-                        sql.Add("avlgps", wdata.avlgps);
-                        sql.Add("avlnote", wdata.avlnote);
-                        sql.Add("antenna", wdata.antenna);
-                        sql.Add("antennaNote", wdata.antennaNote);
-                        sql.Add("camera", wdata.camera);
-                        sql.Add("cameraNote", wdata.cameraNote);
-                        sql.Add("gpslocation", wdata.gpslocation);
-                        sql.Add("gpsNote", wdata.gpsNote);
-                        sql.Add("modem", wdata.modem);
-                        sql.Add("modemNote", wdata.modemNote);
-                        sql.Add("ignition", wdata.ignition);
-                        sql.Add("ignitionNote", wdata.ignitionNote);
-                        sql.Add("plowup", wdata.plowup);
-                        sql.Add("plowupNote", wdata.plowupNote);
-                        sql.Add("plowdown", wdata.plowdown);
-                        sql.Add("plowdownNote", wdata.plowdownNote);
-                        sql.Add("wingup", wdata.wingup);
-                        sql.Add("wingupNote", wdata.wingupNote);
-                        sql.Add("wingdown", wdata.wingdown);
-                        sql.Add("wingdownNote", wdata.wingdownNote);
-                        sql.Add("ECM", wdata.ECM);
-                        sql.Add("ECMnote", wdata.ECMnote);
-                        sql.Add("spreader", wdata.spreader);
-                        sql.Add("spreaderNote", wdata.spreaderNote);
-                        sql.Add("spreaderMatch", wdata.spreaderMatch);
-                        sql.Add("spreaderMatchNote", wdata.spreaderMatchNote);
-                        sql.Add("material", wdata.material);                   
-                        sql.Add("materialNote", wdata.materialNote);
-                        sql.Add("blue", wdata.blue);
-                        sql.Add("blueNote", wdata.blueNote);
-                        sql.Add("amber", wdata.amber);
-                        sql.Add("amberNote", wdata.amberNote);
-                        sql.Add("airtemp", wdata.airtemp);
-                        sql.Add("airNote", wdata.airNote);
-                        sql.Add("roadtemp", wdata.roadtemp);
-                        sql.Add("roadNote", wdata.roadNote);
-                        sql.Add("camerapower", wdata.camerapower);
-                        sql.Add("camerapowerNote", wdata.camerapowerNote);
-                        sql.Add("cameramount", wdata.cameramount);
-                        sql.Add("cameramountNote", wdata.cameramountNote);
-                        sql.Add("camerareport", wdata.camerareport);
-                        sql.Add("camerareportNote", wdata.camerareportNote);
-                        sql.Add("testimage", wdata.testimage);
-                        sql.Add("testimageNote", wdata.testimageNote);
+
+                    sql.Clear();
+                    sql.Add("username", wdata.username);
+                    sql.Add("date", wdata.date);
+                    sql.Add("handcode", wdata.handcode);
+                    sql.Add("unitnum", wdata.unitnum);
+                    sql.Add("yard", wdata.yard);
+                    sql.Add("avlgps", wdata.avlgps);
+                    sql.Add("avlnote", wdata.avlnote);
+                    sql.Add("antenna", wdata.antenna);
+                    sql.Add("antennaNote", wdata.antennaNote);
+                    sql.Add("camera", wdata.camera);
+                    sql.Add("cameraNote", wdata.cameraNote);
+                    sql.Add("gpslocation", wdata.gpslocation);
+                    sql.Add("gpsNote", wdata.gpsNote);
+                    sql.Add("modem", wdata.modem);
+                    sql.Add("modemNote", wdata.modemNote);
+                    sql.Add("ignition", wdata.ignition);
+                    sql.Add("ignitionNote", wdata.ignitionNote);
+                    sql.Add("plowup", wdata.plowup);
+                    sql.Add("plowupNote", wdata.plowupNote);
+                    sql.Add("plowdown", wdata.plowdown);
+                    sql.Add("plowdownNote", wdata.plowdownNote);
+                    sql.Add("wingup", wdata.wingup);
+                    sql.Add("wingupNote", wdata.wingupNote);
+                    sql.Add("wingdown", wdata.wingdown);
+                    sql.Add("wingdownNote", wdata.wingdownNote);
+                    sql.Add("ECM", wdata.ECM);
+                    sql.Add("ECMnote", wdata.ECMnote);
+                    sql.Add("spreader", wdata.spreader);
+                    sql.Add("spreaderNote", wdata.spreaderNote);
+                    sql.Add("spreaderMatch", wdata.spreaderMatch);
+                    sql.Add("spreaderMatchNote", wdata.spreaderMatchNote);
+                    sql.Add("material", wdata.material);
+                    sql.Add("materialNote", wdata.materialNote);
+                    sql.Add("blue", wdata.blue);
+                    sql.Add("blueNote", wdata.blueNote);
+                    sql.Add("amber", wdata.amber);
+                    sql.Add("amberNote", wdata.amberNote);
+                    sql.Add("airtemp", wdata.airtemp);
+                    sql.Add("airNote", wdata.airNote);
+                    sql.Add("roadtemp", wdata.roadtemp);
+                    sql.Add("roadNote", wdata.roadNote);
+                    sql.Add("camerapower", wdata.camerapower);
+                    sql.Add("camerapowerNote", wdata.camerapowerNote);
+                    sql.Add("cameramount", wdata.cameramount);
+                    sql.Add("cameramountNote", wdata.cameramountNote);
+                    sql.Add("camerareport", wdata.camerareport);
+                    sql.Add("camerareportNote", wdata.camerareportNote);
+                    sql.Add("testimage", wdata.testimage);
+                    sql.Add("testimageNote", wdata.testimageNote);
 
 
                     stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO winter_ready"));
 
-                        Result = 1;
-                    
+                    Result = 1;
+
                 }
             }
             catch (Exception x)
@@ -3700,7 +3700,7 @@ namespace RoadaWebService
             return SendWeather(req, wdata);
         }
 
-     
+
 
 
         private int SendWeather(Request req, WeatherData wdata)
@@ -7562,7 +7562,7 @@ namespace RoadaWebService
                 whereClause += ((whereClause == string.Empty) ? " WHERE" : " AND") + (" a." + type);
             if (lat != 0.0 && lon != 0.0)
                 whereClause += ((whereClause == string.Empty) ? " WHERE" : " AND") + " (a.latitude is not null and a.longitude is not null)";
-            if(contract > 0)
+            if (contract > 0)
                 whereClause += ((whereClause == string.Empty) ? " WHERE" : " AND") + string.Format(" (contract={0})", contract);
 
             string orderBy = " ORDER BY " + ((lat != 0.0 && lon != 0.0) ? string.Format(" geography::Point({0}, {1}, 4326).STDistance(geography::Point(a.latitude, a.longitude, 4326)),a.id", lat, lon) : "a." + structure);
@@ -7670,6 +7670,13 @@ namespace RoadaWebService
             return Result;
         }
 
+        [WebMethod(Description = "Retrieve Route Segment list")]
+        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public Segment[] RequestRoutesJson(Request req)
+        {
+            return GetRouteSegments(req);
+        }
+
         [WebMethod(Description = "Retrieve Road Segment list")]
         [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
         public Segment[] RequestSegmentsJson(Request req)
@@ -7698,6 +7705,58 @@ namespace RoadaWebService
             return JsonConvert.SerializeObject(aPoints);
         }
 
+        /*
+         * create table roadaRouting (
+        id int identity(1,1),
+        id_field varchar(64),
+        seg_name_full varchar(255),
+        next_segment varchar(255),
+        seg_info varchar(255),
+        geog geometry
+        );*/
+        public Segment[] GetRouteSegments(Request request)
+        {
+            Segment[] Result = null;
+
+            if (LowSecurityCheck(request, "GetRouteSegments"))
+            {
+                string connStr = CustConnectionString(request);
+                SqlStmt stmt = null;
+                try
+                {
+                    if (GetStmt(connStr, out stmt))
+                    {
+                        List<Segment> Segments = new List<Segment>();
+
+                        bool rc = stmt.DoSQL("select id_field,seg_name_full,next_segment,seg_info,geography::STGeomFromWKB(geog.STAsBinary(),4326).STAsText() as geog from roadaRouting");
+                        while (rc)
+                        {
+                            string seg = convertGeogText(stmt.fetch("geog"));
+                            Segments.Add(new Segment() { segmentId = stmt.fetch("id_field"), name = stmt.fetch("seg_name_full"), nextSegment = stmt.fetch("next_segment"), segmentInfo = stmt.fetch("seg_info"), segment = seg });
+
+                            rc = stmt.dbSkip();
+                        }
+
+                        Result = Segments.ToArray();
+                        Segments.Clear();
+                    }
+                }
+                catch (Exception x)
+                {
+                    Global.messLog.Flush("GetRouteSegments() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
+                    InsertErrorRecord(request.CustCode, string.Format("GetRouteSegments() Failed to send HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message), request);
+                }
+                finally
+                {
+                    if (stmt != null)
+                    {
+                        stmt.Close();
+                        stmt = null;
+                    }
+                }
+            }
+            return Result;
+        }
 
         public Segment[] GetSegmentList(Request request)
         {
@@ -8752,7 +8811,7 @@ namespace RoadaWebService
                         List<Contract> contracts = new List<Contract>();
 
                         bool rc = stmt.DoSQL("select * from yard where yard_no in (select distinct isnull(contract,0) from asset_sign)");
-                        while(rc)
+                        while (rc)
                         {
                             Contract v = new Contract();
                             v.Id = stmt.ifetch("yard_no");
@@ -8784,7 +8843,7 @@ namespace RoadaWebService
 
             return Result;
         }
-        
+
         private Sign FillSign(SqlStmt stmt)
         {
             Sign s = new Sign();
