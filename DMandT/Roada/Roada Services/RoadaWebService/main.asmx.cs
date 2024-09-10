@@ -7708,6 +7708,7 @@ namespace RoadaWebService
         /*
          * create table roadaRouting (
         id int identity(1,1),
+        route_id varchar(64),
         id_field varchar(64),
         seg_name_full varchar(255),
         next_segment varchar(255),
@@ -7728,7 +7729,7 @@ namespace RoadaWebService
                     {
                         List<Segment> Segments = new List<Segment>();
 
-                        bool rc = stmt.DoSQL("select id_field,seg_name_full,next_segment,seg_info,geography::STGeomFromWKB(geog.STAsBinary(),4326).STAsText() as geog from roadaRouting");
+                        bool rc = stmt.DoSQL("select route_id,id_field,seg_name_full,next_segment,seg_info,geography::STGeomFromWKB(geog.STAsBinary(),4326).STAsText() as geog from roadaRouting");
                         while (rc)
                         {
                             string seg = convertGeogText(stmt.fetch("geog"));
