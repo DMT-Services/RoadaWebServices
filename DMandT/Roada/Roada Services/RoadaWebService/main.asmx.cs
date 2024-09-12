@@ -7733,7 +7733,7 @@ namespace RoadaWebService
                         while (rc)
                         {
                             string seg = convertGeogText(stmt.fetch("geog"));
-                            Segments.Add(new Segment() { segmentId = stmt.fetch("id_field"), name = stmt.fetch("seg_name_full"), nextSegment = stmt.fetch("next_segment"), segmentInfo = stmt.fetch("seg_info"), segment = seg });
+                            Segments.Add(new Segment() { routeId = stmt.fetch("route_id"), segmentId = stmt.fetch("id_field"), name = stmt.fetch("seg_name_full"), nextSegment = stmt.fetch("next_segment"), segmentInfo = stmt.fetch("seg_info"), segment = seg });
 
                             rc = stmt.dbSkip();
                         }
@@ -7774,11 +7774,11 @@ namespace RoadaWebService
                         List<Segment> Segments = new List<Segment>();
                         //bool rc = stmt.DoSQL("select seg_name_full,geog.STAsText() as geog from baseSegments");
                         //
-                        bool rc = stmt.DoSQL("select seg_name_full,geography::STGeomFromWKB(geog.STAsBinary(),4326).STAsText() as geog from baseSegments");
+                        bool rc = stmt.DoSQL("select id_field,seg_name_full,geography::STGeomFromWKB(geog.STAsBinary(),4326).STAsText() as geog from baseSegments");
                         while (rc)
                         {
                             string seg = convertGeogText(stmt.fetch("geog"));
-                            Segments.Add(new Segment() { name = stmt.fetch("seg_name_full"), segment = seg });
+                            Segments.Add(new Segment() { segmentId = stmt.fetch("id_field"), name = stmt.fetch("seg_name_full"), segment = seg });
 
                             rc = stmt.dbSkip();
                         }
