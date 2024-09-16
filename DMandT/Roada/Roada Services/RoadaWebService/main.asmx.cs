@@ -17,6 +17,7 @@ using System.Collections;
 using Newtonsoft.Json;
 
 using DMTServices;
+using System.Xml.Linq;
 
 namespace RoadaWebService
 {
@@ -3760,8 +3761,20 @@ namespace RoadaWebService
                         sql.Add("vehicle_id", getVehicleId(stmt, wdata.handCode, wdata.unitNum));
 
                         stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO weather_condition"));
-
                         Result = 1;
+
+                        //added updated the temp field in the collsion report due to the fact that the weather report getting sent after collsion
+                        if (stmt.DoSQL(string.Format("SELECT ci_id FROM collision_incident WHERE ci_id = '{0}'", wdata.reportId)))
+                        {
+                            sql.Clear();
+                            sql.Add("temp", wdata.tempAir);
+                            stmt.DoSQL(sql.BuildUpdate("UPDATE collision_incident", string.Format("WHERE ci_id = '{0}'", wdata.reportId)));
+                            Result = 2;
+                        }
+
+
+
+                        
                     }
                 }
             }
