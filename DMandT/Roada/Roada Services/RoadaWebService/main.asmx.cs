@@ -17,7 +17,6 @@ using System.Collections;
 using Newtonsoft.Json;
 
 using DMTServices;
-using System.Xml.Linq;
 
 namespace RoadaWebService
 {
@@ -7713,7 +7712,7 @@ namespace RoadaWebService
             {
                 string[] ll = point.Trim(' ').Split(' ');
                 if (ll.Length > 1)
-                    aPoints.Add(new APoint() { latitude = Math.Round(myConvert.ToDouble(ll[1]), 7, MidpointRounding.AwayFromZero), longitude = Math.Round(myConvert.ToDouble(ll[0]), 7, MidpointRounding.AwayFromZero) });
+                    aPoints.Add(new APoint() { latitude = Math.Round(myConvert.ToDouble(ll[1]), 5, MidpointRounding.AwayFromZero), longitude = Math.Round(myConvert.ToDouble(ll[0]), 5, MidpointRounding.AwayFromZero) });
             }
             return JsonConvert.SerializeObject(aPoints);
         }
