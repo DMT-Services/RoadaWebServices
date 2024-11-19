@@ -7706,13 +7706,22 @@ namespace RoadaWebService
         {
             string rc = string.Empty;
             List<APoint> aPoints = new List<APoint>();
-
+            double llat = 0.0, llon = 0.0;
             string[] points = Geog.Replace("), (", "),(").Replace("MULTILINESTRING (", "").Replace("MULTILINESTRING(", "").Split(new char[] { ')', ',', '(' });
             foreach (string point in points)
             {
                 string[] ll = point.Trim(' ').Split(' ');
                 if (ll.Length > 1)
-                    aPoints.Add(new APoint() { latitude = Math.Round(myConvert.ToDouble(ll[1]), 5, MidpointRounding.AwayFromZero), longitude = Math.Round(myConvert.ToDouble(ll[0]), 5, MidpointRounding.AwayFromZero) });
+                {
+                    double latitude = Math.Round(myConvert.ToDouble(ll[1]), 5, MidpointRounding.AwayFromZero);
+                    double longitude = Math.Round(myConvert.ToDouble(ll[0]), 5, MidpointRounding.AwayFromZero);
+                    if (latitude != llat && longitude != llon)
+                    {
+                        llat = latitude;
+                        llon = longitude;
+                        aPoints.Add(new APoint() { latitude = llat, longitude = llon });
+                    }
+                }
             }
             return JsonConvert.SerializeObject(aPoints);
         }
