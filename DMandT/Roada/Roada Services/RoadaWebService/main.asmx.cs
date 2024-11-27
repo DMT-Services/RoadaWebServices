@@ -7684,9 +7684,50 @@ namespace RoadaWebService
 
         [WebMethod(Description = "Retrieve Route Segment list")]
         [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
-        public Segment[] RequestRoutesJson(Request req)
+        public Segment[] RequestRoutesJson(Request req, string routeId)
         {
-            return GetRouteSegments(req);
+            return GetRouteSegments(req, routeId);
+        }
+
+        [WebMethod(Description = "Retrieve Route Names/Id list")]
+        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public string[][] RequestRouteNamesJson(Request req)
+        {
+            return GetRouteNames(req);
+        }
+
+        public string[][] GetRouteNames(Request request)
+        {
+            string[][] Result = new string[0][];
+
+            if (LowSecurityCheck(request, "GetRouteSegments"))
+            {
+                string connStr = CustConnectionString(request);
+                SqlStmt stmt = null;
+                try
+                {
+                    if (GetStmt(connStr, out stmt))
+                    {
+                        List<string[]> routeList = new List<string[]>();
+                        bool rc = stmt.DoSQL("select * from roadaRoutes");
+                        while (rc)
+                        {
+                            routeList.Add(new string[] { stmt.fetch("route_name"), stmt.fetch("route_id") });
+
+                            rc = stmt.dbSkip();
+                        }
+
+                        Result = routeList.ToArray();
+                        routeList.Clear();
+                    }
+                }
+                finally
+                {
+                    stmt.Close();
+                    stmt = null;
+                }
+            }
+            return Result;
         }
 
         [WebMethod(Description = "Retrieve Road Segment list")]
@@ -7707,7 +7748,7 @@ namespace RoadaWebService
             string rc = string.Empty;
             List<APoint> aPoints = new List<APoint>();
             double llat = 0.0, llon = 0.0;
-            string[] points = Geog.Replace("), (", "),(").Replace("MULTILINESTRING (", "").Replace("MULTILINESTRING(", "").Split(new char[] { ')', ',', '(' });
+            string[] points = Geog.Replace("), (", "),(").Replace("LINESTRING (", "LINESTRING(").Replace("MULTILINESTRING(", "").Replace("LINESTRING(", "").Split(new char[] { ')', ',', '(' });
             foreach (string point in points)
             {
                 string[] ll = point.Trim(' ').Split(' ');
@@ -7726,7 +7767,7 @@ namespace RoadaWebService
             return JsonConvert.SerializeObject(aPoints);
         }
 
-        /*
+       /*
          * create table roadaRouting (
         id int identity(1,1),
         route_id varchar(64),
@@ -7736,7 +7777,7 @@ namespace RoadaWebService
         seg_info varchar(255),
         geog geometry
         );*/
-        public Segment[] GetRouteSegments(Request request)
+        public Segment[] GetRouteSegments(Request request, string routeId)
         {
             Segment[] Result = null;
 
@@ -7750,7 +7791,7 @@ namespace RoadaWebService
                     {
                         List<Segment> Segments = new List<Segment>();
 
-                        bool rc = stmt.DoSQL("select route_id,id_field,seg_name_full,next_segment,seg_info,geography::STGeomFromWKB(geog.STAsBinary(),4326).STAsText() as geog from roadaRouting");
+                        bool rc = stmt.DoSQLFormat("select route_id,id_field,seg_name_full,next_segment,seg_info,geography::STGeomFromWKB(geog.STAsBinary(),4326).STAsText() as geog from roadaRouting where route_id='{0}'", routeId);
                         while (rc)
                         {
                             string seg = convertGeogText(stmt.fetch("geog"));
