@@ -4660,6 +4660,8 @@ namespace RoadaWebService
             return lastEvent;
         }
 
+        // Apr/2025  changed S3 servers used to be https://bucket.s3-nubav...
+        //           now it's https://xxxxxxx.ca/bucket/....
         private string getBucket(string url)
         {
             string rc = url;
@@ -4667,9 +4669,14 @@ namespace RoadaWebService
             if (l >= 0)
             {
                 rc = rc.Substring(l + 2);
-                l = rc.IndexOf(".");
+                l = rc.IndexOf("/");
                 if (l > 0)
-                    rc = rc.Substring(0, l);
+                {
+                    rc = rc.Substring(l + 1);
+                    l = rc.IndexOf("/");
+                    if (l > 0)
+                        rc = rc.Substring(0, l);
+                }
             }
             if (rc.Length > 80)
                 rc = rc.Substring(0, 79);
