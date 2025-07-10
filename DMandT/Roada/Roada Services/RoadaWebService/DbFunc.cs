@@ -1618,6 +1618,7 @@ namespace DMTServices
                 }
                 catch (Exception e)
                 {
+#if !NO_MESSLOG
                     if(retry-- > 0 && e.Message.Contains("transport-level error"))
                     {
                         if (fParent.Mess != null)
@@ -1625,7 +1626,6 @@ namespace DMTServices
                         continue;
                     }
 
-#if !NO_MESSLOG
                     if (fParent.Mess != null)
                     {
                         if (!fParent.ignoreDupErr || !e.Message.StartsWith("Cannot insert duplicate key row"))
