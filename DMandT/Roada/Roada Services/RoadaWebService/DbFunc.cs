@@ -1618,14 +1618,16 @@ namespace DMTServices
                 }
                 catch (Exception e)
                 {
-#if !NO_MESSLOG
                     if(retry-- > 0 && e.Message.Contains("transport-level error"))
                     {
+#if !NO_MESSLOG
                         if (fParent.Mess != null)
                             fParent.Mess.Flush("transport-level error, retrying... " + e.Message);
+#endif
                         continue;
                     }
 
+#if !NO_MESSLOG
                     if (fParent.Mess != null)
                     {
                         if (!fParent.ignoreDupErr || !e.Message.StartsWith("Cannot insert duplicate key row"))
