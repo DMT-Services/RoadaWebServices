@@ -882,6 +882,14 @@ namespace RoadaWebService
         [DataMember]
         public int visibility { get; set; }
         [DataMember]
+        public int plowOperation { get; set; }
+        [DataMember]
+        public int saltingOperation { get; set; }
+        [DataMember]
+        public int sandingOperation { get; set; }
+        [DataMember]
+        public int icingOperation { get; set; }
+        [DataMember]
         public int cloudCondition { get; set; }
         [DataMember]
         public int fogLvl { get; set; }
