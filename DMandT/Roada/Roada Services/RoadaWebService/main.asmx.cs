@@ -12007,7 +12007,7 @@ namespace RoadaWebService
                             sql.Add("signature", myConvert.ToByteArray(base64SigToBmp(data.strImgSig)));
                         else
                             sql.Add("signature", data.Signature);
-
+                        sql.AddNow("udate");
                         string where = string.Format("WHERE hand_code={0} and start_patrol={1}", data.HandCode, SqlHelper.timeStamp(data.StartTime));
 
                         if (stmt.DoSQL("SELECT id FROM patrol_log " + where))
