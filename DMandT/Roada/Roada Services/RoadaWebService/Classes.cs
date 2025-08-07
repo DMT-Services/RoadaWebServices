@@ -912,7 +912,7 @@ namespace RoadaWebService
         [DataMember]
         public string address { get; set; }
         [DataMember]
-        public double tempAir { get; set; }
+        public string tempAir { get; set; }
         [DataMember]
         public double tempRoad { get; set; }
         [DataMember]

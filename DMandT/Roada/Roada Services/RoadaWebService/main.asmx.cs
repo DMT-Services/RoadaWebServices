@@ -3747,7 +3747,7 @@ namespace RoadaWebService
                         sql.Add("longitude", wdata.CurrentLong);
                         sql.Add("calc_lat", wdata.calcLat);
                         sql.Add("calc_long", wdata.calcLong);
-                        sql.Add("temp_air", wdata.tempAir);
+                        sql.Add("temp_air", myConvert.ToDouble(wdata.tempAir));
                         sql.Add("temp_road", wdata.tempRoad);
                         sql.Add("valid_loc", wdata.validLoc);
                         sql.Add("address", wdata.address);
