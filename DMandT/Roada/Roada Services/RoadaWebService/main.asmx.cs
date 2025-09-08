@@ -3687,6 +3687,61 @@ namespace RoadaWebService
             return Result;
         }
 
+        [WebMethod(Description = "Push Work Report Data Json")]
+        [ScriptMethod(UseHttpGet = false, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public int SendWorkReportJson(Request req, WorkReport wrdata)
+        {
+            return SendWorkReport(req, wrdata);
+        }
+        private int SendWorkReport(Request req, WorkReport wrdata)
+        {
+
+            int Result = 0;
+            // low security check, don't want hackers!
+            if (!LowSecurityCheck(req, "SendWorkReport"))
+                return -2;
+
+            string connStr = CustConnectionString(req);
+            SqlStmt stmt = null;
+            try
+            {
+                Result = -3;
+                if (GetStmt(connStr, out stmt))
+                {
+                    SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
+
+                    sql.Clear();
+                    sql.Add("username", wrdata.userName);
+                    sql.Add("rdate", wrdata.reportDate);
+                    sql.Add("install", wrdata.install);
+                    sql.Add("notes", wrdata.notes);
+                    sql.Add("unitnum", wrdata.unitNum);
+                    sql.Add("photo_id", wrdata.photoId);
+                    sql.AddNow("idate");
+
+
+
+                    stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO work_report"));
+
+                    Result = 1;
+
+                }
+            }
+            catch (Exception x)
+            {
+                Result = -4;
+                Global.messLog.Flush("SendWorkReport() HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, x.Message);
+                InsertErrorRecord(req.CustCode, "SendWorkReport() " + x.Message, req);
+            }
+            finally
+            {
+                if (stmt != null)
+                    stmt.Close();
+            }
+            return Result;
+        }
+
+
         [WebMethod(Description = "Push Weather Report Data Json")]
         [ScriptMethod(UseHttpGet = false, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
         public int SendWeatherReportJson(Request req, WeatherData wdata)
@@ -3719,6 +3774,7 @@ namespace RoadaWebService
                 if (GetStmt(connStr, out stmt))
                 {
                     SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
+                    string opString = "";
 
                     Result = -5;
                     if (wdata.fromTime.Year > 1000)         // just incase someone from the year 919 tries to send us data (1019 is ok)?
@@ -3756,6 +3812,36 @@ namespace RoadaWebService
                         sql.Add("work_order", wdata.workOrder);
                         sql.Add("road_service", wdata.roadService);
                         sql.Add("sidewalk_service", wdata.sidewalkService);
+
+                        if (wdata.action != null && wdata.action.Length > 0)
+                        {
+                            sql.Add("action_taken", wdata.action);
+                        }
+                        else
+                        {
+                            if (wdata.plowOperation > 0)
+                            {
+                                opString += "Plowing (OP),";
+                            }
+                            if (wdata.sandingOperation > 0)
+                            {
+                                opString += "Sanding (OSA),";
+                            }
+                            if (wdata.saltingOperation > 0)
+                            {
+                                opString += "Salting (OSG),";
+                            }
+                            if (wdata.icingOperation > 0)
+                            {
+                                opString += "Anti-Icing (OAI),";
+                            }
+                            if (opString.Length > 0)
+                            {
+                                sql.Add("action_taken", opString);
+                            }
+                        }
+
+
                         sql.AddNow("idate");
                         sql.Add("vehicle_id", getVehicleId(stmt, wdata.handCode, wdata.unitNum));
 
@@ -3766,6 +3852,7 @@ namespace RoadaWebService
                         if (stmt.DoSQL(string.Format("SELECT ci_id FROM collision_incident WHERE ci_id = '{0}'", wdata.reportId)))
                         {
                             sql.Clear();
+                            opString = "";
                             sql.Add("temp", wdata.tempAir);
                             stmt.DoSQL(sql.BuildUpdate("UPDATE collision_incident", string.Format("WHERE ci_id = '{0}'", wdata.reportId)));
                             Result = 2;
@@ -11965,6 +12052,7 @@ namespace RoadaWebService
                                   { "EndTime", "end_patrol" },
                                   { "EndLatitude", "end_latitude" },
                                   { "EndLongitude", "end_longitude" },
+                                  { "WinterPatrol", "winter_patrol" },
                                   { "EndOdometer", "end_odo" } };
         //{ "Signature", "signature" } };
 

@@ -269,6 +269,24 @@ namespace RoadaWebService
     }
 
     [DataContract]
+    public class WorkReport
+    {
+        [DataMember]
+        public string userName { get; set; }
+        [DataMember]
+        public string unitNum { get; set; }
+        [DataMember]
+        public string notes { get; set; }
+        [DataMember]
+        public bool install { get; set; }
+        [DataMember]
+        public string photoId { get; set; }
+        [DataMember]
+        public DateTime reportDate { get; set; }
+    }
+
+
+    [DataContract]
     public class RWISData
     {
         [DataMember]
@@ -416,6 +434,8 @@ namespace RoadaWebService
         public string strSignature { get; set; }
         [DataMember]
         public string strImgSig { get; set; }
+        [DataMember]
+        public bool WinterPatrol { get; set; }
     }
 
     public class ColumnCheckData
