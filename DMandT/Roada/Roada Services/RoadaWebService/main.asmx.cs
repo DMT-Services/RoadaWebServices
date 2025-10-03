@@ -12090,12 +12090,9 @@ namespace RoadaWebService
                     if (GetStmt(connStr, out stmt))
                     {
                         SqlHelper sql = procData.fillQuery(data, loginLayout);
-                        // because of some app screwup, we need to handle type casting of WinterPatrol manually
-                        Type objectType = data.WinterPatrol.GetType();
-                        if (objectType.Equals(typeof(bool)))
-                            sql.Add("winter_patrol", (bool)data.WinterPatrol);
-                        else
-                            sql.Add("winter_patrol", (int)data.WinterPatrol != 0);
+
+                        // because of some app screwup, we need to handle type casting of WinterPatrol manually as it's now defined as object
+                        sql.Add("winter_patrol", myConvert.ToBoolean(data.WinterPatrol));
 
                         if (!string.IsNullOrEmpty(data.strImgSig))
                             sql.Add("signature", myConvert.ToByteArray(base64SigToBmp(data.strImgSig)));
