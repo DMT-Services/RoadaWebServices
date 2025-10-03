@@ -12052,7 +12052,6 @@ namespace RoadaWebService
                                   { "EndTime", "end_patrol" },
                                   { "EndLatitude", "end_latitude" },
                                   { "EndLongitude", "end_longitude" },
-                                  { "WinterPatrol", "winter_patrol" },
                                   { "EndOdometer", "end_odo" } };
         //{ "Signature", "signature" } };
 
@@ -12091,6 +12090,13 @@ namespace RoadaWebService
                     if (GetStmt(connStr, out stmt))
                     {
                         SqlHelper sql = procData.fillQuery(data, loginLayout);
+                        // because of some app screwup, we need to handle type casting of WinterPatrol manually
+                        Type objectType = data.WinterPatrol.GetType();
+                        if (objectType.Equals(typeof(bool)))
+                            sql.Add("winter_patrol", (bool)data.WinterPatrol);
+                        else
+                            sql.Add("winter_patrol", (int)data.WinterPatrol != 0);
+
                         if (!string.IsNullOrEmpty(data.strImgSig))
                             sql.Add("signature", myConvert.ToByteArray(base64SigToBmp(data.strImgSig)));
                         else

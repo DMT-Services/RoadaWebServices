@@ -435,7 +435,7 @@ namespace RoadaWebService
         [DataMember]
         public string strImgSig { get; set; }
         [DataMember]
-        public bool WinterPatrol { get; set; }
+        public object WinterPatrol { get; set; }
     }
 
     public class ColumnCheckData
