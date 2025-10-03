@@ -3853,6 +3853,7 @@ namespace RoadaWebService
                         {
                             sql.Clear();
                             opString = "";
+                            sql.Add("temp", myConvert.ToDouble(wdata.tempAir));
                             stmt.DoSQL(sql.BuildUpdate("UPDATE collision_incident", string.Format("WHERE ci_id = '{0}'", wdata.reportId)));
                             Result = 2;
                         }
