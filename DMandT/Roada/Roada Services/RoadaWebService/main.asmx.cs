@@ -8479,6 +8479,7 @@ namespace RoadaWebService
             b.structure = stmt.fetch("structure");
             b.location = stmt.fetch("location");
             b.name = stmt.fetch("name");
+            b.road = stmt.fetch("road");
             b.latitude = stmt.dfetch("latitude");
             b.longitude = stmt.dfetch("longitude");
             b.notes = stmt.fetch("notes");
