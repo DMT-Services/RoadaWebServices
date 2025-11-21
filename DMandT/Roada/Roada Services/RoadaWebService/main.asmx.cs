@@ -9588,6 +9588,7 @@ namespace RoadaWebService
                             sql.Add("issue", item.issue);
                             sql.Add("note", item.note);
                             sql.Add("tstate", item.tstate);
+                            sql.Add("group_enabled", item.groupEnabled);
                             sql.AddNow("idate");
 
                             stmt.DoSQL(sql.BuildInsert("INSERT INTO inspection__high_mast_lite__item"));
@@ -10273,6 +10274,9 @@ namespace RoadaWebService
                                         hmi.issue = stmt2.ifetch("issue");
                                         hmi.note = stmt2.fetch("note");
                                         hmi.tstate = stmt2.ifetch("tstate");
+                                        hmi.groupEnabled = stmt2.bfetch("group_enabled");
+                                        hmi.structure = stmt2.fetch("structure");
+                                        hmi.date = stmt2.dtfetch("date");
 
                                         hm.highmastItems.Add(hmi);
 
