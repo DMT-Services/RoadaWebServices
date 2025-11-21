@@ -1094,6 +1094,12 @@ namespace RoadaWebService
         public int tstate { get; set; }
         [DataMember]
         public string note { get; set; }
+        [DataMember]
+        public bool groupEnabled { get; set; }
+        [DataMember]
+        public string structure { get; set; }
+        [DataMember]
+        public DateTime date { get; set; }
     }
 
     [DataContract]
