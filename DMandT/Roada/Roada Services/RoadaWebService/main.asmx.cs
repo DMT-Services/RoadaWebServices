@@ -1398,6 +1398,383 @@ namespace RoadaWebService
             return Result;
         }
 
+        [WebMethod(Description = "Retrieve only open issue tracking tickets as json")]
+        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public IssueInfo[] GetOpenIssuesJson(Request req)
+        {
+            return GetIssues(req, true, DateTime.MinValue);
+        }
+
+        [WebMethod(Description = "Retrieve any issue tracking tickets from > sdate as JSON")]
+        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public IssueInfo[] GetAllIssuesJson(Request req, DateTime sdate)
+        {
+            return GetIssues(req, false, sdate);
+        }
+
+        [WebMethod(Description = "Retrieve issue tracking system tickets")]
+        public IssueInfo[] GetIssues(Request request, bool open, DateTime sdate)
+        {
+            IssueInfo[] Result = null;
+            if (LowSecurityCheck(request, "GetOpenIssues"))
+            {
+                string connStr = CustConnectionString(request);
+                SqlStmt stmt = null;
+                SqlStmt stmt2 = null;
+                SqlStmt stmt3 = null;
+                try
+                {
+                    if (GetStmt(connStr, out stmt))
+                    {
+                        GetStmt(connStr, out stmt2);
+                        GetStmt(connStr, out stmt3);
+                        List<IssueInfo> issues = new List<IssueInfo>();
+                        bool rc;
+                        if (open)
+                            rc = stmt.DoSQL("SELECT * FROM issue_tickets WHERE closed_flag is null ORDER BY id");
+                        else
+                            rc = stmt.DoSQLFormat("SELECT * FROM issue_tickets WHERE issue_date >= {0} ORDER BY id", SqlHelper.timeStamp(sdate));
+                        while (rc)
+                        {
+                            IssueInfo info = new IssueInfo();
+                            info.DevId = stmt.ifetch("hand_code");
+                            info.UnitNum = stmt.fetch("unit_num");
+                            info.IssueDate = stmt.dtfetch("issue_date");
+                            info.ClosedFlag = stmt.tfetch("closed_flag");
+                            info.WhoClosed = stmt.fetch("who_closed");
+                            info.WhoCreated = stmt.fetch("who_created");
+                            info.ReasonCode = stmt.ifetch("reason_code");
+                            info.OtherReason = stmt.fetch("other_reason");
+                            info.Comments = stmt.fetch("comments");
+
+                            int id = stmt.ifetch("id");
+                            bool rc2 = stmt2.DoSQLFormat("SELECT * FROM issue_sched WHERE issue_tick_id = {0} ORDER BY id", id);
+                            List<IssueSched> scheds = new List<IssueSched>();
+                            while(rc2)
+                            {
+                                int sid = stmt2.ifetch("id");
+                                IssueSched sched = new IssueSched();
+                                sched.IssueId = id;
+                                sched.SchedDate = stmt2.dtfetch("sched_date");
+                                sched.WhoCreated = stmt2.fetch("who_created");
+                                sched.CancelFlag = stmt2.tfetch("cancel_flag");
+                                sched.CancelDate = stmt2.dtfetch("cancel_date");
+                                sched.CancelReason = stmt2.fetch("cancel_reason");
+                                sched.Comments = stmt2.fetch("comments");
+                                bool rc3 = stmt3.DoSQLFormat("SELECT * FROM issue_item WHERE issue_tick_id = {0} and issue_sched_id = {1} ORDER BY id", id, sid);
+                                List<IssueItem> items = new List<IssueItem>();
+                                while (rc3)
+                                {
+                                    IssueItem item = new IssueItem();
+                                    item.IssueId = id;
+                                    item.SchedId = sid;
+                                    item.TimeStart = stmt3.dtfetch("time_start");
+                                    item.WhoCreated = stmt3.fetch("who_created");
+                                    item.Technician = stmt3.fetch("technician");
+                                    item.HrsOnSite = stmt3.dfetch("hrs_onsite");
+                                    item.TravelKm = stmt3.ifetch("travel_km");
+                                    item.Comments = stmt3.fetch("comments");
+                                    items.Add(item);
+                                    rc3 = stmt3.dbSkip();
+                                }
+                                sched.Items = items.ToArray();
+                                items.Clear();
+                                scheds.Add(sched);
+                                rc2 = stmt2.dbSkip();
+                            }
+                            info.Scheduled = scheds.ToArray();
+                            scheds.Clear();
+
+                            issues.Add(info);
+
+                            rc = stmt.dbSkip();
+                        }
+                        Result = issues.ToArray();
+                        issues.Clear();
+                    }
+                }
+                catch (Exception x)
+                {
+                    Global.messLog.Flush("GetOpenIssues() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
+                    InsertErrorRecord(request.CustCode, string.Format("GetOpenIssues() Failed to send HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message), request);
+                }
+                finally
+                {
+                    if (stmt != null)
+                        stmt.Close();
+                    if (stmt2 != null)
+                        stmt.Close();
+                    if (stmt3 != null)
+                        stmt.Close();
+                }
+            }
+            return Result;
+        }
+
+        [WebMethod(Description = "Create an Issue Ticket as JSON")]
+        [ScriptMethod(UseHttpGet = false, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public int CreateIssueTicketJson(Request req, IssueInfo info)
+        {
+            return CreateIssueTicket(req, info);
+        }
+
+        [WebMethod(Description = "Create issue tracking system ticket")]
+        public int CreateIssueTicket(Request request, IssueInfo info)
+        {
+            int Result = -9;
+            if (LowSecurityCheck(request, "CreateIssueTicket"))
+            {
+                string connStr = CustConnectionString(request);
+                SqlStmt stmt = null;
+                try
+                {
+                    if (GetStmt(connStr, out stmt))
+                    {
+                        stmt.Conn.ignoreDupErr = true;
+                        SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
+                        sql.Add("hand_code", info.DevId);
+                        sql.Add("unit_num", info.UnitNum);
+                        sql.Add("issue_date", info.IssueDate);
+                        sql.AddNow("idate");
+                        sql.Add("who_created", info.WhoCreated);
+                        sql.Add("reason_code", info.ReasonCode);
+                        sql.Add("other_reason", info.OtherReason);
+                        sql.Add("comments", info.Comments);
+                        stmt.DoSQL(sql.BuildInsert("INSERT INTO issue_tickets"));
+                        if (stmt.LastError.Contains("duplicate"))
+                            Result = -2;
+                        else if (stmt.LastError == string.Empty)
+                            Result = 0;
+                        else
+                            Result = -3;
+                    }
+                }
+                catch (Exception x)
+                {
+                    Global.messLog.Flush("CreateIssueTicket() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
+                    InsertErrorRecord(request.CustCode, string.Format("CreateIssueTicket() Failed to send HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message), request);
+                    Result = -4;
+                }
+                finally
+                {
+                    if (stmt != null)
+                        stmt.Close();
+                }
+            }
+            return Result;
+        }
+
+        [WebMethod(Description = "Create issue tracking system schedule record JSON")]
+        [ScriptMethod(UseHttpGet = false, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public int CreateIssueSchedJson(Request req, IssueSched sched)
+        {
+            return CreateIssueSched(req, sched);
+        }
+
+        [WebMethod(Description = "Create issue tracking system schedule record")]
+        public int CreateIssueSched(Request request, IssueSched sched)
+        {
+            int Result = -9;
+            if (LowSecurityCheck(request, "CreateIssueSched"))
+            {
+                string connStr = CustConnectionString(request);
+                SqlStmt stmt = null;
+                try
+                {
+                    if (GetStmt(connStr, out stmt))
+                    {
+                        stmt.Conn.ignoreDupErr = true;
+                        SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
+                        sql.Add("issue_tick_id", sched.IssueId);
+                        sql.Add("sched_date", sched.SchedDate);
+                        sql.AddNow("idate");
+                        sql.Add("who_created", sched.WhoCreated);
+                        sql.Add("cancel_flag", sched.CancelFlag);
+                        sql.Add("cancel_date", sched.CancelDate);
+                        sql.Add("cancel_reason", sched.CancelReason);
+                        sql.Add("comments", sched.Comments);
+                        stmt.DoSQL(sql.BuildInsert("INSERT INTO issue_sched"));
+                        if (stmt.LastError.Contains("duplicate"))
+                            Result = -2;
+                        else if (stmt.LastError == string.Empty)
+                            Result = 0;
+                        else
+                            Result = -3;
+                    }
+                }
+                catch (Exception x)
+                {
+                    Global.messLog.Flush("CreateIssueSched() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
+                    InsertErrorRecord(request.CustCode, string.Format("CreateIssueSched() Failed to send HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message), request);
+                    Result = -4;
+                }
+                finally
+                {
+                    if (stmt != null)
+                        stmt.Close();
+                }
+            }
+            return Result;
+        }
+
+        [WebMethod(Description = "Update issue tracking system schedule record JSON")]
+        [ScriptMethod(UseHttpGet = false, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public int UpdateIssueSchedJson(Request req, IssueSched sched)
+        {
+            return UpdateIssueSched(req, sched);
+        }
+
+        [WebMethod(Description = "Update issue tracking system schedule record")]
+        public int UpdateIssueSched(Request request, IssueSched sched)
+        {
+            int Result = -9;
+            if (LowSecurityCheck(request, "UpdateIssueSched"))
+            {
+                string connStr = CustConnectionString(request);
+                SqlStmt stmt = null;
+                try
+                {
+                    if (GetStmt(connStr, out stmt))
+                    {
+                        stmt.Conn.ignoreDupErr = true;
+                        SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
+                        sql.Add("cancel_flag", sched.CancelFlag);
+                        sql.Add("cancel_date", sched.CancelDate);
+                        sql.Add("cancel_reason", sched.CancelReason);
+                        stmt.DoSQL(sql.BuildUpdate("UPDATE issue_sched", string.Format(" WHERE issue_tick_id = {0} and sched_date = {1}", sched.IssueId, SqlHelper.timeStamp(sched.SchedDate))));
+                        if (stmt.LastError == string.Empty)
+                            Result = 0;
+                        else
+                            Result = -3;
+                    }
+                }
+                catch (Exception x)
+                {
+                    Global.messLog.Flush("UpdateIssueSched() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
+                    InsertErrorRecord(request.CustCode, string.Format("UpdateIssueSched() Failed to send HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message), request);
+                    Result = -4;
+                }
+                finally
+                {
+                    if (stmt != null)
+                        stmt.Close();
+                }
+            }
+            return Result;
+        }
+
+        [WebMethod(Description = "Create an issue tracking system item JSON")]
+        [ScriptMethod(UseHttpGet = false, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public int CreateIssueItemJson(Request req, IssueItem item)
+        {
+            return CreateIssueItem(req, item);
+        }
+
+        [WebMethod(Description = "Create an issue tracking system item record")]
+        public int CreateIssueItem(Request request, IssueItem item)
+        {
+            int Result = -9;
+            if (LowSecurityCheck(request, "CreateIssueItem"))
+            {
+                string connStr = CustConnectionString(request);
+                SqlStmt stmt = null;
+                try
+                {
+                    if (GetStmt(connStr, out stmt))
+                    {
+                        SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
+                        sql.Add("issue_tick_id", item.IssueId);
+                        sql.Add("issue_sched_id", item.SchedId);
+                        sql.Add("time_start", item.TimeStart);
+                        sql.AddNow("idate");
+                        sql.Add("who_created", item.WhoCreated);
+                        sql.Add("hrs_onsite", item.HrsOnSite);
+                        sql.Add("technician", item.Technician);
+                        sql.Add("travel_km", item.TravelKm);
+                        sql.Add("comments", item.Comments);
+                        stmt.DoSQL(sql.BuildInsert("INSERT INTO issue_item"));
+                        if (stmt.LastError == string.Empty)
+                            Result = 0;
+                        else
+                            Result = -3;
+                    }
+                }
+                catch (Exception x)
+                {
+                    Global.messLog.Flush("CreateIssueItem() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
+                    InsertErrorRecord(request.CustCode, string.Format("CreateIssueItem() Failed to send HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message), request);
+                    Result = -4;
+                }
+                finally
+                {
+                    if (stmt != null)
+                        stmt.Close();
+                }
+            }
+            return Result;
+        }
+
+
+        [WebMethod(Description = "Update an issue tracking system item JSON")]
+        [ScriptMethod(UseHttpGet = false, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public int UpdateIssueItemJson(Request req, IssueItem item)
+        {
+            return UpdateIssueItem(req, item);
+        }
+
+        [WebMethod(Description = "Update an issue tracking system item record")]
+        public int UpdateIssueItem(Request request, IssueItem item)
+        {
+            int Result = -9;
+            if (LowSecurityCheck(request, "UpdateIssueItem"))
+            {
+                string connStr = CustConnectionString(request);
+                SqlStmt stmt = null;
+                try
+                {
+                    if (GetStmt(connStr, out stmt))
+                    {
+                        SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
+                        if (item.TimeStart != null)
+                            sql.Add("time_start", item.TimeStart);
+                        sql.AddNow("idate");
+                        if (item.HrsOnSite > 0)
+                            sql.Add("hrs_onsite", item.HrsOnSite);
+                        if (item.Technician != null)
+                            sql.Add("technician", item.Technician);
+                        if (item.TravelKm > 0)
+                            sql.Add("travel_km", item.TravelKm);
+                        if (item.Comments != null)
+                        {
+                            stmt.DoSQLFormat("SELECT comments FROM issue_item WHERE issue_tick_id = {0} and issue_sched_id = {1}", item.IssueId, item.SchedId);
+                            string comments = stmt.fetch("comments");
+                            if (comments.Length > 0)
+                                comments += "|";
+                            comments += item.Comments;
+                            sql.Add("comments", comments);
+                        }
+                        stmt.DoSQL(sql.BuildUpdate("UPDATE issue_item", string.Format("WHERE issue_tick_id = {0} and issue_sched_id = {1}", item.IssueId, item.SchedId)));
+                        if (stmt.LastError == string.Empty)
+                            Result = 0;
+                        else
+                            Result = -3;
+                    }
+                }
+                catch (Exception x)
+                {
+                    Global.messLog.Flush("UpdateIssueItem() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
+                    InsertErrorRecord(request.CustCode, string.Format("UpdateIssueItem() Failed to send HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message), request);
+                    Result = -4;
+                }
+                finally
+                {
+                    if (stmt != null)
+                        stmt.Close();
+                }
+            }
+            return Result;
+        }
+
         [WebMethod(Description = "Retrieve list of yards as JSON filtered by roles for a user (optional)")]
         [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
         public Yard[] GetYardListJsonRole(Request req, string username)

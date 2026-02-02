@@ -2787,6 +2787,74 @@ namespace RoadaWebService
         public ImgInfo[] Images { get; set; }
     }
 
+    [DataContract]
+    public class IssueInfo
+    {
+        [DataMember]
+        public int DevId { get; set; }
+        [DataMember]
+        public string UnitNum { get; set; }
+        [DataMember]
+        public DateTime IssueDate { get; set; }
+        [DataMember]
+        public bool ClosedFlag { get; set; }
+        [DataMember]
+        public string WhoClosed { get; set; }
+        [DataMember]
+        public string WhoCreated { get; set; }
+        [DataMember]
+        public int ReasonCode { get; set; }
+        [DataMember]
+        public string OtherReason { get; set; }
+        [DataMember]
+        public string Comments { get; set; }
+        [DataMember]
+        public IssueSched[] Scheduled { get; set; }
+    }
+
+    [DataContract]
+    public class IssueSched
+    {
+        [DataMember]
+        public int IssueId { get; set; }
+        [DataMember]
+        public DateTime SchedDate { get; set; }
+        [DataMember]
+        public string WhoCreated { get; set; }
+        [DataMember]
+        public bool CancelFlag { get; set; }
+        [DataMember]
+        public DateTime CancelDate { get; set; }
+        [DataMember]
+        public string CancelReason { get; set; }
+        [DataMember]
+        public string Comments { get; set; }
+        [DataMember]
+        public IssueItem[] Items { get; set; }
+    }
+
+    [DataContract]
+    public class IssueItem
+    {
+        [DataMember]
+        public int IssueId { get; set; }
+        [DataMember]
+        public int SchedId { get; set; }
+        [DataMember]
+        public DateTime TimeStart { get; set; }
+        [DataMember]
+        public string WhoCreated { get; set; }
+        [DataMember]
+        public string Technician { get; set; }
+        [DataMember]
+        public double HrsOnSite { get; set; }
+        [DataMember]
+        public int TravelKm { get; set; }
+        [DataMember]
+        public string Comments { get; set; }
+    }
+
+
     public class TPatrol511
     {
         public int HandCode;
