@@ -87,7 +87,13 @@ using myDbCommand = ADODB.Command;
 using myDataReader = ADODB.DataReader;  Nope
 using myParameter = ADODB.Parameter;
 using myTransaction = ADODB.Transaction;   Nope 
-
+#elif POSTGRESQL
+using Npgsql;
+using myDbConnection = Npgsql.NpgsqlConnection;
+using myDbCommand = Npgsql.NpgsqlCommand;
+using myDataReader = Npgsql.NpgsqlDataReader;
+using myParameter = Npgsql.NpgsqlParameter;
+using myTransaction = Npgsql.NpgsqlTransaction;
 #else
 #define SQLSERVER
 using System.Data.SqlClient;
