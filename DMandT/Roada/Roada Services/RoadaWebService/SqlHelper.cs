@@ -12,7 +12,7 @@ namespace DMTServices
 {
     public class SqlHelper
     {
-        public enum dbType { SqlServer, Oracle, Access, DBF, Firebird };
+        public enum dbType { SqlServer, Oracle, Access, DBF, Firebird, Postgresql };
 
         private List<string> ColumnList = new List<string>();       // column names
         private List<object> ValueList = new List<object>();        // values to insert/update
@@ -510,10 +510,21 @@ namespace DMTServices
         /// </summary>
         public int Add(string colName, bool b)
         {
-            if (b)
-                return Add(colName, 1);
+            if (DataSource == dbType.Postgresql)
+            {
+                // Postgresql needs the actual name true/false
+                if (b)
+                    return Add(colName, "true", false);
+                else
+                    return Add(colName, "false", false);
+            }
             else
-                return Add(colName, 0);
+            {
+                if (b)
+                    return Add(colName, 1);
+                else
+                    return Add(colName, 0);
+            }
         }
 
         public int AddnotEmtpy(string colName, double value)
