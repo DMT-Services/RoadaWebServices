@@ -1003,10 +1003,20 @@ namespace DMTServices
 
         public static string timeStamp(DateTime date, dbType dbtype)
         {
-            if (dbtype == dbType.Oracle)
-                return string.Format("to_date('{0}', 'YYYY-MM-DD HH24:MI:SS')", date.ToString("yyyy-MM-dd HH:mm:ss"));
-            else
-                return timeStamp(date);
+            string Result;
+            switch (dbtype)
+            {
+                case dbType.Oracle:
+                    Result = string.Format("to_date('{0}', 'YYYY-MM-DD HH24:MI:SS')", date.ToString("yyyy-MM-dd HH:mm:ss"));
+                    break;
+                case dbType.Postgresql:
+                    Result = date.ToString("yyyy-MM-dd HH:mm:ss");
+                    break;
+                default:
+                    Result = timeStamp(date);
+                    break;
+            }
+            return Result;
         }
 
         // 'older' Oracle's connection stuff doesn't appear to have the GetSchema function?
