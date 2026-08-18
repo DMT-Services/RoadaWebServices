@@ -2788,8 +2788,21 @@ namespace RoadaWebService
     }
 
     [DataContract]
+    public class IssueReason
+    {
+        [DataMember]
+        public int code;
+        [DataMember]
+        public string label;
+        [DataMember]
+        public string value;
+    }
+
+    [DataContract]
     public class IssueInfo
     {
+        [DataMember]
+        public int IssueId { get; set; }
         [DataMember]
         public int DevId { get; set; }
         [DataMember]
@@ -2809,6 +2822,10 @@ namespace RoadaWebService
         [DataMember]
         public string Comments { get; set; }
         [DataMember]
+        public string RepKey { get; set; }
+        [DataMember]
+        public ImgInfo[] Images { get; set; }
+        [DataMember]
         public IssueSched[] Scheduled { get; set; }
     }
 
@@ -2816,11 +2833,15 @@ namespace RoadaWebService
     public class IssueSched
     {
         [DataMember]
+        public int Id { get; set; }
+        [DataMember]
         public int IssueId { get; set; }
         [DataMember]
         public DateTime SchedDate { get; set; }
         [DataMember]
         public string WhoCreated { get; set; }
+        [DataMember]
+        public string SchedTech { get; set; }
         [DataMember]
         public bool CancelFlag { get; set; }
         [DataMember]

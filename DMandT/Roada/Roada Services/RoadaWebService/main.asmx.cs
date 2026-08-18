@@ -1412,6 +1412,118 @@ namespace RoadaWebService
             return GetIssues(req, false, sdate);
         }
 
+        [WebMethod(Description = "Retrieve a single issue by id as JSON")]
+        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public IssueInfo GetIssueJson(Request req, int issueId)
+        {
+            IssueInfo Result = null;
+            if (LowSecurityCheck(req, "GetIssueJson"))
+            {
+                string connStr = CustConnectionString(req);
+                SqlStmt stmt = null;
+                SqlStmt stmt2 = null;
+                SqlStmt stmt3 = null;
+                try
+                {
+                    if (GetStmt(connStr, out stmt))
+                    {
+                        GetStmt(connStr, out stmt2);
+                        GetStmt(connStr, out stmt3);
+                        if (stmt.DoSQLFormat("SELECT * FROM issue_tickets WHERE id = {0}", issueId))
+                            Result = GetIssue(stmt, stmt2, stmt3);
+                    }
+                }
+                catch (Exception x)
+                {
+                    Global.messLog.Flush("GetIssueJson() HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, x.Message);
+                }
+                finally
+                {
+                    if (stmt != null)
+                        stmt.Close();
+                    if (stmt2 != null)
+                        stmt.Close();
+                    if (stmt3 != null)
+                        stmt.Close();
+                }
+            }
+            return Result;
+        }
+
+        private IssueInfo GetIssue(SqlStmt stmt, SqlStmt stmt2, SqlStmt stmt3)
+        {
+            IssueInfo info = new IssueInfo();
+            info.IssueId = stmt.ifetch("id");
+            info.DevId = stmt.ifetch("hand_code");
+            info.UnitNum = stmt.fetch("unit_num");
+            info.IssueDate = stmt.dtfetch("issue_date");
+            info.ClosedFlag = stmt.tfetch("closed_flag");
+            info.WhoClosed = stmt.fetch("who_closed");
+            info.WhoCreated = stmt.fetch("who_created");
+            info.ReasonCode = stmt.ifetch("reason_code");
+            info.OtherReason = stmt.fetch("other_reason");
+            info.Comments = stmt.fetch("comments");
+            info.RepKey = stmt.fetch("repkey");
+
+            int id = stmt.ifetch("id");
+            List<ImgInfo> images = new List<ImgInfo>();
+            bool rc2;
+            if (info.RepKey.Length > 0)
+            {
+                rc2 = stmt2.DoSQLFormat("SELECT * FROM Img_Events WHERE repkey = '{0}'", info.RepKey);
+                while (rc2)
+                {
+                    ImgInfo img = new ImgInfo();
+                    img.EvtType = stmt2.ifetch("evt_type");
+                    img.rdate = stmt2.dtfetch("rdate");
+                    img.ImgUrl = stmt2.fetch("img_url");
+                    images.Add(img);
+                    rc2 = stmt2.dbSkip();
+                }
+            }
+            info.Images = images.ToArray();
+            images.Clear();
+            rc2 = stmt2.DoSQLFormat("SELECT * FROM issue_sched WHERE issue_tick_id = {0} ORDER BY id", id);
+            List<IssueSched> scheds = new List<IssueSched>();
+            while (rc2)
+            {
+                int sid = stmt2.ifetch("id");
+                IssueSched sched = new IssueSched();
+                sched.IssueId = id;
+                sched.Id = sid;
+                sched.SchedDate = stmt2.dtfetch("sched_date");
+                sched.WhoCreated = stmt2.fetch("who_created");
+                sched.CancelFlag = stmt2.tfetch("cancel_flag");
+                sched.CancelDate = stmt2.dtfetch("cancel_date");
+                sched.CancelReason = stmt2.fetch("cancel_reason");
+                sched.Comments = stmt2.fetch("comments");
+                sched.SchedTech = stmt2.fetch("sched_tech");
+                bool rc3 = stmt3.DoSQLFormat("SELECT * FROM issue_item WHERE issue_tick_id = {0} and issue_sched_id = {1} ORDER BY id", id, sid);
+                List<IssueItem> items = new List<IssueItem>();
+                while (rc3)
+                {
+                    IssueItem item = new IssueItem();
+                    item.IssueId = id;
+                    item.SchedId = sid;
+                    item.TimeStart = stmt3.dtfetch("time_start");
+                    item.WhoCreated = stmt3.fetch("who_created");
+                    item.Technician = stmt3.fetch("technician");
+                    item.HrsOnSite = stmt3.dfetch("hrs_onsite");
+                    item.TravelKm = stmt3.ifetch("travel_km");
+                    item.Comments = stmt3.fetch("comments");
+                    items.Add(item);
+                    rc3 = stmt3.dbSkip();
+                }
+                sched.Items = items.ToArray();
+                items.Clear();
+                scheds.Add(sched);
+                rc2 = stmt2.dbSkip();
+            }
+            info.Scheduled = scheds.ToArray();
+            scheds.Clear();
+            return info;
+        }
+
         [WebMethod(Description = "Retrieve issue tracking system tickets")]
         public IssueInfo[] GetIssues(Request request, bool open, DateTime sdate)
         {
@@ -1436,55 +1548,7 @@ namespace RoadaWebService
                             rc = stmt.DoSQLFormat("SELECT * FROM issue_tickets WHERE issue_date >= {0} ORDER BY id", SqlHelper.timeStamp(sdate));
                         while (rc)
                         {
-                            IssueInfo info = new IssueInfo();
-                            info.DevId = stmt.ifetch("hand_code");
-                            info.UnitNum = stmt.fetch("unit_num");
-                            info.IssueDate = stmt.dtfetch("issue_date");
-                            info.ClosedFlag = stmt.tfetch("closed_flag");
-                            info.WhoClosed = stmt.fetch("who_closed");
-                            info.WhoCreated = stmt.fetch("who_created");
-                            info.ReasonCode = stmt.ifetch("reason_code");
-                            info.OtherReason = stmt.fetch("other_reason");
-                            info.Comments = stmt.fetch("comments");
-
-                            int id = stmt.ifetch("id");
-                            bool rc2 = stmt2.DoSQLFormat("SELECT * FROM issue_sched WHERE issue_tick_id = {0} ORDER BY id", id);
-                            List<IssueSched> scheds = new List<IssueSched>();
-                            while(rc2)
-                            {
-                                int sid = stmt2.ifetch("id");
-                                IssueSched sched = new IssueSched();
-                                sched.IssueId = id;
-                                sched.SchedDate = stmt2.dtfetch("sched_date");
-                                sched.WhoCreated = stmt2.fetch("who_created");
-                                sched.CancelFlag = stmt2.tfetch("cancel_flag");
-                                sched.CancelDate = stmt2.dtfetch("cancel_date");
-                                sched.CancelReason = stmt2.fetch("cancel_reason");
-                                sched.Comments = stmt2.fetch("comments");
-                                bool rc3 = stmt3.DoSQLFormat("SELECT * FROM issue_item WHERE issue_tick_id = {0} and issue_sched_id = {1} ORDER BY id", id, sid);
-                                List<IssueItem> items = new List<IssueItem>();
-                                while (rc3)
-                                {
-                                    IssueItem item = new IssueItem();
-                                    item.IssueId = id;
-                                    item.SchedId = sid;
-                                    item.TimeStart = stmt3.dtfetch("time_start");
-                                    item.WhoCreated = stmt3.fetch("who_created");
-                                    item.Technician = stmt3.fetch("technician");
-                                    item.HrsOnSite = stmt3.dfetch("hrs_onsite");
-                                    item.TravelKm = stmt3.ifetch("travel_km");
-                                    item.Comments = stmt3.fetch("comments");
-                                    items.Add(item);
-                                    rc3 = stmt3.dbSkip();
-                                }
-                                sched.Items = items.ToArray();
-                                items.Clear();
-                                scheds.Add(sched);
-                                rc2 = stmt2.dbSkip();
-                            }
-                            info.Scheduled = scheds.ToArray();
-                            scheds.Clear();
-
+                            IssueInfo info = GetIssue(stmt, stmt2, stmt3);
                             issues.Add(info);
 
                             rc = stmt.dbSkip();
@@ -1511,6 +1575,95 @@ namespace RoadaWebService
             return Result;
         }
 
+        [WebMethod(Description = "Retrieve issue reasons as JSON")]
+        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public IssueReason[] GetIssueReasonsJson(Request req)
+        {
+            return GetIssueReasons(req);
+        }
+
+
+        [WebMethod(Description = "Retrieve issue tracking reason codes")]
+        public IssueReason[] GetIssueReasons(Request request)
+        {
+            IssueReason[] Result = null;
+            if (LowSecurityCheck(request, "GetIssueReasons"))
+            {
+                string connStr = CustConnectionString(request);
+                SqlStmt stmt = null;
+                try
+                {
+                    if (GetStmt(connStr, out stmt))
+                    {
+                        List<IssueReason> reasons = new List<IssueReason>();
+                        bool rc = stmt.DoSQL("SELECT * FROM reasons ORDER BY code");
+                        while (rc)
+                        {
+                            IssueReason r = new IssueReason();
+                            r.code = stmt.ifetch("code");
+                            r.label = stmt.fetch("reason_text");
+                            r.value = stmt.fetch("reason_text");
+                            reasons.Add(r);
+                            rc = stmt.dbSkip();
+                        }
+                        Result = reasons.ToArray();
+                        reasons.Clear();
+                    }
+                }
+                catch (Exception x)
+                {
+                    Global.messLog.Flush("GetIssueReasons() HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message);
+                    InsertErrorRecord(request.CustCode, string.Format("GetIssueReaons() Failed to send HandCode:{0} Version:{1} Error:{2}", request.Handcode, request.Version, x.Message), request);
+                }
+                finally
+                {
+                    if (stmt != null)
+                        stmt.Close();
+                }
+            }
+            return Result;
+        }
+        [WebMethod(Description = "Create an issue tracking system item JSON")]
+        [ScriptMethod(UseHttpGet = false, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public int CloseIssueTicketJson(Request req, IssueInfo info)
+        {
+            int Result = -9;
+            if (LowSecurityCheck(req, "CloseIssueTicket"))
+            {
+                string connStr = CustConnectionString(req);
+                SqlStmt stmt = null;
+                try
+                {
+                    if (GetStmt(connStr, out stmt))
+                    {
+                        SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
+                        sql.Add("closed_flag", true);
+                        sql.AddNow("closed_date");
+                        sql.Add("who_closed", info.WhoClosed);
+                        stmt.DoSQL(sql.BuildUpdate("UPDATE issue_tickets", " WHERE id = " + info.IssueId.ToString()));
+                        if (stmt.LastError == string.Empty)
+                            Result = 0;
+                        else
+                            Result = -3;
+                    }
+                }
+                catch (Exception x)
+                {
+                    Global.messLog.Flush("CloseIssueTicket() HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, x.Message);
+                    Result = -4;
+                }
+                finally
+                {
+                    if (stmt != null)
+                        stmt.Close();
+                }
+            }
+            return Result;
+
+        }
+
+
+
         [WebMethod(Description = "Create an Issue Ticket as JSON")]
         [ScriptMethod(UseHttpGet = false, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
         public int CreateIssueTicketJson(Request req, IssueInfo info)
@@ -1534,17 +1687,29 @@ namespace RoadaWebService
                         SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
                         sql.Add("hand_code", info.DevId);
                         sql.Add("unit_num", info.UnitNum);
-                        sql.Add("issue_date", info.IssueDate);
-                        sql.AddNow("idate");
-                        sql.Add("who_created", info.WhoCreated);
                         sql.Add("reason_code", info.ReasonCode);
                         sql.Add("other_reason", info.OtherReason);
-                        sql.Add("comments", info.Comments);
-                        stmt.DoSQL(sql.BuildInsert("INSERT INTO issue_tickets"));
+                        stmt.Add("@comments", info.Comments);
+                        sql.Add("comments", "@comments", false);
+                        int id;
+                        if (info.IssueId > 0)
+                        {
+                            stmt.DoSQL(sql.BuildUpdate("UPDATE issue_tickets", " WHERE id = " + info.IssueId.ToString()));
+                            id = info.IssueId;
+                        }
+                        else
+                        {
+                            sql.Add("issue_date", info.IssueDate);
+                            sql.Add("who_created", info.WhoCreated);
+                            sql.Add("repkey", info.RepKey);
+                            sql.AddNow("idate");
+                            stmt.DoSQL(sql.BuildInsert("INSERT INTO issue_tickets", " output inserted.id VALUES "), true);
+                            id = stmt.ifetch("id");
+                        }
                         if (stmt.LastError.Contains("duplicate"))
                             Result = -2;
                         else if (stmt.LastError == string.Empty)
-                            Result = 0;
+                            Result = id;
                         else
                             Result = -3;
                     }
@@ -1592,12 +1757,13 @@ namespace RoadaWebService
                         sql.Add("cancel_flag", sched.CancelFlag);
                         sql.Add("cancel_date", sched.CancelDate);
                         sql.Add("cancel_reason", sched.CancelReason);
-                        sql.Add("comments", sched.Comments);
-                        stmt.DoSQL(sql.BuildInsert("INSERT INTO issue_sched"));
+                        stmt.Add("comments", sched.Comments);
+                        sql.Add("comments", "@comments", false);
+                        stmt.DoSQL(sql.BuildInsert("INSERT INTO issue_sched", " output inserted.id VALUES "), true);
                         if (stmt.LastError.Contains("duplicate"))
                             Result = -2;
                         else if (stmt.LastError == string.Empty)
-                            Result = 0;
+                            Result = stmt.ifetch("id");
                         else
                             Result = -3;
                     }
@@ -1641,6 +1807,8 @@ namespace RoadaWebService
                         sql.Add("cancel_flag", sched.CancelFlag);
                         sql.Add("cancel_date", sched.CancelDate);
                         sql.Add("cancel_reason", sched.CancelReason);
+                        stmt.Add("comments", sched.Comments);
+                        sql.Add("comments", "@comments", false);
                         stmt.DoSQL(sql.BuildUpdate("UPDATE issue_sched", string.Format(" WHERE issue_tick_id = {0} and sched_date = {1}", sched.IssueId, SqlHelper.timeStamp(sched.SchedDate))));
                         if (stmt.LastError == string.Empty)
                             Result = 0;
@@ -1691,7 +1859,8 @@ namespace RoadaWebService
                         sql.Add("hrs_onsite", item.HrsOnSite);
                         sql.Add("technician", item.Technician);
                         sql.Add("travel_km", item.TravelKm);
-                        sql.Add("comments", item.Comments);
+                        stmt.Add("comments", item.Comments);
+                        sql.Add("comments", "@comments", false);
                         stmt.DoSQL(sql.BuildInsert("INSERT INTO issue_item"));
                         if (stmt.LastError == string.Empty)
                             Result = 0;
@@ -1746,12 +1915,8 @@ namespace RoadaWebService
                             sql.Add("travel_km", item.TravelKm);
                         if (item.Comments != null)
                         {
-                            stmt.DoSQLFormat("SELECT comments FROM issue_item WHERE issue_tick_id = {0} and issue_sched_id = {1}", item.IssueId, item.SchedId);
-                            string comments = stmt.fetch("comments");
-                            if (comments.Length > 0)
-                                comments += "|";
-                            comments += item.Comments;
-                            sql.Add("comments", comments);
+                            stmt.Add("comments", item.Comments);
+                            sql.Add("comments", "@comments", false);
                         }
                         stmt.DoSQL(sql.BuildUpdate("UPDATE issue_item", string.Format("WHERE issue_tick_id = {0} and issue_sched_id = {1}", item.IssueId, item.SchedId)));
                         if (stmt.LastError == string.Empty)
