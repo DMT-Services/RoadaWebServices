@@ -2725,6 +2725,8 @@ namespace RoadaWebService
         public bool testimage { get; set; }
         [DataMember]
         public string testimageNote { get; set; }
+        [DataMember]
+        public string repKey { get; set; }
     }
 
     [DataContract]
