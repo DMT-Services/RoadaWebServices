@@ -4207,6 +4207,7 @@ namespace RoadaWebService
                     sql.Add("camerareportNote", wdata.camerareportNote);
                     sql.Add("testimage", wdata.testimage);
                     sql.Add("testimageNote", wdata.testimageNote);
+                    sql.Add("repKey", wdata.repKey);
 
 
                     stmt.DoSQLFormat(sql.BuildInsert("INSERT INTO winter_ready"));
