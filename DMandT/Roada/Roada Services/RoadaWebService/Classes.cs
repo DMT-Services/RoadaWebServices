@@ -308,6 +308,21 @@ namespace RoadaWebService
     }
 
     [DataContract]
+    public class UserNotes
+    {
+        [DataMember]
+        public int HandCode { get; set; }
+        [DataMember]
+        public string UnitNum { get; set; }
+        [DataMember]
+        public string UserName { get; set; }
+        [DataMember]
+        public DateTime ReportTime { get; set; }
+        [DataMember]
+        public string Notes { get; set; }
+    }
+
+    [DataContract]
     public class DeficiencyData
     {
         [DataMember(IsRequired = false, EmitDefaultValue = false)]

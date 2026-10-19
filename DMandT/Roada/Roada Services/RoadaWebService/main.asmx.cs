@@ -1543,7 +1543,7 @@ namespace RoadaWebService
                         List<IssueInfo> issues = new List<IssueInfo>();
                         bool rc;
                         if (open)
-                            rc = stmt.DoSQL("SELECT * FROM issue_tickets WHERE closed_flag is null ORDER BY id");
+                            rc = stmt.DoSQL("SELECT * FROM issue_tickets WHERE isnull(closed_flag, 0) = 0 ORDER BY id");
                         else
                             rc = stmt.DoSQLFormat("SELECT * FROM issue_tickets WHERE issue_date >= {0} ORDER BY id", SqlHelper.timeStamp(sdate));
                         while (rc)
@@ -6320,6 +6320,14 @@ namespace RoadaWebService
                                        { "WO_Id", "workorderid" },
                                        { "WO_No", "workorderno" } };
 
+        // defines the relationship between UserNote class and usernotes fields
+        // first string is name in class, second is name in database
+        string[,] userNotesLayout = {  { "HandCode", "hand_code"},
+                                       { "UnitNum", "unit_num"},
+                                       { "UserName", "user_name"},
+                                       { "ReportTime", "rdate"},
+                                       { "Notes", "notes"} };
+
         // these are only used when sending data TO tablets and MUST be removed when receiving...
         string[] defSendOnly = new string[] { "id", "requestid", "closed", "workorderid", "workorderno" };
 
@@ -6533,6 +6541,64 @@ namespace RoadaWebService
                 Result = -3;
                 Global.messLog.Flush("SendDeficiencyData() data failed to receive: " + ex.Message);
                 InsertErrorRecord(req.CustCode, string.Format("SendDeficiencyData() data failed to receive HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, ex.Message), req);
+            }
+            finally
+            {
+                if (stmt != null)
+                    stmt.Close();
+            }
+
+            return Result;
+        }
+
+        [WebMethod(Description = "Receive UserNotes as JSON")]
+        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public int SendUserNotesJson(Request req, UserNotes data)
+        {
+            return SendUserNotes(req, data);
+        }
+
+        [WebMethod(Description = "Receive User Notes from tablet")]
+        public int SendUserNotes(Request req, UserNotes data)
+        {
+            int Result = -1;
+            // low security check, don't want hackers!
+            if (!LowSecurityCheck(req, "SendUserNotes"))
+                return Result;
+
+            string connStr = CustConnectionString(req);
+
+            SqlStmt stmt = null;
+            try
+            {
+                Result = -2;
+                if (GetStmt(connStr, out stmt))
+                {
+                    SqlHelper sql = procData.fillQuery(data, userNotesLayout);
+
+                    string where = string.Format("WHERE hand_code = {0} and rdate = {1}", data.HandCode, SqlHelper.timeStamp(data.ReportTime));
+                    sql.AddNow("idate");
+                    if (stmt.DoSQL("SELECT id FROM usernotes " + where))
+                    {
+                        Result = stmt.ifetch("id");     // return the ID of the existing record...
+                    }
+                    else
+                    {
+                        sql.Add("vehicle_id", getVehicleId(stmt, data.HandCode, data.UnitNum));
+                        // MUST set second param of DoSQL() to true as this makes it run the insert 
+                        // as an ExecuteReader instead of ExecuteNonQuery so we can get back the inserted id
+                        stmt.DoSQL(sql.BuildInsert("INSERT INTO usernotes", " output inserted.id VALUES "), true);
+                        Result = stmt.ifetch("id");     // return the ID of the new record...
+                    }
+
+                    logUser(stmt, req, data.UserName, true);
+                }
+            }
+            catch (Exception ex)
+            {
+                Result = -3;
+                Global.messLog.Flush("SendUserNotes() data failed to receive: " + ex.Message);
+                InsertErrorRecord(req.CustCode, string.Format("SendUserNotes() data failed to receive HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, ex.Message), req);
             }
             finally
             {
