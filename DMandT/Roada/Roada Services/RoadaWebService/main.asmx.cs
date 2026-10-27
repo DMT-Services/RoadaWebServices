@@ -6327,7 +6327,8 @@ namespace RoadaWebService
                                        { "UnitNum", "unit_num"},
                                        { "UserName", "user_name"},
                                        { "ReportTime", "rdate"},
-                                       { "Notes", "notes"} };
+                                       { "Notes", "notes"},
+                                       { "WorkOrderNo", "workorderno" } };
 
         // these are only used when sending data TO tablets and MUST be removed when receiving...
         string[] defSendOnly = new string[] { "id", "requestid", "closed", "workorderid", "workorderno" };

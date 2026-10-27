@@ -320,6 +320,8 @@ namespace RoadaWebService
         public DateTime ReportTime { get; set; }
         [DataMember]
         public string Notes { get; set; }
+        [DataMember]
+        public string WorkOrderNo { get; set; }
     }
 
     [DataContract]
