@@ -1398,6 +1398,32 @@ namespace RoadaWebService
             return Result;
         }
 
+        [WebMethod(Description = "Count open issue tracking tickets as JSON")]
+        [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
+        public int GetOpenIssueCountJson(Request req)
+        {
+            if (!LowSecurityCheck(req, "GetOpenIssues"))
+                return -9;
+
+            SqlStmt stmt = null;
+            try
+            {
+                if (GetStmt(CustConnectionString(req), out stmt)
+                    && stmt.DoSQL("SELECT COUNT(*) AS open_count FROM issue_tickets WHERE ISNULL(closed_flag, 0) = 0"))
+                    return stmt.ifetch("open_count");
+                return -3;
+            }
+            catch (Exception x)
+            {
+                Global.messLog.Flush("GetOpenIssueCount() HandCode:{0} Version:{1} Error:{2}", req.Handcode, req.Version, x.Message);
+                return -4;
+            }
+            finally
+            {
+                if (stmt != null) stmt.Close();
+            }
+        }
+
         [WebMethod(Description = "Retrieve only open issue tracking tickets as json")]
         [ScriptMethod(UseHttpGet = true, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
         public IssueInfo[] GetOpenIssuesJson(Request req)
@@ -1463,6 +1489,7 @@ namespace RoadaWebService
             info.ReasonCode = stmt.ifetch("reason_code");
             info.OtherReason = stmt.fetch("other_reason");
             info.Comments = stmt.fetch("comments");
+            info.ClientNotes = stmt.fetch("client_notes");
             info.RepKey = stmt.fetch("repkey");
 
             int id = stmt.ifetch("id");
@@ -1630,6 +1657,10 @@ namespace RoadaWebService
             int Result = -9;
             if (LowSecurityCheck(req, "CloseIssueTicket"))
             {
+                // -5: client notes are required before closing a ticket.
+                if (info == null)
+                    return -5;
+
                 string connStr = CustConnectionString(req);
                 SqlStmt stmt = null;
                 try
@@ -1637,9 +1668,16 @@ namespace RoadaWebService
                     if (GetStmt(connStr, out stmt))
                     {
                         SqlHelper sql = new SqlHelper(SqlHelper.dbType.SqlServer);
+                        if (!stmt.DoSQLFormat("SELECT client_notes FROM issue_tickets WHERE id = {0}", info.IssueId))
+                            return -3;
+                        if (string.IsNullOrWhiteSpace(info.NewClientNote ?? info.ClientNotes)
+                            && string.IsNullOrWhiteSpace(stmt.fetch("client_notes")))
+                            return -5;
+
                         sql.Add("closed_flag", true);
                         sql.AddNow("closed_date");
                         sql.Add("who_closed", info.WhoClosed);
+                        AddClientNote(stmt, sql, info, false);
                         stmt.DoSQL(sql.BuildUpdate("UPDATE issue_tickets", " WHERE id = " + info.IssueId.ToString()));
                         if (stmt.LastError == string.Empty)
                             Result = 0;
@@ -1663,6 +1701,23 @@ namespace RoadaWebService
         }
 
 
+
+        // Append only the new entry. SQL timestamps and appends it atomically,
+        // preserving notes saved by another user since the ticket was loaded.
+        private void AddClientNote(SqlStmt stmt, SqlHelper sql, IssueInfo info, bool insert)
+        {
+            // ClientNotes is accepted for compatibility with older app versions.
+            string note = info.NewClientNote ?? info.ClientNotes;
+            if (string.IsNullOrWhiteSpace(note))
+                return;
+
+            stmt.Add("@clientNote", note.Trim());
+            string entry = "N'[' + CONVERT(nvarchar(19), GETUTCDATE(), 120) + N' UTC]' + NCHAR(13) + NCHAR(10) + @clientNote";
+            string value = insert ? entry :
+                "CASE WHEN ISNULL(client_notes, N'') = @clientNote THEN client_notes ELSE " +
+                "CASE WHEN NULLIF(client_notes, N'') IS NULL THEN N'' ELSE client_notes + NCHAR(13) + NCHAR(10) + NCHAR(13) + NCHAR(10) END + " + entry + " END";
+            sql.Add("client_notes", value, false);
+        }
 
         [WebMethod(Description = "Create an Issue Ticket as JSON")]
         [ScriptMethod(UseHttpGet = false, XmlSerializeString = false, ResponseFormat = ResponseFormat.Json)]
@@ -1691,6 +1746,7 @@ namespace RoadaWebService
                         sql.Add("other_reason", info.OtherReason);
                         stmt.Add("@comments", info.Comments);
                         sql.Add("comments", "@comments", false);
+                        AddClientNote(stmt, sql, info, info.IssueId <= 0);
                         int id;
                         if (info.IssueId > 0)
                         {

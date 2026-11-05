@@ -2821,6 +2821,10 @@ namespace RoadaWebService
     public class IssueInfo
     {
         [DataMember]
+        public string ClientNotes { get; set; }
+        [DataMember]
+        public string NewClientNote { get; set; }
+        [DataMember]
         public int IssueId { get; set; }
         [DataMember]
         public int DevId { get; set; }
