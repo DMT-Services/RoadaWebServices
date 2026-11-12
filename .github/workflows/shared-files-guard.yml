@@ -1,0 +1,31 @@
+# Installed into each project by the shared-code sync.
+# Fails any pull request that edits a shared file directly, so shared-code stays the only source.
+name: Shared files guard
+
+on:
+  pull_request:
+
+jobs:
+  guard:
+    # The sync bot's own PRs are allowed to change shared files.
+    if: github.head_ref != 'sync/shared-files'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Block edits to shared files
+        run: |
+          manifest=".github/shared-files.txt"
+          [ -f "$manifest" ] || { echo "No shared files manifest; nothing to check."; exit 0; }
+
+          changed="$(git diff --name-only "origin/${{ github.base_ref }}...HEAD")"
+          hits="$(grep -v '^#' "$manifest" | grep -Fx -f - <<<"$changed" || true)"
+
+          if [ -n "$hits" ]; then
+            echo "::error::These files are managed by the shared-code repo and must be changed there:"
+            echo "$hits" | sed 's/^/  - /'
+            exit 1
+          fi
+          echo "No shared files modified."
