@@ -2,6 +2,8 @@
 // as there are a couple of #define's inside 
 // these #if's and they MUST come first
 
+// I added a comment just to see if shared code works in Git
+
 // these "using xxx=yyy" are like typedef's 
 #if OLEDB
 #define QUESTIONMARK_PARAMS

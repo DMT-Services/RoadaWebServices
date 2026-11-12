@@ -1,0 +1,6 @@
+# Files managed by shared-code. Do not edit them here - edit them in shared-code.
+.github/workflows/shared-files-guard.yml
+DbFunc.cs
+MessLog.cs
+SqlHelper.cs
+myIO.cs
